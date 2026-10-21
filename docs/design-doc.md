@@ -225,10 +225,18 @@ clock in production and is fixed in tests.
 - **Weapons on screen.** `src/render/weapons.ts` builds one viewmodel rig
   per kind under the camera and draws the active one in 0.25 s
   (`DRAW_TIME`); each has its own accent colour, muzzle flash sprite and
-  light, and tracer: a 1 px line for the laser, eight pellet traces for the
-  scatter, a glowing cylinder with sparks along it for the beam, a smoking
-  round and a drum that turns a notch per shot for the launcher, a spinning
-  barrel cluster for the minigun. Pickups (`src/render/pickups.ts`) are an
+  light, and tracer. Flash sprites are 0.12 to 0.3 m wide at the muzzle
+  (under 160 px at 1280x720) and fade with their light in 35 to 75 ms
+  (`FLASH`), so a shot reads as a pop under bloom rather than a disc. The
+  laser fires a 1.5 cm cylinder bolt (`LASER_RADIUS`) rather than a 1 px
+  line so it survives 4K; the scatter throws eight pellet traces at half
+  opacity; the beam is a 3.5 cm white core (`BEAM_CORE_RADIUS`) inside a
+  14 cm violet sheath at 0.18 opacity (`BEAM_RADIUS`) with a 24 cd light
+  (`BEAM_LIGHT`) riding 2.5 m in from the muzzle; the launcher opens a
+  muzzle ring to 0.6 m across (`LAUNCHER_RING_DIAMETER`) in 0.1 s, puffs
+  smoke a metre out (past the particle shader's near-eye fade) and turns
+  its drum a notch per shot; the minigun spins its barrel cluster.
+  Pickups (`src/render/pickups.ts`) are an
   emblem over a post with a kind-coloured light and a 3 m column, a ring on
   the ground when they land and when they are taken, and a fade over the
   last three seconds of their life.
