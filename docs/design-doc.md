@@ -229,9 +229,11 @@ clock in production and is fixed in tests.
   scatter, a glowing cylinder with sparks along it for the beam, a smoking
   round and a drum that turns a notch per shot for the launcher, a spinning
   barrel cluster for the minigun. Pickups (`src/render/pickups.ts`) are an
-  emblem over a post with a kind-coloured light and a 3 m column, a ring on
-  the ground when they land and when they are taken, and a fade over the
-  last three seconds of their life.
+  emissive emblem over a post with a kind-coloured billboard halo and a 2 m
+  column whose alpha fades to nothing at the top, no light of their own (so
+  the scene's light count, and with it every compiled material, is the same
+  before and after a spawn), a ring on the ground when they land and when
+  they are taken, and a fade over the last three seconds of their life.
 - **Effects.** Impact sparks, recoil on the viewmodel, explosions (a flash
   sphere at 0.55 opacity and a 140-intensity point light that is gone in a
   quarter second, a ground shockwave ring, fire and smoke bursts), kill
