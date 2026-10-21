@@ -120,7 +120,7 @@ in order, and freezes the result:
 | Archetype | Health | Speed  | Attack                          | Behavior                                        | Score |
 | --------- | ------ | ------ | ------------------------------- | ------------------------------------------------ | ----- |
 | Skimmer   | 40     | 7 m/s  | Melee zap, 12 dmg every 0.9 s   | Closes to 2 m with lateral jitter so packs fan out | 100   |
-| Strider   | 120    | 3 m/s  | Bolt, 18 dmg every 1.4 s        | Holds 8 to 16 m, backs off when crowded, aims at the current eye position with 4 % spread | 300 |
+| Strider   | 120    | 3 m/s  | Bolt, 18 dmg every 1.4 s        | Holds 8 to 16 m, backs off when crowded, closes while cover hides the player's eye, aims at the current eye position with 4 % spread | 300 |
 | Watcher   | 160    | 2 m/s  | Hitscan beam, 35 dmg: 1.2 s charge, 0.15 s beam, 3.5 s cooldown | Holds 24 to 32 m and never closes, orbits the player at half speed inside the band, charges only with line of sight to the eye, stands still while charging; the beam stops at cover | 400 |
 
 The rifle kills a skimmer in two shots and a strider in six. A watcher takes
@@ -177,6 +177,46 @@ flanker and skittish setting tried between 0.3 and 0.6 of the distance and
 temperament did not bring it under the ceiling; only all-chaser did.
 
 <!-- /design-check: enemies -->
+
+#### Pathing
+
+<!-- design-check: pathing -->
+
+Enemies have no navigation mesh: a moving enemy walks the straight line at
+its goal and `moveWithCollision` slides it along cover one axis at a time.
+Two shapes defeat the slide. A convex corner approached on its diagonal
+blocks both axes at once, and a face the goal sits straight behind leaves
+only the lateral jitter, a random walk that never reaches a corner. An enemy
+in either stood still for the rest of the wave; on `main` after #93, five of
+the forty balance-gate games ran to the clock with one enemy frozen in
+`chase` that way.
+
+The answer is a headway clock (`headwayAt` on the enemy) and a detour, both
+in `src/core/enemy.ts`. A step counts as headway when it covers at least
+25 % (`HEADWAY_FRACTION`) of the intended distance along the heading, so a
+slide at up to 60° off a face still counts. After 1 s (`STUCK_AFTER`)
+without headway the enemy sidesteps at right angles to its heading, toward
+the nearer end of the block in front of it (`sidestepDirection`), or by a
+coin flip from the seeded `Rng` at the arena edge or on a retry. The sidestep
+holds for up to 3 s (`DETOUR_MAX`), or until a probe two body radii long
+(`OPEN_LOOKAHEAD`) along the straight line comes back at least 90 % clear
+(`OPEN_FRACTION`); one clear step is not enough, because a corner's diagonal
+frees exactly one step and blocks the next. A sidestep that covers under
+10 % (`SIDESTEP_FRACTION`) of its own length reverses once, then backs out;
+boxed in on every side, the detour is dropped and the clock runs again.
+Holding by choice is not a dead end: a skittish skimmer waiting for company
+and a strider in its band keep their clock current and never detour. The
+end of a rout and the landing of a drop pod each start the clock afresh; a
+rout or an exit drops any detour in progress.
+
+A strider inside its band with cover between its muzzle and the player's
+eye (`hasClearShot`) closes on the player instead of holding: the bolt
+would stop on the block, and before this it stood and fired into the cover
+for as long as the player stayed hidden, which was three more of the forty
+games once the sidestep alone was in. With a clear shot it holds and backs
+off as before.
+
+<!-- /design-check: pathing -->
 
 ### Rout
 

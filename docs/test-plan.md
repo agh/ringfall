@@ -65,23 +65,32 @@ to the job summary.
 ### Baseline
 
 The run the thresholds are derived from, printed by `pnpm balance` on the
-branch for issue #93 (the bot holds fire without line of sight and walks at
-a target behind cover) on top of `main` at `cd16454`, seeds 100 to 119,
-480 s cap:
+branch for the enemy dead ends (a chasing enemy wedged on the corner of a
+cover block, or against a face the player stands straight behind, sidesteps
+after a second without headway; a strider closes while cover hides the
+player's eye, see [design-doc.md](design-doc.md#pathing)) on top of `main`
+at `8c840b2`, seeds 100 to 119, 480 s cap:
 
 | Profile | Win rate | Mean waves cleared (of 5) | Mean seconds | Accuracy | Shield breaks | Mean clear per wave (s) |
 | ------- | -------- | ------------------------- | ------------ | -------- | ------------- | ----------------------- |
-| Steady | 85% | 4.50 | 154 | 83% | 0.10 | 4, 11, 16, 20 |
-| Reckless | 85% | 4.70 | 138 | 83% | 0.20 | 4, 16, 15, 18 |
+| Steady | 100% | 5.00 | 93 | 88% | 0.10 | 4, 11, 14, 17 |
+| Reckless | 100% | 5.00 | 95 | 80% | 0.20 | 4, 11, 14, 15 |
 
-Accuracy jumped from the fifties because shots fired into cover had been
-counted as misses; from here it measures line of sight as much as aim.
-Holding fire without the walk was measured too and left the gate on its
-limits (steady 70% wins, 4.10 waves, 231 s mean; reckless 65% wins, 4.05
-waves): the bot stood still while a target sat behind a slab, and more
-games ran to the 480 s cap.
+Both profiles win every game. On `main` after #93, five of the forty ran to
+the 480 s cap with one enemy frozen in `chase` (steady seeds 103, 107 and
+117, reckless 101 and 110); with the sidestep alone, three more ran to the
+cap with a strider holding its band behind cover (steady 110 and 119,
+reckless 102). The reckless win-rate cap saturates: a baseline of 100 %
+plus two games of twenty is 100 %, so that row holds nothing until #63
+gives the gate a cross-profile bound; it stays so the report keeps showing
+it.
 
-This supersedes the five-beat baseline (#8 merged onto the rout #40 and the
+This supersedes the #93 baseline (the bot holds fire without line of sight
+and walks at a target behind cover, on `main` at `cd16454`: steady 85%
+wins, 4.50 waves, 154 s, 83% accuracy; reckless 85% wins, 4.70 waves,
+138 s, 83% accuracy, where accuracy jumped from the fifties because shots
+fired into cover had been counted as misses), the five-beat baseline (#8
+merged onto the rout #40 and the
 temperaments #47: steady 75% wins, 4.35 waves, 152 s, 52% accuracy;
 reckless 70% wins, 4.55 waves, 127 s, 43% accuracy), the eight-wave
 baseline the gate was introduced with (steady 15% wins, 5.35 waves of 8,
@@ -108,17 +117,17 @@ accuracy is not a damage signal). Each margin is about half of that shift.
 The margins have not been re-measured under the five beats; issue #12 is
 closed and no issue tracks that re-measurement. The reckless bound's original intent ("never retreating must
 not become the way to win") does not hold under the compositions #8
-specifies: the reckless profile wins 85% of its games. Issue #63 holds
-that question.
+specifies: the reckless profile wins every one of its games. Issue #63
+holds that question.
 
 | Profile | Metric | Bound | Limit | Baseline | Margin |
 | ------- | ------ | ----- | ----- | -------- | ------ |
-| Steady | Win rate | at least | 80% | 85% | one game of twenty |
-| Steady | Mean waves cleared | at least | 4.00 | 4.50 | half a wave of five |
-| Steady | Accuracy | at least | 73% | 83% | ten points |
-| Steady | Slowest mean wave clear | at most | 40 s | 20 s | twice the slowest baseline wave |
-| Reckless | Win rate | at most | 95% | 85% | two games of twenty; drift only, see above and #63 |
-| Reckless | Mean waves cleared | at least | 4.20 | 4.70 | half a wave of five |
+| Steady | Win rate | at least | 95% | 100% | one game of twenty |
+| Steady | Mean waves cleared | at least | 4.50 | 5.00 | half a wave of five |
+| Steady | Accuracy | at least | 78% | 88% | ten points |
+| Steady | Slowest mean wave clear | at most | 34 s | 17 s | twice the slowest baseline wave |
+| Reckless | Win rate | at most | 100% | 100% | two games of twenty, saturated; holds nothing, see above and #63 |
+| Reckless | Mean waves cleared | at least | 4.50 | 5.00 | half a wave of five |
 
 The original intent of the reckless row, that never retreating must not
 become the way to win, would be a cross-profile bound (reckless not
@@ -128,7 +137,7 @@ cross-profile metric yet, so that is issue #63 rather than a row.
 The thresholds live in `tests/balance/gate.ts`; the report shape
 (`BalanceReport`, `GateThreshold`, `evaluateGate`) in
 `src/core/playtest.ts`. Issue #12 asked for 60% steady wins and a five to
-nine minute median run; the five beats meet the first (85%) and miss the
+nine minute median run; the five beats meet the first (100%) and miss the
 second (the median won run is under two minutes), so the gate holds what
 the game does as of 2026-10-21 and the run-length target stays with issue #8.
 

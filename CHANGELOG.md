@@ -157,6 +157,15 @@ and this project adheres to
 
 ### Fixed
 
+- A chasing enemy wedged on the corner of a cover block, or pressed against
+  a face the player stood straight behind, never moved again; it now
+  sidesteps round the block after a second without headway (`STUCK_AFTER`
+  and `sidestepDirection` in `src/core/enemy.ts`, numbers in
+  `docs/design-doc.md`). A strider inside its range band with cover between
+  it and the player's eye closes instead of firing into the block
+  (`hasClearShot`). Seen in the balance traces for #93: five of the forty
+  gate games ran to the clock that way, none does now, and the gate is
+  re-derived from the new run (`tests/balance/gate.ts`, `docs/test-plan.md`).
 - Weapon muzzle flashes, tracers and the beam re-tuned under the HDR
   composer so they read without blooming out (#28).
 - Review sweep for #51 and #52, after the owning pull requests merged:

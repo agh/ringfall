@@ -13,7 +13,7 @@ created: 2026-10-21
 
 > [Ringfall](../../README.md) > [Architecture](README.md) > Module map
 
-Every TypeScript module under `src/` with its responsibility and what it imports, read from the import declarations by `scripts/architecture.mjs`. The tree holds 37 modules in 6 layers (`audio`, `core`, `hud`, `input`, `main`, `render`) joined by 128 internal imports. A dotted arrow in the diagrams is a type-only import, which Vite erases from the bundle; a solid arrow carries runtime code.
+Every TypeScript module under `src/` with its responsibility and what it imports, read from the import declarations by `scripts/architecture.mjs`. The tree holds 37 modules in 6 layers (`audio`, `core`, `hud`, `input`, `main`, `render`) joined by 129 internal imports. A dotted arrow in the diagrams is a type-only import, which Vite erases from the bundle; a solid arrow carries runtime code.
 
 ## Allowed dependencies
 
@@ -53,7 +53,7 @@ Source: [diagrams/render-components.mmd](diagrams/render-components.mmd).
 | `src/audio/offline.ts` | `audio` | Offline score: re-runs a seeded playtest and renders its events into an `OfflineAudioContext` | `core/game` (types), `core/playtest`, `audio/sounds` |
 | `src/audio/sounds.ts` | `audio` | The procedural sound table keyed by event, the `SILENT` list and the voice scheduler | `core/game` (types), `core/weapon` |
 | `src/core/bot.ts` | `core` | Scripted player: reads the state a human could see and returns an `InputFrame` | `core/enemy`, `core/game`, `core/grenade`, `core/pickups` (types), `core/raycast`, `core/rng` (types), `core/vec3`, `core/weapon`, `core/world` (types) |
-| `src/core/enemy.ts` | `core` | Enemy state machine (`spawning`, `chase`, `attack`, `flee`, `dead`), skimmer temperaments, the rout and its bark lines | `core/rng` (types), `core/vec3`, `core/watcher`, `core/world` |
+| `src/core/enemy.ts` | `core` | Enemy state machine (`spawning`, `chase`, `attack`, `flee`, `dead`), skimmer temperaments, the rout and its bark lines | `core/raycast`, `core/rng` (types), `core/vec3`, `core/watcher`, `core/world` |
 | `src/core/game.ts` | `core` | `GameState`, `InputFrame`, the `GameEvent` union and `stepGame`: one simulation tick as a draft, ten systems in order, then a frozen state | `core/enemy`, `core/grenade`, `core/pickups`, `core/projectile`, `core/raycast`, `core/rng`, `core/vec3`, `core/vitality`, `core/waves`, `core/weapon`, `core/world` |
 | `src/core/grenade.ts` | `core` | Thrown grenades and launcher rounds: bounce, fuse, blast falloff | `core/vec3`, `core/world` |
 | `src/core/pickups.ts` | `core` | Weapon pickups: drops, wave rewards, expiry, reach and the two-slot inventory | `core/enemy` (types), `core/rng` (types), `core/vec3`, `core/weapon`, `core/world` |

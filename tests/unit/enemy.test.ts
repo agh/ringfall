@@ -4,6 +4,7 @@ import {
   BARK_LINES,
   chaseGoal,
   createEnemy,
+  DETOUR_MAX,
   damageEnemy,
   ENEMY_STATS,
   type Enemy,
@@ -13,6 +14,7 @@ import {
   FLEE_EXIT_MARGIN,
   FLEE_EXIT_SPEED_FACTOR,
   FLEE_SPEED_FACTOR,
+  hasClearShot,
   hasFled,
   offHandSide,
   pickBark,
@@ -20,6 +22,8 @@ import {
   SKITTISH_PACK_RANGE,
   SPAWN_DELAY,
   STILL_TRACKING,
+  STUCK_AFTER,
+  sidestepDirection,
   startExit,
   startFlee,
   TEMPERAMENTS,
@@ -28,9 +32,9 @@ import {
   updateEnemy,
 } from '../../src/core/enemy';
 
-import { createRng } from '../../src/core/rng';
-import { distanceXZ, vec3 } from '../../src/core/vec3';
-import type { Arena } from '../../src/core/world';
+import { createRng, type Rng } from '../../src/core/rng';
+import { distanceXZ, normalize, vec3 } from '../../src/core/vec3';
+import { type Arena, aabbFromCenter } from '../../src/core/world';
 
 const arena: Arena = { halfSize: 30, obstacles: [], secret: null };
 const feet = vec3(0, 0, 0);
@@ -375,6 +379,311 @@ describe('enemy', () => {
       };
       const stepped = updateEnemy(strider, arena, feet, eye, 1 / 60, 5, rng, pack).enemy;
       expect(distanceXZ(stepped.position, feet)).toBeLessThan(30);
+    });
+  });
+
+  describe('pathing', () => {
+    const DT = 1 / 60;
+    /** An `Rng` whose every draw is `value`, so a coin flip in the code under test is chosen. */
+    const fixed = (value: number): Rng => ({
+      next: () => value,
+      range: (lo, hi) => lo + (hi - lo) * value,
+      int: (n) => Math.floor(value * n),
+    });
+    const chasing = (kind: 'skimmer' | 'strider', at: ReturnType<typeof vec3>, now = 0): Enemy => ({
+      ...createEnemy(1, kind, at, now),
+      state: 'chase',
+      headwayAt: now,
+    });
+    /** Steps `e` for `seconds` and returns the enemy after each step. */
+    const run = (
+      e: Enemy,
+      world: Arena,
+      player: ReturnType<typeof vec3>,
+      seconds: number,
+      rng: Rng,
+      start = 0,
+    ): Enemy[] => {
+      const trail: Enemy[] = [];
+      let current = e;
+      for (let i = 0; i < seconds * 60; i += 1) {
+        const now = start + i * DT;
+        current = updateEnemy(
+          current,
+          world,
+          player,
+          vec3(player.x, 1.7, player.z),
+          DT,
+          now,
+          rng,
+        ).enemy;
+        trail.push(current);
+      }
+      return trail;
+    };
+    const moved = (a: Enemy, b: Enemy): number => distanceXZ(a.position, b.position);
+
+    it('escapes a convex corner it is wedged against diagonally', () => {
+      // Seed 102 of the balance gate: the skimmer sat on the north-west corner of this block
+      // from t = 20 s to the cap, with the player south-east of it. Each axis alone is blocked
+      // by the corner, so the slide is zero-length every step.
+      const world: Arena = {
+        halfSize: 30,
+        obstacles: [{ min: vec3(0, 0, 7.5), max: vec3(3.3, 3, 13.1) }],
+        secret: null,
+      };
+      const player = vec3(17.9, 0, 4);
+      const e = chasing('skimmer', vec3(-0.34, 0, 13.54));
+      const rng = createRng(102);
+      const first = updateEnemy(e, world, player, vec3(17.9, 1.7, 4), DT, 0, rng).enemy;
+      expect(moved(first, e)).toBeLessThan(0.04);
+      expect(first.detour).toBeNull();
+      const trail = run(e, world, player, 6, rng);
+      // Stuck for STUCK_AFTER, then a detour, then on the player.
+      const stillAt = trail[Math.round(STUCK_AFTER * 60) - 2];
+      expect(stillAt).toBeDefined();
+      expect(moved(stillAt as Enemy, e)).toBeLessThan(0.1);
+      expect(trail.some((t) => t.detour !== null)).toBe(true);
+      const last = trail[trail.length - 1] as Enemy;
+      expect(last.state).toBe('attack');
+      expect(last.detour).toBeNull();
+      expect(distanceXZ(last.position, player)).toBeLessThanOrEqual(
+        ENEMY_STATS.skimmer.attackRange,
+      );
+    });
+
+    it('escapes a concave corner between two blocks with the player behind them', () => {
+      // Two blocks meeting at (2, 2): one east of the enemy, one north. The player is beyond
+      // the corner to the north-east, so the straight line is blocked on both axes.
+      const world: Arena = {
+        halfSize: 30,
+        obstacles: [
+          { min: vec3(2, 0, -2), max: vec3(6, 3, 2) },
+          { min: vec3(-2, 0, 2), max: vec3(2, 3, 6) },
+        ],
+        secret: null,
+      };
+      const player = vec3(10, 0, 10);
+      const e = chasing('skimmer', vec3(1.4, 0, 1.4));
+      const rng = createRng(7);
+      const first = updateEnemy(e, world, player, vec3(10, 1.7, 10), DT, 0, rng).enemy;
+      expect(moved(first, e)).toBeLessThan(0.04);
+      const trail = run(e, world, player, 8, rng);
+      const last = trail[trail.length - 1] as Enemy;
+      expect(last.state).toBe('attack');
+      expect(distanceXZ(last.position, player)).toBeLessThanOrEqual(
+        ENEMY_STATS.skimmer.attackRange,
+      );
+    });
+
+    it('walks off a face the player stands straight behind instead of jittering on it', () => {
+      // Seed 107: a strider against the east face of a block with the player due west. The
+      // straight line is blocked, and the lateral jitter alone is a random walk along the face
+      // that never reaches a corner.
+      const world: Arena = {
+        halfSize: 30,
+        obstacles: [aabbFromCenter(16, 7.8, 6, 3, 6)],
+        secret: null,
+      };
+      const player = vec3(-10, 0, 7.8);
+      const e = chasing('strider', vec3(19.8, 0, 7.8));
+      const rng = createRng(107);
+      const trail = run(e, world, player, 6, rng);
+      const atOneSecond = trail[60] as Enemy;
+      // A second of jitter moves it along the face by less than its own radius.
+      expect(Math.abs(atOneSecond.position.x - 19.8)).toBeLessThan(0.1);
+      expect(Math.abs(atOneSecond.position.z - 7.8)).toBeLessThan(ENEMY_STATS.strider.radius);
+      const last = trail[trail.length - 1] as Enemy;
+      expect(last.position.x).toBeLessThan(13);
+      expect(distanceXZ(last.position, player)).toBeLessThan(distanceXZ(e.position, player) - 8);
+      expect(last.detour).toBeNull();
+    });
+
+    it('a free chase never detours and holding position is not a dead end', () => {
+      const rng = createRng(3);
+      const trail = run(chasing('skimmer', vec3(0, 0, -20)), arena, feet, 2, rng);
+      expect(trail.every((t) => t.detour === null)).toBe(true);
+      expect(trail.every((t, i) => t.headwayAt === i * DT || t.state === 'attack')).toBe(true);
+      // A skittish skimmer waiting for company stands still by choice: its clock keeps up.
+      const pack: Tracking = { ...STILL_TRACKING, pack: [vec3(0, 0, 25)] };
+      let skittish: Enemy = {
+        ...chasing('skimmer', vec3(0, 0, -6)),
+        temperament: 'skittish',
+        headwayAt: -10,
+      };
+      for (let i = 0; i < 120; i += 1) {
+        skittish = updateEnemy(skittish, arena, feet, eye, DT, i * DT, rng, pack).enemy;
+      }
+      expect(skittish.position).toEqual(vec3(0, 0, -6));
+      expect(skittish.detour).toBeNull();
+      expect(skittish.headwayAt).toBeCloseTo(119 * DT);
+      // So does a strider holding its range band.
+      let strider: Enemy = { ...chasing('strider', vec3(0, 0, -12)), headwayAt: -10 };
+      for (let i = 0; i < 120; i += 1) {
+        strider = updateEnemy(strider, arena, feet, eye, DT, i * DT, rng).enemy;
+      }
+      expect(strider.position).toEqual(vec3(0, 0, -12));
+      expect(strider.detour).toBeNull();
+    });
+
+    it('picks the short way round the blocker, and flips a coin at the arena edge or on a retry', () => {
+      const box = { min: vec3(0, 0, 7.5), max: vec3(3.3, 3, 13.1) };
+      const world: Arena = { halfSize: 30, obstacles: [box], secret: null };
+      const r = ENEMY_STATS.skimmer.radius;
+      // On the north-west corner heading south-east: north then east is 1.8 m to open ground,
+      // west then south is 5.7 m.
+      const corner = sidestepDirection(
+        world,
+        vec3(-0.34, 0, 13.54),
+        r,
+        normalize(vec3(0.88, 0, -0.46)),
+        fixed(0.9),
+      );
+      expect(corner.x).toBeGreaterThan(0);
+      expect(corner.z).toBeGreaterThan(0);
+      // Against the west face near its south end, heading east: south is the short way.
+      const face = sidestepDirection(world, vec3(-0.5, 0, 8), r, vec3(1, 0, 0), fixed(0.1));
+      expect(face.x).toBeCloseTo(0);
+      expect(face.z).toBeCloseTo(-1);
+      // The coin decides at the arena edge (no block ahead) and on a retry: heads is the
+      // strafe to the enemy's left of its heading, tails the right.
+      const edge = (coin: number): number =>
+        sidestepDirection(world, vec3(29, 0, 0), r, vec3(1, 0, 0), fixed(coin)).z;
+      expect(edge(0.1)).toBeCloseTo(1);
+      expect(edge(0.9)).toBeCloseTo(-1);
+      const retry = sidestepDirection(world, vec3(-0.5, 0, 8), r, vec3(1, 0, 0), fixed(0.1), true);
+      expect(retry.z).toBeCloseTo(1);
+    });
+
+    it('a sidestep blocked both ways backs out, and one boxed in on every side is dropped', () => {
+      // A pocket 1.6 m wide open to the south, the player beyond its north wall. West is
+      // blocked after two steps, east after four, and the third block backs out south.
+      const pocket: Arena = {
+        halfSize: 30,
+        obstacles: [
+          { min: vec3(-3, 0, 2), max: vec3(3, 3, 4) },
+          { min: vec3(-3, 0, -2), max: vec3(-0.8, 3, 2) },
+          { min: vec3(0.8, 0, -2), max: vec3(3, 3, 2) },
+        ],
+        secret: null,
+      };
+      const player = vec3(0, 0, 10);
+      const e = chasing('skimmer', vec3(0, 0, 1.4));
+      const trail = run(e, pocket, player, STUCK_AFTER + 1, fixed(0.5));
+      const detours = trail
+        .map((t) => t.detour)
+        .filter((d): d is NonNullable<typeof d> => d !== null);
+      expect(detours.some((d) => d.direction.x < -0.9 && !d.flipped)).toBe(true);
+      expect(detours.some((d) => d.direction.x > 0.9 && d.flipped)).toBe(true);
+      expect(detours.some((d) => d.direction.z < -0.9 && d.flipped)).toBe(true);
+      expect(Math.min(...trail.map((t) => t.position.z))).toBeLessThan(1);
+      // Walled in on all four sides there is nothing to do; the detour is dropped, not held.
+      const cell: Arena = {
+        halfSize: 30,
+        obstacles: [
+          { min: vec3(-2, 0, 0.6), max: vec3(2, 3, 2) },
+          { min: vec3(-2, 0, -2), max: vec3(2, 3, -0.6) },
+          { min: vec3(0.6, 0, -0.5), max: vec3(2, 3, 0.5) },
+          { min: vec3(-2, 0, -0.5), max: vec3(-0.6, 3, 0.5) },
+        ],
+        secret: null,
+      };
+      const walled = run(chasing('skimmer', vec3(0, 0, 0)), cell, player, 3, createRng(1));
+      const last = walled[walled.length - 1] as Enemy;
+      expect(distanceXZ(last.position, vec3(0, 0, 0))).toBeLessThan(0.1);
+      expect(last.detour).toBeNull();
+      expect(walled.some((t) => t.detour !== null)).toBe(true);
+    });
+
+    it('a strider closes while cover hides the player and holds its band once it sees', () => {
+      // A 4 m block between a strider at 12 m (inside its 16 m band) and the player. Holding
+      // the band here is standing still and firing into the block.
+      const world: Arena = {
+        halfSize: 30,
+        obstacles: [aabbFromCenter(0, -6, 4, 3, 2)],
+        secret: null,
+      };
+      const e = chasing('strider', vec3(0, 0, -12));
+      expect(hasClearShot(e, world, eye)).toBe(false);
+      expect(hasClearShot(e, arena, eye)).toBe(true);
+      const first = updateEnemy(e, world, feet, eye, DT, 0, createRng(1)).enemy;
+      expect(first.state).toBe('attack');
+      expect(first.position.z).toBeGreaterThan(-12);
+      const trail = run(e, world, feet, 10, createRng(1));
+      const seen = trail.findIndex((t) => hasClearShot(t, world, eye));
+      expect(seen).toBeGreaterThan(0);
+      const last = trail[trail.length - 1] as Enemy;
+      expect(hasClearShot(last, world, eye)).toBe(true);
+      const dist = distanceXZ(last.position, feet);
+      expect(dist).toBeGreaterThanOrEqual(ENEMY_STATS.strider.attackRange * 0.5 - 0.1);
+      expect(dist).toBeLessThanOrEqual(ENEMY_STATS.strider.attackRange);
+      // With a clear shot it holds, as before.
+      const holding = updateEnemy(
+        chasing('strider', vec3(0, 0, -12)),
+        arena,
+        feet,
+        eye,
+        DT,
+        0,
+        createRng(1),
+      ).enemy;
+      expect(holding.position).toEqual(vec3(0, 0, -12));
+      // The muzzle itself at the eye counts as a clear shot.
+      expect(
+        hasClearShot(
+          { ...e, position: vec3(0, 1.7 - ENEMY_STATS.strider.height * 0.75, 0) },
+          world,
+          eye,
+        ),
+      ).toBe(true);
+    });
+
+    it('a lapsed detour is retried, and a rout or an exit clears one', () => {
+      const world: Arena = {
+        halfSize: 30,
+        obstacles: [aabbFromCenter(16, 7.8, 6, 3, 6)],
+        secret: null,
+      };
+      const player = vec3(-10, 0, 7.8);
+      const stuck: Enemy = {
+        ...chasing('strider', vec3(19.8, 0, 7.8), 10),
+        headwayAt: 10 - STUCK_AFTER,
+        detour: { direction: vec3(0, 0, 1), until: 10, flipped: false },
+      };
+      const { enemy } = updateEnemy(stuck, world, player, vec3(-10, 1.7, 7.8), DT, 10, fixed(0.9));
+      expect(enemy.detour).not.toBeNull();
+      expect(enemy.detour?.until).toBeCloseTo(10 + DETOUR_MAX);
+      // The retry drew the coin: tails is the strafe to the right of a westward heading, north.
+      expect(enemy.detour?.direction.z).toBeGreaterThan(0);
+      expect(startExit(enemy).detour).toBeNull();
+      const skimmer: Enemy = { ...enemy, kind: 'skimmer' };
+      expect(startFlee(skimmer, 10).detour).toBeNull();
+      // A rout that ends against cover starts a fresh clock rather than detouring at once.
+      const routed: Enemy = { ...enemy, state: 'flee', fleeUntil: 5, headwayAt: 0 };
+      const back = updateEnemy(
+        routed,
+        world,
+        player,
+        vec3(-10, 1.7, 7.8),
+        DT,
+        11,
+        fixed(0.9),
+      ).enemy;
+      expect(back.state).toBe('chase');
+      expect(back.detour).toBeNull();
+      expect(back.headwayAt).toBe(11);
+      // Spawning sets the clock to the moment the enemy wakes.
+      expect(createEnemy(9, 'skimmer', feet, 4).headwayAt).toBe(4 + SPAWN_DELAY);
+      const woken = updateEnemy(
+        createEnemy(9, 'skimmer', vec3(0, 0, -10), 4),
+        arena,
+        feet,
+        eye,
+        DT,
+        6,
+        fixed(0.5),
+      ).enemy;
+      expect(woken.headwayAt).toBe(6);
     });
   });
 });

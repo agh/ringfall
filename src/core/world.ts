@@ -86,7 +86,8 @@ export const pointInsideAabbXZ = (p: Vec3, box: Aabb, margin = 0): boolean =>
   p.z > box.min.z - margin &&
   p.z < box.max.z + margin;
 
-const circleHitsBoxXZ = (p: Vec3, radius: number, box: Aabb): boolean => {
+/** True when a horizontal circle of `radius` at `p` overlaps the box's footprint. */
+export const circleHitsBoxXZ = (p: Vec3, radius: number, box: Aabb): boolean => {
   const nx = Math.max(box.min.x, Math.min(p.x, box.max.x));
   const nz = Math.max(box.min.z, Math.min(p.z, box.max.z));
   return (p.x - nx) ** 2 + (p.z - nz) ** 2 < radius * radius;

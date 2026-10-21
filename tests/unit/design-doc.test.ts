@@ -2,12 +2,18 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  DETOUR_MAX,
   ENEMY_STATS,
   type EnemyKind,
   FLEE_DURATION,
   FLEE_RADIUS,
   FLEE_SPEED_FACTOR,
+  HEADWAY_FRACTION,
+  OPEN_FRACTION,
+  OPEN_LOOKAHEAD,
+  SIDESTEP_FRACTION,
   SPAWN_DELAY,
+  STUCK_AFTER,
 } from '../../src/core/enemy';
 import {
   GRAVITY,
@@ -310,6 +316,25 @@ describe('design-doc.md enemy archetypes', () => {
     expectSentence('enemies', /kills a skimmer in (\w+) shots? and a strider in (\w+)\./, [
       word(shotsToKill('skimmer', damage)),
       word(shotsToKill('strider', damage)),
+    ]);
+  });
+});
+
+describe('design-doc.md pathing', () => {
+  it('quotes the headway clock and the detour', () => {
+    expectSentence('pathing', /at least (\S+) % \(`HEADWAY_FRACTION`\)/, [
+      percent(HEADWAY_FRACTION),
+    ]);
+    expectSentence('pathing', /After (\S+) s \(`STUCK_AFTER`\)/, [STUCK_AFTER]);
+    expectSentence('pathing', /up to (\S+) s \(`DETOUR_MAX`\)/, [DETOUR_MAX]);
+    expectSentence('pathing', /a probe (\w+) body radii long \(`OPEN_LOOKAHEAD`\)/, [
+      word(OPEN_LOOKAHEAD),
+    ]);
+    expectSentence('pathing', /at least (\S+) % clear \(`OPEN_FRACTION`\)/, [
+      percent(OPEN_FRACTION),
+    ]);
+    expectSentence('pathing', /under (\S+) % \(`SIDESTEP_FRACTION`\)/, [
+      percent(SIDESTEP_FRACTION),
     ]);
   });
 });
