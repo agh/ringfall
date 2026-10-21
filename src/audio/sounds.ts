@@ -236,12 +236,35 @@ export const vowelFormants = (phase: number): readonly [number, number] => {
   return [a0 + (a1 - a0) * t, b0 + (b1 - b0) * t];
 };
 
+/**
+ * One noise buffer per length per context, filled on first use. Filling is synchronous main-thread
+ * work: 2.2 ms for the drop pod's 1.2 s, and a wave start lands up to nine pods in one step, so
+ * building a fresh buffer per voice cost about 20 ms and 2 MB at the moment the wave began.
+ */
+const noiseBuffers = new WeakMap<BaseAudioContext, Map<number, AudioBuffer>>();
+
 const noiseBuffer = (ctx: BaseAudioContext, seconds: number): AudioBuffer => {
   const length = Math.floor(ctx.sampleRate * seconds);
+  let cache = noiseBuffers.get(ctx);
+  if (!cache) {
+    cache = new Map();
+    noiseBuffers.set(ctx, cache);
+  }
+  const cached = cache.get(length);
+  if (cached) return cached;
   const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
   const data = buffer.getChannelData(0);
   for (let i = 0; i < length; i += 1) data[i] = (Math.random() * 2 - 1) * (1 - i / length);
+  cache.set(length, buffer);
   return buffer;
+};
+
+/** Fills every noise length the table and the snare use, so no first shot or wave start pays for it. */
+export const warmNoise = (ctx: BaseAudioContext): void => {
+  for (const sound of Object.values(SOUNDS)) {
+    for (const voice of sound.voices) if (voice.kind === 'noise') noiseBuffer(ctx, voice.duration);
+  }
+  noiseBuffer(ctx, SNARE.duration);
 };
 
 const scheduleTone = (
