@@ -66,16 +66,11 @@ await page.evaluate(() => window.ringfallCapture.start());
 await page.waitForTimeout(300);
 const started = Date.now();
 for (let i = 0; i < totalFrames; i += 1) {
-  const dataUrl = await page.evaluate(
-    ({ steps }) => {
-      window.ringfallCapture.advance(steps);
-      return window.ringfallCapture.frame(0.9);
-    },
-    { steps: stepsPerFrame },
-  );
-  // HUD lives in the DOM, so composite it with a screenshot instead of the raw canvas.
+  await page.evaluate(({ steps }) => window.ringfallCapture.advance(steps), {
+    steps: stepsPerFrame,
+  });
+  // The HUD lives in the DOM, so a page screenshot composites canvas and HUD in one go.
   const shot = await page.screenshot({ type: 'jpeg', quality: 90 });
-  void dataUrl;
   writeFileSync(`${framesDir}/f${String(titleFrames + i).padStart(5, '0')}.jpg`, shot);
   if (i % fps === 0) {
     const status = await page.evaluate(() => {
