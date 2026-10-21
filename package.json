@@ -15,6 +15,12 @@
     "preview": "vite preview",
     "lint": "biome ci . && markdownlint-cli2 \"**/*.md\"",
     "lint:fix": "biome check --write .",
+    "lint:docs": "pnpm docs:frontmatter && pnpm docs:typos && pnpm docs:vale && pnpm docs:links",
+    "docs:frontmatter": "node scripts/check-frontmatter.mjs",
+    "docs:typos": "typos --config _typos.toml .",
+    "docs:vale": "git ls-files -z '*.md' | xargs -0 vale --no-global --no-exit",
+    "docs:links": "git ls-files -z '*.md' | xargs -0 markdown-link-check --config .markdown-link-check-internal.json --quiet",
+    "docs:links:external": "git ls-files -z '*.md' | xargs -0 -n 1 markdown-link-check --config .markdown-link-check.json --quiet",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --coverage",
     "test:watch": "vitest",
@@ -22,7 +28,7 @@
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "frames": "node scripts/frames.mjs",
     "demo": "node scripts/record-demo.mjs --seed 7 --seconds 40 --fps 30 --out demo-silent.mp4 && node scripts/render-score.mjs --seed 7 --seconds 40 --lead-in 1 --video demo-silent.mp4 --out demo.mp4",
-    "balance": "vitest run tests/balance --coverage.enabled=false --silent=false"
+    "balance": "vitest run tests/balance --coverage.enabled=false --silent=false --reporter=verbose"
   },
   "dependencies": {
     "three": "0.186.1"
@@ -33,9 +39,17 @@
     "@types/node": "26.6.5",
     "@types/three": "0.186.0",
     "@vitest/coverage-v8": "5.0.0",
+    "ajv": "8.20.0",
+    "markdown-link-check": "3.15.0",
     "markdownlint-cli2": "0.23.2",
     "typescript": "6.0.3",
     "vite": "8.3.5",
-    "vitest": "5.0.0"
+    "vitest": "5.0.0",
+    "yaml": "2.9.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "basic-ftp": "6.2.3"
+    }
   }
 }

@@ -130,6 +130,34 @@ describe('playtest bot', () => {
       expect(decide(scene(launcher, null, pack), aimedAt(0.6, 12)).fire).toBe(true);
     });
 
+    it('holds the launcher when cover on the aim ray is inside the blast radius', () => {
+      const launcher = createWeapon('launcher');
+      const strider = [awake(1, 'strider', -12)];
+      // A slab 1 m thick with its near face 3 m ahead, well inside ROUND_BLAST_RADIUS + 1.
+      const slabAt = (near: number) => ({
+        min: vec3(-1, 0, -(near + 1)),
+        max: vec3(1, 2.5, -near),
+      });
+      const withSlab = (near: number): GameState => {
+        const g = scene(launcher, null, strider);
+        return { ...g, arena: { ...g.arena, obstacles: [slabAt(near)] } };
+      };
+      expect(decide(withSlab(3), aimedAt(1.3, 12)).fire).toBe(false);
+      // The same slab past the clearance line: the round bursts there without reaching the bot.
+      expect(decide(withSlab(7), aimedAt(1.3, 12)).fire).toBe(true);
+      // Cover beside the aim ray, not on it, is not a reason to hold.
+      const aside = scene(launcher, null, strider);
+      const offLine = {
+        ...aside,
+        arena: { ...aside.arena, obstacles: [{ min: vec3(2, 0, -4), max: vec3(4, 2.5, -3) }] },
+      };
+      expect(decide(offLine, aimedAt(1.3, 12)).fire).toBe(true);
+      // The check is about the round's path: a hitscan weapon faces the same slab unchanged.
+      const rifle = scene(createWeapon('rifle'), null, strider);
+      const rifleSlab = { ...rifle, arena: { ...rifle.arena, obstacles: [slabAt(3)] } };
+      expect(decide(rifleSlab, aimedAt(1.3, 12)).fire).toBe(true);
+    });
+
     it('fires the minigun with a loose aim and the rifle with a tight one', () => {
       const target = [awake(1, 'skimmer', -10)];
       // One step of turning (0.076 rad at 260 deg/s) leaves about 0.064 rad of error.

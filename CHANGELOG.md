@@ -10,6 +10,19 @@ and this project adheres to
 
 ### Added
 
+- Four skimmer temperaments handed out round-robin per wave: chaser,
+  ambusher (leads the player's velocity by 4 m), flanker (swings to the
+  off-hand side) and skittish (holds at 10 m until a packmate is within
+  6 m of the player). The HUD names the arena Sector 117 from a core
+  constant. A crouch on C or Ctrl lowers the eye by 0.6 m; three crouches
+  within 1.5 s over a fallen strider earn a one-word bark from a surviving
+  skimmer. One cover block per arena hides a switch on its outward face;
+  shooting it once scores 1000 and the end card counts secrets found.
+- Enemy theatre: when a strider dies, every skimmer within 25 m breaks and
+  runs for 4 s at 1.3x speed without attacking, then returns to the chase.
+  New enemy state `flee` and two events for the presentation layers,
+  `enemyFled { id, kind }` and `enemyBark { id, line }`, with three original
+  bark lines (`src/core/enemy.ts`).
 - Renderer v2: scattering dawn sky, a ringworld you stand on, rolling
   terrain with mountains, image-based lighting, a GPU particle pool, an HDR
   composer with bloom and a custom feel pass (vignette, chromatic
@@ -39,9 +52,20 @@ and this project adheres to
   cards, wave 1 by day and wave 2 by night from the deterministic bot, the
   offline score, one MP4.
 - Pages deploys to ringfall.alexhowells.com.
+- Explosions and deaths that read at any distance, by day and at night:
+  a 120 ms sprite flash, a thin shockwave crest, debris sparks and chips
+  under gravity, a smoke column that rises and thins over 1.5 s, and a
+  4 s scorch on the floor; a kill borrows the enemy's own accent and shell
+  colours. The particle pool gains `spark`, `smoke` and `shard` shapes with
+  premultiplied blending so smoke can darken the frame (#26).
 
 ### Fixed
 
+- The frame bloomed and flared too much: the bloom prefilter passed the
+  whole HDR texel, so the sky's sun disc and the dust motes flooded the
+  frame with halos. The prefilter now keeps only the excess over the
+  threshold, with a knee and a per-pixel cap; the flare ghosts are sized as
+  fractions of the frame and hidden with the sun at night (#25).
 - A negative first frame delta after Deploy made every decay term grow
   without bound; the delta is now clamped at zero.
 - The terrain under the arena z-fought the floor at range; it is sunk six
