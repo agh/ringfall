@@ -1,7 +1,10 @@
 import { expect, test } from '@playwright/test';
 
-// Software GL (CI runners, sandboxes) renders the post stack at a few frames per second.
-test.describe.configure({ timeout: 120_000 });
+// Software GL (CI runners, sandboxes) renders the post stack at a few frames per second, and
+// a two-core runner spends more than a minute compiling the shader set on the first frame
+// after Deploy, so the first simulation step can be minutes away from the click.
+const FIRST_FRAME_TIMEOUT = 240_000;
+test.describe.configure({ timeout: 600_000 });
 
 test.describe('Ringfall smoke', () => {
   // Every test fails on a page error or a console error, not only the first one.
@@ -31,7 +34,7 @@ test.describe('Ringfall smoke', () => {
     // The simulation must advance. Wave spawning is covered headlessly in tests/unit; waiting
     // for it here would make the test a benchmark of the runner's GPU.
     await page.waitForFunction(() => (window.ringfall?.state().time ?? 0) > 0.5, null, {
-      timeout: 60_000,
+      timeout: FIRST_FRAME_TIMEOUT,
     });
     const snapshot = await page.evaluate(() => {
       const s = window.ringfall?.state();
@@ -58,14 +61,14 @@ test.describe('Ringfall smoke', () => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Deploy' }).click();
     await page.waitForFunction(() => (window.ringfall?.state().time ?? 0) > 0.2, null, {
-      timeout: 60_000,
+      timeout: FIRST_FRAME_TIMEOUT,
     });
     const before = await page.evaluate(() => window.ringfall?.state().player.position.z ?? 0);
     await page.keyboard.down('KeyW');
     await page.waitForFunction(
       (z0) => (window.ringfall?.state().player.position.z ?? 0) < z0 - 0.5,
       before,
-      { timeout: 60_000 },
+      { timeout: FIRST_FRAME_TIMEOUT },
     );
     await page.keyboard.up('KeyW');
     const after = await page.evaluate(() => window.ringfall?.state().player.position.z ?? 0);
