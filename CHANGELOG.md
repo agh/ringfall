@@ -53,6 +53,11 @@ and this project adheres to
 
 ### Fixed
 
+- The frame bloomed and flared too much: the bloom prefilter passed the
+  whole HDR texel, so the sky's sun disc and the dust motes flooded the
+  frame with halos. The prefilter now keeps only the excess over the
+  threshold, with a knee and a per-pixel cap; the flare ghosts are sized as
+  fractions of the frame and hidden with the sun at night (#25).
 - A negative first frame delta after Deploy made every decay term grow
   without bound; the delta is now clamped at zero.
 - The terrain under the arena z-fought the floor at range; it is sunk six

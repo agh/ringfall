@@ -249,6 +249,26 @@ clock in production and is fixed in tests.
   1.0 so only emitters bloom, a custom feel pass (vignette, chromatic
   aberration that grows with damage, a hexagonal shield lattice that flares
   on hits, grain), then `OutputPass` for ACES tone mapping at exposure 0.38.
+- **Bloom.** The stock bloom prefilter passes a whole texel once it is over
+  the threshold, so the sky's sun disc (hundreds in HDR) bloomed six
+  hundred times harder than a trim at 1.0 and flooded a quarter of the
+  frame; the dust motes did the same in miniature. `src/render/post.ts`
+  replaces it with a prefilter that keeps only the excess over the
+  threshold, with a quadratic knee that starts at 1.0, capped at 1.5 per
+  pixel: strength 0.3, radius 0.35, threshold 1.3, knee 0.3, cap 1.5. The
+  values come from measured seed-7 frames (`docs/journey/README.md`,
+  17:40): looking into the dawn sun the mean luminance of a 64 by 36
+  downscale went from 136 to 106 of 255 and the saturated blob from 22% to
+  14% of the frame height; at the first kill at night from 60 to 19. The
+  budget is a mean under 150 by day and 110 at night.
+- **Sun flare.** An additive core sprite at the sun (scale 520 at 9 km,
+  about 4% of the frame height) and three ghosts on the sun-to-centre axis,
+  sized as fractions of the frame height (5%, 8%, 3.5%) at opacity 0.6, so
+  no ghost can reach the third of the frame the budget allows. Core and
+  ghosts follow `sunDisc`, which is 0 at night, and are hidden rather than
+  drawn transparent when it is. The moon is a 420-unit disc sprite whose
+  texel is under the bloom threshold, so its halo is only its own gradient:
+  a 3 px disc with a 6 px halo at 720p.
   Lighting is a sun, a hemisphere fill, and image-based lighting baked from
   the sky itself with `PMREMGenerator`, with exponential fog; the values
   come from the atmosphere rig below and blend over three seconds when the

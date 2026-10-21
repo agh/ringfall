@@ -538,6 +538,63 @@ shield lattice up; the same frame measured 125 before the change.
 
 ![A blast in the open by day, 0.45 s on: smoke by the slab, the scorch under the pickup](images/1730-issue26-day-blast-smoke.jpg)
 
+## 17:40 Bloom and flare pass, measured
+
+Issue #25 asked for bloom numbers chosen from frames, not taste. Before
+touching anything, seed 7 was stepped headlessly with the capture hook at
+t = 4, 10 and 18 s by day and 8.5, 10 and 18 s at night, plus two frames
+the bot never gives: standing still looking into the dawn sun, and pitched
+up at the moon. Each frame was scored two ways: the mean luminance of a
+64 by 36 area downscale, and the largest 4-connected blob of saturated
+pixels (every channel at 245 or more). The sun-facing frame explained the
+complaint on its own: a 354 by 158 px saturated blob, 22% of the frame
+height, and a mean of 136. The cause was not the bloom strength but the
+prefilter: `UnrealBloomPass` passes the whole HDR texel once it is over
+the threshold, and the sky's sun disc is in the hundreds, so it bloomed
+hundreds of times harder than a trim at 1.0; the dust motes, with their
+centre boost, did the same in miniature as fist-sized discs. The
+prefilter now keeps only the excess over the threshold, with a quadratic
+knee that starts at 1.0 and a cap of 1.5 per pixel, and the strength and
+radius came down (0.35 to 0.3, 0.6 to 0.35). The flare ghosts, which
+were already 5%, 8% and 3.5% of the frame height, are now sized as those
+fractions explicitly and drawn at 0.6 opacity; core and ghosts are hidden
+when `sunDisc` is 0. The moon's texel is under the threshold and was never
+blooming: its 3 px disc carries a 6 px halo from its own sprite gradient,
+unchanged. Every budget in the issue holds: no day frame over 150, no
+night frame over 110.
+
+| Frame (seed 7) | Mean before | Mean after | Saturated blob before | Saturated blob after |
+| -------------- | ----------- | ---------- | --------------------- | -------------------- |
+| Title (overlay up) | 41 | 38 | none | none |
+| Day, 4 s | 105 | 86 | 188 by 168 px (23% of height) | none |
+| Day, 10 s (kill flash) | 100 | 67 | 76 by 67 px (9%) | 56 by 38 px (5%) |
+| Day, 18 s | 23 | 23 | none | none |
+| Night, 8.5 s | 10 | 10 | none | none |
+| Night, 10 s (kill flash) | 60 | 19 | 78 by 70 px (10%) | 58 by 43 px (6%) |
+| Night, 18 s (beam) | 14 | 14 | none | none |
+| Day, facing the sun, no bot | 136 | 106 | 354 by 158 px (22%) | 237 by 100 px (14%) |
+| Night, facing the moon, no bot | 6 | 6 | none (disc 3 px, halo 6 px) | none (same) |
+
+The 14% blob that remains when staring into the sun is the sky shader's
+own forward-scattering aureole under ACES at exposure 0.38, not bloom;
+it belongs to the environment rig and was left alone.
+
+![Day, 4 s, before: the sun and the dust bloom into discs](images/1715-bloom-before-day-04s.jpg)
+
+![Day, 4 s, after: trims glow, the sky is a sky](images/1740-bloom-after-day-04s.jpg)
+
+![Facing the sun, before: a quarter of the frame is white](images/1715-bloom-before-sun.jpg)
+
+![Facing the sun, after: the aureole stays, the flood goes](images/1740-bloom-after-sun.jpg)
+
+![Night, 10 s, before: the kill flash fills the frame](images/1715-bloom-before-night-10s.jpg)
+
+![Night, 10 s, after: a flash you can see past](images/1740-bloom-after-night-10s.jpg)
+
+The remaining pairs (day 10 s and 18 s, night 8.5 s and 18 s, the moon)
+are filed beside them as `1715-bloom-before-*.jpg` and
+`1740-bloom-after-*.jpg`.
+
 ## Playtest reviews
 
 Each row is a human or agent watching the game play, not a screenshot.

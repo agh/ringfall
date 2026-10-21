@@ -84,8 +84,10 @@ sun and recolour the rig per wave, and rain and fog weathers grey it.
   sky.
 - Sky: scattering sky (three.js `Sky`) with turbidity 4, Rayleigh 2.2; the
   ring, sun and stars are excluded from fog.
-- Bloom: `UnrealBloomPass` threshold 1.25 in HDR so ordinary lit albedo
-  never blooms; only emissive trims and effects cross it. Tone mapping ACES
+- Bloom: `UnrealBloomPass` threshold 1.3 in HDR so ordinary lit albedo
+  never blooms; only emissive trims and effects cross it, and only their
+  excess over the threshold, capped at 1.5 per pixel, so the sun and a near
+  sprite bloom like emitters rather than floodlights. Tone mapping ACES
   Filmic, exposure 0.38 by day.
 
 ## Typography
