@@ -71,8 +71,9 @@ jobs:
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
-          name: playwright-report
-          path: playwright-report
+          name: playwright-traces
+          # The reporter is `github`, so the evidence of a failure is the trace under test-results.
+          path: test-results
           retention-days: 7
 
   frames:
@@ -315,7 +316,10 @@ jobs:
   # code, may write Pages and mint an OIDC token.
   pages-build:
     name: Pages build
-    needs: [lint, test, frames, build, balance, docs, security]
+    # The luminance gate (`frames`) and the browser smoke tests still fail the run, but the
+    # deploy does not wait on them: both take ten to forty minutes on software GL, and a push
+    # to main every few minutes would otherwise never reach this job.
+    needs: [lint, test, build, balance, docs, security]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
