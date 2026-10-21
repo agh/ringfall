@@ -604,6 +604,39 @@ The remaining pairs (day 10 s and 18 s, night 8.5 s and 18 s, the moon)
 are filed beside them as `1715-bloom-before-*.jpg` and
 `1740-bloom-after-*.jpg`.
 
+## 18:08 Flare budget, second cut
+
+Issue #71: after #61 the user watched the reel twice and said there was
+still far too much flare. The same frame set was measured the same way
+(mean luminance of a 64 by 36 downscale; largest 4-connected blob of
+pixels with every channel at 245 or more) before and after, at 1280 by
+720 with seed 7. Bloom strength went from 0.3 to 0.15 and radius from
+0.35 to 0.25; the flare ghosts from 0.6 to 0.3 opacity and the core sprite
+to two thirds of its size (520 to 347); the day and dawn skies got a
+thinner, tighter mie lobe (coefficient 0.003 to 0.0008 and 0.006 to 0.002,
+g 0.82 to 0.93 and 0.85 to 0.92), which is what the aureole was. The night
+rig, the dust block and the explosions were not touched. The facing-the-sun
+blob fell from 13% of the frame height to 3%; the means moved little
+because they are sky and terrain brightness, not flare, and the night kill
+frame is the explosion from #60, which this cut does not own. The ring,
+trims and stars are still visible at night on the frames.
+
+| Frame (seed 7) | Mean before | Mean after | Saturated blob before | Saturated blob after |
+| -------------- | ----------- | ---------- | --------------------- | -------------------- |
+| Title (overlay up) | 43 | 42 | none | none |
+| Day, 4 s | 84 | 78 | none | none |
+| Day, 10 s (kill flash) | 55 | 56 | none | none |
+| Night, 10 s (kill flash) | 40 | 37 | none | none |
+| Night, 18 s (beam) | 24 | 23 | none | none |
+| Day, facing the sun, no bot | 114 | 106 | 206 by 95 px (13%) | 28 by 24 px (3%) |
+
+![Facing the sun, before: an aureole a tenth of the frame](images/1803-flare2-before-sun.jpg)
+
+![Facing the sun, after: a disc on the horizon](images/1808-flare2-after-sun.jpg)
+
+The other pairs are filed beside them as `1803-flare2-before-*.jpg` and
+`1808-flare2-after-*.jpg`.
+
 ## 17:40 The hero is a frame, not a drawing
 
 Seven moments of seed 7 were rendered headless at 3840x1600 with the post
