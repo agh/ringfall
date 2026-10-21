@@ -86,6 +86,8 @@ the events to the renderer, HUD, and audio bank, then renders.
 `GameState` is immutable. A step creates a mutable draft, runs these stages
 in order, and freezes the result:
 
+<!-- design-check: simulation -->
+
 1. **Player movement.** Wish direction from yaw and WASD, speed 6 m/s (9 when
    sprinting forward), gravity 18 m/s², jump impulse 6 m/s. The player is a
    vertical cylinder (radius 0.4 m, height 1.8 m, eye at 1.7 m). Each axis is
@@ -102,8 +104,9 @@ in order, and freezes the result:
    skating across the arena. The blast deals 150 damage at the centre
    falling linearly to zero at 6 m, and half that to the thrower.
 4. **Enemies.** Each enemy is a small state machine (`spawning`, `chase`,
-   `attack`, `dead`). Spawning lasts 1 s and the enemy is invulnerable and
-   visibly descending during it, so the player has a beat to react.
+   `attack`, `flee`, `dead`). Spawning lasts 1 s and the enemy is invulnerable and
+   visibly descending during it, so the player has a beat to react. Only
+   skimmers enter `flee`, and only when a strider dies near them.
 5. **Bolts.** Strider projectiles travel at 22 m/s for up to 3 s, stop on
    cover, the floor, and the arena edge, and hit a 0.9 m sphere around the
    player's centre.
@@ -112,7 +115,11 @@ in order, and freezes the result:
 7. **Vitality.** Damage hits the shield first (100), then health (100). The
    shield recharges at 35/s after 4 s without damage. Health never recharges.
 
+<!-- /design-check: simulation -->
+
 ### Enemy archetypes
+
+<!-- design-check: enemies -->
 
 | Archetype | Health | Speed  | Attack                          | Behaviour                                        | Score |
 | --------- | ------ | ------ | ------------------------------- | ------------------------------------------------ | ----- |
@@ -124,7 +131,52 @@ contact strip a full shield in about four seconds; one strider's volley is
 dodgeable by strafing because the bolt takes roughly half a second to cross
 its range.
 
+<!-- /design-check: enemies -->
+
+### Rout
+
+<!-- design-check: rout -->
+
+The first "the AI is thinking" moment: when a strider dies, every skimmer
+within 25 m of it (`FLEE_RADIUS`, XZ distance from the strider) breaks and
+runs. Values are the `FLEE_*` constants in `src/core/enemy.ts`.
+
+| Number                 | Value                   | Why                                                                                   |
+| ---------------------- | ----------------------- | ------------------------------------------------------------------------------------- |
+| Trigger                | strider `enemyKilled`   | Skimmer deaths rout nobody; a pack losing its leader is the one legible cause        |
+| Radius                 | 25 m                    | Covers a whole pack spawned on the 26 m ring without reaching across the arena       |
+| Duration               | 4 s (`FLEE_DURATION`)   | Long enough to be seen and shot at, short enough that wave 2 stays under 10 % slower |
+| Speed                  | 1.3x (9.1 m/s)          | Faster than a sprinting player (9 m/s), so the gap opens instead of closing           |
+| Heading                | straight away from the player | Reads as fear, not as a flank; cover and the arena edge stop it                |
+| Attacks while fleeing  | none                    | The reward for the kill is a breather                                                 |
+| After                  | `chase`                 | It comes back, which is what makes the next strider kill worth repeating              |
+| Second strider death   | refreshes the 4 s       | Routs do not stack                                                                    |
+| Spawning or dead       | unchanged               | A descending skimmer is not yet in the fight                                          |
+
+Each rout emits `enemyFled { id, kind }` and then `enemyBark { id, line }`
+for the same skimmer, after the strider's `enemyKilled` in the same step.
+The lines are the three originals in `BARK_LINES`: the first skimmer of a
+rout always calls "LEADER DOWN", the rest draw from the set with the
+simulation's seeded `Rng`. A strider death with no skimmer within 25 m
+routs nobody and barks nothing. Fleeing skimmers stay hittable and count
+as alive for the wave. The posture (tilt, faster ring, a floating label
+for 1.2 s) and the squeal belong to the render and audio layers, which
+consume these events.
+
+Balance, twenty seeded games per profile (`pnpm balance`), before and
+after the rout. Wave 2 is the first wave with a strider and the gate from
+the issue: no more than 10 % slower for the steady profile.
+
+| Profile  | Wave 2 clear before | Wave 2 clear after | Win rate before | Win rate after |
+| -------- | ------------------- | ------------------ | --------------- | -------------- |
+| steady   | 15 s                | 16 s               | 15 %            | 30 %           |
+| reckless | 13 s                | 14 s               | 0 %             | 10 %           |
+
+<!-- /design-check: rout -->
+
 ### Weapons
+
+<!-- design-check: weapons -->
 
 Values are `WEAPON_SPECS` in `src/core/weapon.ts`; spread is in radians,
 standing / moving. Damage falls linearly from full at the falloff start to
@@ -156,7 +208,11 @@ of its full rate (`MINIGUN_IDLE_RATE`) until it has spun up.
   until it has spun up for half a second; it is borrowed firepower that runs
   out.
 
+<!-- /design-check: weapons -->
+
 ### Wave composition
+
+<!-- design-check: waves -->
 
 Wave *n* spawns `2 + n` skimmers and `floor(n / 2)` striders on a 26 m ring
 around the arena centre, avoiding cover. Clearing a wave is worth 500. The
@@ -173,12 +229,18 @@ roster for the eight waves:
 | 7    | 9        | 3        |
 | 8    | 10       | 4        |
 
+<!-- /design-check: waves -->
+
 ### Arena
+
+<!-- design-check: arena -->
 
 A 60 m square with transparent boundary walls and 16 procedurally placed
 cover blocks (2 to 6 m footprint, 1.5 to 4 m tall), none within 6 m of the
 centre so the spawn point is open. Layout is seeded; the seed comes from the
 clock in production and is fixed in tests.
+
+<!-- /design-check: arena -->
 
 ### Presentation
 
@@ -229,9 +291,11 @@ clock in production and is fixed in tests.
   scatter, a glowing cylinder with sparks along it for the beam, a smoking
   round and a drum that turns a notch per shot for the launcher, a spinning
   barrel cluster for the minigun. Pickups (`src/render/pickups.ts`) are an
-  emblem over a post with a kind-coloured light and a 3 m column, a ring on
-  the ground when they land and when they are taken, and a fade over the
-  last three seconds of their life.
+  emissive emblem over a post with a kind-coloured billboard halo and a 2 m
+  column whose alpha fades to nothing at the top, no light of their own (so
+  the scene's light count, and with it every compiled material, is the same
+  before and after a spawn), a ring on the ground when they land and when
+  they are taken, and a fade over the last three seconds of their life.
 - **Effects.** Impact sparks, recoil on the viewmodel, explosions (a flash
   sphere at 0.55 opacity and a 140-intensity point light that is gone in a
   quarter second, a ground shockwave ring, fire and smoke bursts), kill
@@ -256,6 +320,18 @@ Pointer lock is requested on Deploy. Mouse movement adjusts yaw and pitch at
 read live each step; reload and grenade are latched so a key press between
 two steps is never lost. Esc releases the lock and the game returns to the
 overlay, where the run can be resumed with another click.
+
+The title overlay carries a settings panel whose values persist under the
+local-storage key `ringfall.settings.v1` (`src/core/settings.ts`). Corrupt or
+blocked storage yields the defaults, which equal the behaviour before the
+panel existed.
+
+| Setting | Range | Default | Applied to |
+| ------- | ----- | ------- | ---------- |
+| Sensitivity | 0.5 to 2.0 × | 1.0 (0.0022 rad per pixel) | `InputController.setSensitivity` |
+| Field of view | 70 to 100 degrees | 78 | `SceneRenderer.setBaseFov`; sprint still adds 6 |
+| Screen shake | on / off | on | `SceneRenderer.setShakeEnabled`: off sets the shake cap to 0 rad |
+| Hit flash | on / off | on | `SceneRenderer.setFlashEnabled` (hex shield lattice) and the HUD damage flash |
 
 ## Alternatives Considered
 

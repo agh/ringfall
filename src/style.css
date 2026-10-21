@@ -796,4 +796,117 @@ body {
   .hud:not([hidden]) .hud__weapon {
     animation: none;
   }
+
+/* Settings panel on the title overlay (issue #37). Tokens from docs/brand.md. */
+.settings {
+  margin: clamp(14px, 2.4vmin, 24px) 0 0;
+  border: 1px solid var(--slate);
+  background: rgba(16, 31, 54, 0.6);
+  text-align: left;
+}
+
+.settings__summary {
+  padding: clamp(8px, 1.4vmin, 12px) clamp(12px, 2vmin, 18px);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(14px, 1.8vmin, 16px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ring);
+  cursor: pointer;
+  list-style: none;
+}
+
+.settings__summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings__summary::before {
+  content: "+";
+  display: inline-block;
+  width: 1.4em;
+  color: var(--beacon);
+}
+
+.settings[open] .settings__summary::before {
+  content: "−";
+}
+
+.settings__summary:focus-visible {
+  outline: 2px solid var(--beacon);
+  outline-offset: -2px;
+}
+
+.settings__grid {
+  display: grid;
+  gap: clamp(8px, 1.4vmin, 12px);
+  padding: 0 clamp(12px, 2vmin, 18px) clamp(10px, 1.6vmin, 14px);
+  border-top: 1px solid rgba(138, 160, 184, 0.4);
+  padding-top: clamp(10px, 1.6vmin, 14px);
+}
+
+.settings__row {
+  display: grid;
+  grid-template-columns: minmax(13ch, 15ch) 1fr 5.5ch;
+  align-items: center;
+  gap: clamp(8px, 1.4vmin, 14px);
+  font-size: clamp(14px, 1.8vmin, 16px);
+  color: var(--slate);
+  cursor: pointer;
+}
+
+.settings__name {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.settings__value {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--bone);
+}
+
+.settings__range {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--beacon);
+  cursor: pointer;
+}
+
+.settings__check {
+  justify-self: start;
+  width: clamp(16px, 2.2vmin, 20px);
+  height: clamp(16px, 2.2vmin, 20px);
+  margin: 0;
+  accent-color: var(--beacon);
+  cursor: pointer;
+}
+
+.settings__range:focus-visible,
+.settings__check:focus-visible {
+  outline: 2px solid var(--beacon);
+  outline-offset: 3px;
+}
+
+.settings__note {
+  margin: 0;
+  padding: 0 clamp(12px, 2vmin, 18px) clamp(10px, 1.6vmin, 14px);
+  font-size: clamp(14px, 1.6vmin, 15px);
+  line-height: 1.5;
+  color: var(--slate);
+}
+
+/* With the panel open the card can outgrow a short window: scroll rather than clip the title. */
+.overlay {
+  overflow-y: auto;
+  align-items: safe center;
+}
+
+/* Flash off: the HUD damage flash stays in the DOM for its timers but never paints. */
+body.settings-no-flash .hud__damage {
+  display: none;
 }

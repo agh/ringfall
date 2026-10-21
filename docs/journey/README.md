@@ -405,6 +405,40 @@ The lesson: an issue assigned to a repository bot runs against whatever
 main holds at that minute. File the backlog before the merge, assign it
 after.
 
+## 17:13 Pickup glow without a light
+
+Issue #29. Every pickup carried its own point light and a 3 m additive
+column. Adding a light to a three.js scene changes the light count that
+every lit material is compiled against, so the first pickup of a round
+recompiled every shader (a hitch on real hardware), and the column
+bloomed into a pillar that owned the frame from close up. The capture
+hook at seed 7 shows the wave 3 reward land 5 m ahead at 41.9 s and the
+bot walk into it by 42.5 s. The pickup is now an emissive emblem above
+the bloom threshold, a billboard halo sprite, and a 2 m column whose
+alpha falls off with the square of its height to zero at the top. A
+Node test over the renderer counted zero lights under the pickup group
+after a spawn, and the two take bursts dropped from sprite sizes 9 and
+16 to 0.6 and 0.9, so a mote that has flown clear of the near fade stays
+under the 64 px cap. Same frame, same tick, before and after:
+
+![Pickup at 3 m, before: the column is a pillar](images/1713-pickup-column-before.jpg)
+
+![Pickup at 3 m, after: an emblem with a halo and a short plume](images/1715-pickup-glow-after.jpg)
+
+No pickup in the seed 7 run is ever seen from far away (rewards land 6 m
+ahead and the bot walks into them), so the range check pushed a launcher
+pickup into the live state through the `ringfall.state()` hook, 21 m
+along the view at 43 s, night. It reads as a lime point on a post with
+its plume, between the trims:
+
+![Injected pickup at 21 m, night](images/1724-pickup-glow-21m-night.jpg)
+
+At 40 m, the far side of the arena, it is a lime point under the
+reticle: findable, not loud. The 3 m column read further, and that was
+the problem.
+
+![Injected pickup at 40 m, night](images/1731-pickup-glow-40m-night.jpg)
+
 ## 17:15 The reel, twice
 
 The day-only interim cut (56.5 s, cards plus wave 1) was sent to the user
@@ -418,6 +452,26 @@ on this machine's software GL; the check-in to deliver it is set for
 
 The reel agent's shortfall list was honest and short: night unverified,
 dust discs, and two browser deaths recovered by the resume logic.
+
+## 17:26 A settings panel on the title card
+
+Issue #37 asked for the four things a demo on a borrowed laptop needs:
+mouse sensitivity, field of view, and switches for screen shake and the hit
+flash, all kept between visits. The values live in a pure module,
+`src/core/settings.ts`, modelled on the personal-bests store: missing,
+blocked or corrupt storage yields the defaults, and the defaults are
+exactly what the game did before the panel existed. The panel itself is a
+collapsed "Settings" strip under the controls list so the title card stays
+one button; opened, it shows two sliders and two checkboxes in the brand
+tokens. Wiring stayed small: three one-line setters on the renderer (base
+FOV, shake cap to zero, lattice off), one on the input controller, and a
+body class that hides the HUD damage flash. The frame below was taken
+headless from a clean profile with non-default values, after a reload, to
+show the persistence working. The first capture showed the open card
+overflowing an 800 px window and the field-of-view label wrapping; the
+overlay now scrolls and the label column is wider.
+
+![The title overlay with the settings panel open](images/1726-settings-panel.jpg)
 
 ## 17:29 Brand compliance
 

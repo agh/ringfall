@@ -25,9 +25,13 @@ The design is a set of numbers and rules, not adjectives. Every gameplay
 number in [design-doc.md](design-doc.md) names the module and constant
 that holds it (`PLAYER_SPEED`, `SHIELD_RECHARGE_DELAY`, `GRENADE_FUSE`,
 `ENEMY_STATS`, `waveComposition`). A reader can diff the document against
-`src/core/` in minutes, and that diff is the first thing a review should
-do. Where the numbers drift, one of the two is wrong and the pull request
-fixes it in the same change.
+`src/core/` in minutes, and a test does that diff on every run:
+`tests/unit/design-doc.test.ts` imports the constants and parses the
+tables and sentences between `<!-- design-check: ... -->` markers in the
+document with a few lines of string handling, so a number that drifts
+fails `pnpm test` naming the table, row and column (or the sentence).
+Where the numbers drift, one of the two is wrong and the pull request
+fixes it in the same change, from the constant.
 
 The rules are proven by tests that read like the design. The shield
 absorbs before health and recharges only after the delay
@@ -67,7 +71,7 @@ version is a pyramid with one unusual layer in the middle.
 | ----- | -------------- | ----------------- |
 | Static: Biome, strict tsc, markdownlint | Style, types, document hygiene | seconds |
 | Unit: Vitest in Node | Every core rule, the whole step, the records module | about a second |
-| Playtest: the bot in Node | Whole games are winnable, deterministic per seed, and the two bot profiles differ | seconds |
+| Playtest: the bot in Node | Whole games are winnable, deterministic per seed, the two bot profiles differ, and twenty seeded games per profile stay within the balance gate | seconds |
 | Browser: Playwright in Chromium with WebGL | The built page loads, renders, starts, advances the simulation, moves on keys, and logs no errors | about a minute on software GL |
 | Visual and film: captured frames, the recorder | What it looks and plays like | minutes, reviewed by a person |
 
@@ -89,6 +93,13 @@ thresholds chosen from a baseline, not from what passed.
 - Every pull request runs the static, unit, playtest, browser, and build
   layers in CI, with coverage thresholds on `src/core/` (85% lines and
   functions, 75% branches; `pnpm test` prints the actual figures).
+- The playtest gate (`pnpm balance`, the `Balance gate` CI job) plays
+  twenty seeded games per bot profile and fails the build when a number
+  leaves its baseline-derived bound: steady wins at least 10%, waves at
+  least 4.85, accuracy at least 29%, no wave slower than 50 s on average,
+  reckless wins at most 10%. The margins are written next to the
+  thresholds in `tests/balance/gate.ts` and `docs/test-plan.md`, and the
+  report (Markdown and JSON) is uploaded as the `balance-report` artifact.
 - Dependencies and actions are pinned exactly; nothing moves under the
   project between runs.
 - The simulation is deterministic, so a regression report is a seed and a
@@ -100,7 +111,9 @@ thresholds chosen from a baseline, not from what passed.
   `from 'three`, `window.`, or `document.`, naming the file and line.
 - The design document, the brand checklist, and the AGENTS.md pitfalls
   give a reviewer, human or agent, a list to check the diff against rather
-  than a feeling.
+  than a feeling; the gameplay numbers in the design document are checked
+  against the constants by `tests/unit/design-doc.test.ts`, so that part
+  of the list is a test.
 - Rendering regressions are the weak point: there is no automated image
   comparison, because software GL differs from hardware. The mitigation is
   cheap and in use: the recorder makes a film of a seed, and the journey
@@ -143,13 +156,8 @@ has a PR checklist, and why the journey log records what was overruled.
 
 These are the gaps, in the order they should be closed.
 
-1. The playtest gate with baseline-derived thresholds and a report
-   artifact (issue #12).
-2. A per-frame performance measurement on real hardware (issue #11), so
+1. A per-frame performance measurement on real hardware (issue #11), so
    the budget in the research becomes a number in this document.
-3. An audit of every number in the design document against the code,
-   automated as a test that imports the constants and compares them to a
-   table in the document's frontmatter.
-4. A visual regression check that compares a small set of deterministic
+2. A visual regression check that compares a small set of deterministic
    frames against references rendered on the same software GL, with a
    tolerance, so renderer changes get a diff a reviewer can look at.

@@ -115,6 +115,33 @@
           <dt>Fullscreen</dt><dd>F</dd>
         </dl>
         <p class="overlay__footnote">WebGL 2 desktop browser. Deploy captures the mouse and fills the screen; Esc releases both.</p>
+
+        <details class="settings" id="settings">
+          <summary class="settings__summary">Settings</summary>
+          <div class="settings__grid">
+            <label class="settings__row" for="setting-sensitivity">
+              <span class="settings__name">Sensitivity</span>
+              <input class="settings__range" id="setting-sensitivity" type="range" min="0.5" max="2" step="0.05" value="1" />
+              <output class="settings__value" id="setting-sensitivity-value" for="setting-sensitivity">1.00×</output>
+            </label>
+            <label class="settings__row" for="setting-fov">
+              <span class="settings__name">Field of view</span>
+              <input class="settings__range" id="setting-fov" type="range" min="70" max="100" step="1" value="78" />
+              <output class="settings__value" id="setting-fov-value" for="setting-fov">78°</output>
+            </label>
+            <label class="settings__row settings__row--toggle" for="setting-shake">
+              <span class="settings__name">Screen shake</span>
+              <input class="settings__check" id="setting-shake" type="checkbox" checked />
+              <span class="settings__value" id="setting-shake-value">On</span>
+            </label>
+            <label class="settings__row settings__row--toggle" for="setting-flash">
+              <span class="settings__name">Hit flash</span>
+              <input class="settings__check" id="setting-flash" type="checkbox" checked />
+              <span class="settings__value" id="setting-flash-value">On</span>
+            </label>
+          </div>
+          <p class="settings__note">Saved in this browser only. Flash covers the shield lattice and the damage flash.</p>
+        </details>
       </div>
     </div>
 
