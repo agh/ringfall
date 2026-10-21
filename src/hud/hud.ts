@@ -1,8 +1,9 @@
 import { ENEMY_STATS } from '../core/enemy';
-import type { GameEvent, GameState } from '../core/game';
+import { type GameEvent, type GameState, TAUNT_BARK } from '../core/game';
 import type { Vec3 } from '../core/vec3';
 import { FINAL_WAVE } from '../core/waves';
 import { isReloading, WEAPON_SPECS, type Weapon, weaponSpec } from '../core/weapon';
+import { ARENA_SECTOR } from '../core/world';
 
 /** More pips than this and the magazine reads as a bar. */
 const MAX_PIPS = 40;
@@ -40,6 +41,7 @@ const fitCanvas = (
  */
 export class Hud {
   private readonly root = byId<HTMLDivElement>('hud');
+  private readonly sector = byId<HTMLDivElement>('hud-sector');
   private readonly wave = byId<HTMLDivElement>('hud-wave');
   private readonly waveSub = byId<HTMLDivElement>('hud-wave-sub');
   private readonly score = byId<HTMLDivElement>('hud-score');
@@ -72,6 +74,10 @@ export class Hud {
   private lastShield = 100;
   private sweep = 0;
   private pendingDamage: Vec3[] = [];
+
+  constructor() {
+    this.sector.textContent = `Sector ${ARENA_SECTOR}`;
+  }
 
   show(): void {
     this.root.hidden = false;
@@ -111,6 +117,13 @@ export class Hud {
           break;
         case 'victory':
           this.announce('Chapter 1 complete', 4000);
+          break;
+        case 'enemyBark':
+          // Rout barks are the renderer's to label over each skimmer; the taunt answers the player.
+          if (e.line === TAUNT_BARK) this.announce(e.line, 1400);
+          break;
+        case 'secretFound':
+          this.announce(`Secret found +${e.score}`, 1800);
           break;
       }
     }
@@ -268,7 +281,7 @@ export class Hud {
       if (enemy.state === 'dead') continue;
       const [px, py, dist] = project(enemy.position);
       if (dist > RADAR_RANGE) continue;
-      const big = enemy.kind === 'strider';
+      const big = enemy.kind !== 'skimmer';
       const r = (big ? 5 : 3.5) * (w / 150);
       ctx.fillStyle = enemy.state === 'spawning' ? 'rgba(251, 113, 133, 0.4)' : '#fb7185';
       ctx.shadowColor = '#fb7185';
@@ -409,5 +422,9 @@ export class Hud {
 /** Exposed for the end-of-game card. */
 export const summarize = (state: GameState): string => {
   const kinds = Object.keys(ENEMY_STATS).length;
-  return `Score ${state.score} · ${state.kills} kills across ${kinds} enemy types · reached wave ${state.wave.number}.`;
+  const secrets = state.arena.secret === null ? 0 : 1;
+  return (
+    `Score ${state.score} · ${state.kills} kills across ${kinds} enemy types · ` +
+    `reached wave ${state.wave.number} · ${state.secretsFound} of ${secrets} secrets found.`
+  );
 };

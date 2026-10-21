@@ -1,7 +1,15 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.5.12/schema.json",
   "files": {
-    "includes": ["**", "!dist", "!coverage", "!node_modules", "!playwright-report", "!test-results"]
+    "includes": [
+      "**",
+      "!dist",
+      "!coverage",
+      "!node_modules",
+      "!playwright-report",
+      "!test-results",
+      "!tests/scratch"
+    ]
   },
   "assist": {
     "enabled": true,
@@ -41,5 +49,52 @@
       "quoteStyle": "single",
       "semicolons": "always"
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["src/core/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "three": "src/core/ is renderer-free: it must not import three.js."
+                },
+                "patterns": [
+                  {
+                    "group": ["three/**"],
+                    "message": "src/core/ is renderer-free: it must not import three.js."
+                  }
+                ]
+              }
+            },
+            "noRestrictedGlobals": {
+              "level": "error",
+              "options": {
+                "deniedGlobals": {
+                  "window": "src/core/ runs in Node: no window.",
+                  "document": "src/core/ runs in Node: no document.",
+                  "performance": "src/core/ never reads the clock: take dt as a parameter.",
+                  "Date": "src/core/ never reads the clock: take dt as a parameter.",
+                  "crypto": "src/core/ uses the seeded Rng, never crypto.",
+                  "globalThis": "src/core/ reaches no global object.",
+                  "self": "src/core/ reaches no global object.",
+                  "structuredClone": "src/core/ copies with spreads; structuredClone is a host API.",
+                  "Intl": "src/core/ formats nothing; Intl depends on the host locale.",
+                  "setTimeout": "src/core/ has no timers: take dt as a parameter.",
+                  "setInterval": "src/core/ has no timers: take dt as a parameter.",
+                  "queueMicrotask": "src/core/ is synchronous.",
+                  "localStorage": "src/core/ takes a storage interface as a parameter (records.ts).",
+                  "navigator": "src/core/ runs in Node: no navigator.",
+                  "console": "src/core/ returns events; it does not log."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

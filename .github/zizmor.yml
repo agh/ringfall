@@ -1,0 +1,20 @@
+# zizmor configuration (https://docs.zizmor.sh/configuration/).
+# CI runs zizmor 1.31.1 with --persona=pedantic over .github/workflows/*.yml.
+# Every ignore below names the finding and the change that removes it.
+rules:
+  excessive-permissions:
+    ignore:
+      # deploy-pages.yml grants pages: write and id-token: write at the
+      # workflow level, so the build job holds them too. The fix is to move
+      # both under the deploy job, but that workflow runs only on pushes to
+      # main and cannot be verified from a pull request; issue #44 left it
+      # for the maintainer. Remove this entry with that change.
+      - deploy-pages.yml
+  undocumented-permissions:
+    ignore:
+      # Same file, same follow-up: the comments arrive with the move above.
+      - deploy-pages.yml
+  anonymous-definition:
+    ignore:
+      # The build and deploy jobs in deploy-pages.yml carry no name:.
+      - deploy-pages.yml

@@ -2,7 +2,8 @@
 type: spec
 title: "Ringfall metrics: every number the playtest harness reports"
 status: draft
-authors: ["Ringfall hackathon team"]
+authors:
+  - name: "Ringfall hackathon team"
 created: 2026-10-21
 ---
 
@@ -16,7 +17,8 @@ agent writing a gate on them read the same meaning. For each field it
 gives the unit, how the number is computed, what a good value looks like
 for Chapter 1 and why, and which story, issue, or test uses it. The
 gameplay numbers quoted come from [design-doc.md](design-doc.md); the
-thresholds come from `tests/unit/bot.test.ts`, and
+floors come from `tests/unit/bot.test.ts`, the gate thresholds from
+`tests/balance/gate.ts`, and
 [evolution.md](evolution.md) records that two of those thresholds were
 lowered when first written, so they are floors the harness must clear,
 not targets it was tuned to.
@@ -69,8 +71,9 @@ mean.
 A count of enemies killed, read from `GameState.kills`. The maximum in a
 full clear is 68, which is the 52 skimmers and 16 striders in the
 composition table of [design-doc.md](design-doc.md) summed over eight
-waves. The second test requires at least 3 kills on seed 3 within 120
-seconds, which is the whole of wave 1. Story S3 uses it.
+waves. The second test runs eight seeds (200 to 207) for 150 seconds each
+and requires at least five first-wave clears and at least 24 kills in
+total. Story S3 uses it.
 
 ### score
 
@@ -84,8 +87,8 @@ No test asserts a score threshold; the end card and spec item 15 use it.
 
 A count of `shot` events. Each rifle round fired is one event whether or
 not it hits. With 32 rounds in the magazine and 160 in reserve the bot
-cannot exceed 192 shots without the reserve being refilled, which the
-simulation does not do, so a run with more shots than that would be a bug.
+cannot exceed 192 shots with the rifle alone; weapon pickups bring their
+own magazine and reserve, so a run with pickups can exceed it.
 It is the denominator of accuracy.
 
 ### shotsHit
@@ -179,7 +182,7 @@ with a low win rate means they are lethal. Issue #12 reports it.
 A fraction from 0 to 1 computed over the whole batch as total `shotsHit`
 divided by total `shotsFired`, not as the mean of per-run ratios, so a run
 with many shots weighs more. The second test asserts the per-run ratio is
-above 0.3 on seed 3, and [evolution.md](evolution.md) records that figure
+above 0.25 pooled over seeds 200 to 207, and [evolution.md](evolution.md) records that figure
 as a lowered threshold rather than a tuned target. Since the bot aims with
 bounded turn rate and jitter and the rifle's spread is 0.004 rad standing
 and 0.012 rad moving, a steady bot that lands well under half its shots
@@ -190,8 +193,9 @@ collision sphere meant the bot had to aim down.
 ### meanShieldBreaks
 
 Breaks per run, the mean of `shieldBreaks`. The fourth test asserts that
-the reckless mean is at least half the steady mean across seeds 21 to 24,
-with a 300 second cap, so that the profiles are not degenerate; the
+the two profiles differ in at least one of mean shield breaks, mean
+seconds, or accuracy across seeds 21 to 24, with a 300 second cap, so that
+the profiles are not degenerate; the
 expected direction is that the reckless bot breaks more often.
 
 ### meanWaveClearTimes

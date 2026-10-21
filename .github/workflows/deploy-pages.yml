@@ -1,14 +1,16 @@
 name: Deploy to GitHub Pages
 
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
     branches: [main]
+    types: [completed]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+# Least privilege per job: the build runs third-party code from node_modules and gets only a
+# read token; only the deploy step, which runs no project code, may write Pages and mint an
+# OIDC token.
+permissions: {}
 
 concurrency:
   group: pages
@@ -16,7 +18,11 @@ concurrency:
 
 jobs:
   build:
+    # A push to main deploys only once every CI job on that push is green.
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -36,6 +42,9 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

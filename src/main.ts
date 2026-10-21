@@ -3,7 +3,8 @@ import { renderScore } from './audio/offline';
 import { type BotMemory, createBotMemory, decideBot, STEADY_BOT } from './core/bot';
 import { createGame, type GameState, stepGame } from './core/game';
 import { describeComparison, recordRound } from './core/records';
-import { createRng } from './core/rng';
+import { createRng, parseSeed } from './core/rng';
+import { loadSettings, type Settings, saveSettings } from './core/settings';
 import { Hud, summarize } from './hud/hud';
 import { InputController } from './input/input';
 import { SceneRenderer } from './render/scene';
@@ -54,9 +55,54 @@ const main = (): void => {
   const audio = new AudioBank();
   const input = new InputController(canvas);
 
+  // Settings live only in this browser; storage may be blocked, and that is fine.
+  let settingsStore: Storage | null = null;
+  try {
+    settingsStore = window.localStorage;
+  } catch {
+    settingsStore = null;
+  }
+  let settings: Settings = loadSettings(settingsStore);
+  const applySettings = (): void => {
+    input.setSensitivity(settings.sensitivity);
+    renderer.setBaseFov(settings.fov);
+    renderer.setShakeEnabled(settings.shake);
+    renderer.setFlashEnabled(settings.flash);
+    document.body.classList.toggle('settings-no-flash', !settings.flash);
+  };
+  const bindRange = (id: string, key: 'sensitivity' | 'fov', show: (v: number) => string) => {
+    const el = byId<HTMLInputElement>(`setting-${id}`);
+    const out = byId<HTMLOutputElement>(`setting-${id}-value`);
+    el.value = String(settings[key]);
+    out.textContent = show(settings[key]);
+    el.addEventListener('input', () => {
+      settings = { ...settings, [key]: Number(el.value) };
+      out.textContent = show(settings[key]);
+      applySettings();
+      saveSettings(settingsStore, settings);
+    });
+  };
+  const bindToggle = (id: string, key: 'shake' | 'flash') => {
+    const el = byId<HTMLInputElement>(`setting-${id}`);
+    const out = byId<HTMLSpanElement>(`setting-${id}-value`);
+    el.checked = settings[key];
+    out.textContent = settings[key] ? 'On' : 'Off';
+    el.addEventListener('change', () => {
+      settings = { ...settings, [key]: el.checked };
+      out.textContent = settings[key] ? 'On' : 'Off';
+      applySettings();
+      saveSettings(settingsStore, settings);
+    });
+  };
+  bindRange('sensitivity', 'sensitivity', (v) => `${v.toFixed(2)}×`);
+  bindRange('fov', 'fov', (v) => `${Math.round(v)}°`);
+  bindToggle('shake', 'shake');
+  bindToggle('flash', 'flash');
+  applySettings();
+
   const params = new URLSearchParams(window.location.search);
-  const seedParam = Number(params.get('seed'));
-  const seed = Number.isFinite(seedParam) && seedParam > 0 ? seedParam : Date.now() >>> 0;
+  // `?seed=` is untrusted input: only a decimal uint32 is honoured, anything else is the clock.
+  const seed = parseSeed(params.get('seed'), Date.now() >>> 0);
   const botMode = params.has('bot');
   const recordMode = params.has('record');
   let game = createGame({ seed });
@@ -72,6 +118,7 @@ const main = (): void => {
 
   const showOverlay = (finished: boolean): void => {
     running = false;
+    audio.silence();
     audio.setMusic('title');
     hud.hide();
     overlay.hidden = false;
@@ -98,6 +145,11 @@ const main = (): void => {
       stats.textContent = `${summarize(game)} ${describeComparison(round, comparison)}`;
       stats.hidden = false;
       startButton.textContent = won ? 'Run it back' : 'Redeploy';
+    } else {
+      // A pause, not an ending: the card must not keep the previous round's death copy.
+      tagline.textContent = 'Paused. Esc released the mouse; click to take it back.';
+      stats.hidden = true;
+      startButton.textContent = 'Resume';
     }
     if (document.pointerLockElement) document.exitPointerLock();
   };
@@ -115,6 +167,9 @@ const main = (): void => {
     else requestFullscreen();
   });
 
+  /** Seconds of hit-stop remaining; the loop runs the sim at 5% speed while it is positive. */
+  let hitStop = 0;
+
   const start = async (): Promise<void> => {
     audio.unlock();
     if (!recordMode) requestFullscreen();
@@ -125,10 +180,14 @@ const main = (): void => {
       botRng = createRng(next ^ 0x7f4a7c15);
       botMemory = createBotMemory();
       renderer.setArena(game.arena);
+      input.reset();
+    } else {
+      // Resuming after Esc: `reset()` here snapped the camera to yaw 0 on every resume.
+      input.release();
     }
-    input.reset();
+    hitStop = 0;
     overlay.hidden = true;
-    hud.show();
+    if (!params.has('nohud')) hud.show(); // `?nohud`: dev flag, keeps the HUD hidden for clean hero captures.
     running = true;
     audio.setMusic('calm');
     accumulator = 0;
@@ -146,9 +205,6 @@ const main = (): void => {
     // Esc releases the pointer; pause to the overlay so the player can recapture it.
     if (!input.locked && running && game.status === 'playing') showOverlay(false);
   });
-
-  /** Seconds of hit-stop remaining; the loop runs the sim at 5% speed while it is positive. */
-  let hitStop = 0;
 
   /** One simulation step from either the human or the bot, plus event fan-out. */
   const simulate = (now: number): void => {
@@ -215,6 +271,9 @@ const main = (): void => {
       } else {
         accumulator += frameDt;
       }
+      // Anything past the per-frame cap is dropped, not deferred: a deferred backlog would
+      // fast-forward the game at five steps a frame once the frame rate recovers.
+      accumulator = Math.min(accumulator, FIXED_DT * MAX_STEPS_PER_FRAME);
       let steps = 0;
       while (accumulator >= FIXED_DT && steps < MAX_STEPS_PER_FRAME) {
         simulate(now);

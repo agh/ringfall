@@ -2,7 +2,8 @@
 type: art-direction
 title: "Ringfall art direction"
 status: draft
-authors: ["Ringfall hackathon team"]
+authors:
+  - name: "Ringfall hackathon team"
 created: 2026-10-21
 related: ["docs/brand.md", "docs/design-doc.md", "docs/spec.md"]
 ---
@@ -18,7 +19,7 @@ numbers are owned by [design-doc.md](../design-doc.md) and brand.md.
 
 ## World premise
 
-You are standing on the inside of a ring. It is twelve kilometres across, its
+You are standing on the inside of a ring. It is twelve kilometers across, its
 near side buried below the horizon so the arc climbs from both edges of the
 world and crosses overhead, ocean and land and cloud bands on its inner
 face and a bright metal rim catching the light. The sun is low, eleven
@@ -30,7 +31,7 @@ In front of you is a walled arena, 60 m square, with sixteen slabs of cover
 that were manufactured by the same people and share one line of emissive
 trim along their top edge. The walls are transparent; the world does not
 stop at them, the fight does. The terrain outside rolls away flat-shaded
-and vertex-coloured by height. Nothing explains who built the slabs or why
+and vertex-colored by height. Nothing explains who built the slabs or why
 the arena is numbered 117. The premise is a place, not a plot.
 
 ## Rendering tenets
@@ -48,7 +49,7 @@ world never carries Rose. If a pixel is warm, the player can act on it.
 
 **Geometry agrees with itself.** Flat shading, hard edges, one datum line,
 and a readability floor of 0.5 m for anything that carries meaning at 40 m.
-Enemies are told apart by aspect ratio before colour, and colour before
+Enemies are told apart by aspect ratio before color, and color before
 detail. Low-poly is a choice, not a shortcut.
 
 ## Reference moods
@@ -92,7 +93,7 @@ Strider: vertical, tall, four legs, cannon. Capsule walker.
 
 The skimmer is about one body wide and a third of that tall; the strider is
 2.6 m tall and narrower than it is high. Spawning enemies descend from six
-metres over one second; dead ones squash and tilt for 1.2 s before the
+meters over one second; dead ones squash and tilt for 1.2 s before the
 kill ring and spark burst.
 
 ## VFX language
@@ -104,11 +105,11 @@ shield lattice when it flares, the kill ring, and the core of a grenade
 explosion. What never blooms: lit albedo of any kind, terrain, the HUD, the
 ring's surface, and the sky away from the sun.
 
-Particles come from one pool, so colour is the only variable. The
+Particles come from one pool, so color is the only variable. The
 assignments below are proposed and use brand.md tokens only; brand.md
 remains the source for hex values.
 
-| Event | Particle colour | Notes |
+| Event | Particle color | Notes |
 | ----- | --------------- | ----- |
 | Rifle impact on cover | Dawn sparks, Slate dust | Light striking stone. |
 | Rifle impact on an enemy | Rose sparks | Threat bleeds threat. |
@@ -130,8 +131,8 @@ view; sprint adds 6 degrees over 150 ms. Head bob is 0.03 m vertical and
 the look direction and springs back; recoil kicks it back and up and
 recovers within 200 ms. The mouse turns at 0.0022 rad per pixel with pitch
 clamped just short of vertical. Screen shake is max(current, new), never
-additive, hard-capped at 0.035 rad, and the accessibility toggle sets the
-cap to zero. Tone mapping is ACES at exposure 0.38; fog is exponential at
+additive, hard-capped at 0.035 rad, and the Settings screen-shake switch
+sets the cap to zero (`src/core/settings.ts`). Tone mapping is ACES at exposure 0.38; fog is exponential at
 density 0.0032. The tableau is the only scripted camera move: a tilt up to the ring, then
 stillness.
 
@@ -139,7 +140,7 @@ stillness.
 
 - Use a texture, model, sound or font file from the internet; everything is
   procedural or an OFL font named in brand.md.
-- Draw any franchise glyph, logo, silhouette, colour scheme or melody.
+- Draw any franchise glyph, logo, silhouette, color scheme or melody.
 - Put lens flares, glow or bloom on the HUD; panels get a 1 px Slate border
   and nothing else.
 - Let shake exceed the cap, or ignore the toggle.

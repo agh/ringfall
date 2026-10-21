@@ -1,10 +1,12 @@
 import { ENEMY_STATS, type Enemy, enemyCenter } from './enemy';
 import { type GameState, IDLE_INPUT, type InputFrame, playerEye } from './game';
+import { ROUND_BLAST_RADIUS } from './grenade';
 import type { Pickup } from './pickups';
 import { hitscan } from './raycast';
 import type { Rng } from './rng';
-import { distanceXZ, normalize, sub, type Vec3 } from './vec3';
+import { directionFromAngles, distanceXZ, normalize, sub, type Vec3 } from './vec3';
 import { totalAmmo, type Weapon, weaponSpec } from './weapon';
+import type { Aabb } from './world';
 
 /**
  * A scripted player. It reads the same immutable state a human sees on the HUD (enemy positions,
@@ -23,7 +25,19 @@ const SCATTER_RANGE = 10;
 /** Launcher rounds are fired at striders and clusters inside this band; closer risks self-damage. */
 const LAUNCHER_MIN = 8;
 const LAUNCHER_MAX = 20;
+/**
+ * A launcher round bursts on the first cover it touches. Cover on the aim ray closer than this
+ * puts the bot inside its own blast, whatever the distance to the target (issue #24).
+ */
+const LAUNCHER_COVER_CLEARANCE = ROUND_BLAST_RADIUS + 1;
 const MINIGUN_TOLERANCE = 0.08;
+/** Target-score multiplier for a charging watcher in sight: it beats anything inside 40 m. */
+const WATCHER_CHARGE_URGENCY = 0.15;
+/** Striders and watchers are the big, slow targets the heavy weapons and grenades are for. */
+const isHeavyTarget = (e: Enemy | null): boolean => e?.kind === 'strider' || e?.kind === 'watcher';
+/** Guns that can hit a thin target at 24 to 32 m: the rest are out of range or too wide. */
+const reachesWatcher = (w: Weapon): boolean =>
+  w.kind === 'rifle' || w.kind === 'laser' || w.kind === 'beam';
 
 export interface BotProfile {
   /** Degrees per second the bot can turn; low values feel human. */
@@ -99,8 +113,19 @@ const pickTarget = (state: GameState): Enemy | null => {
     const visible = hit.targetId === enemy.id;
     // A player knows about enemies they can see or that show on the 28 m tracker; nothing else.
     if (!visible && dist > TRACKER_RANGE) continue;
-    // Prefer visible and close enemies; skimmers in melee range are urgent.
-    const urgency = enemy.kind === 'skimmer' && dist < 6 ? 0.3 : 1;
+    // Prefer visible and close enemies; skimmers in melee range are urgent, and a charging
+    // watcher in sight is a static target about to land 35 damage, so it comes first. Once a
+    // watcher has taken damage the bot finishes it rather than drifting back to nearer targets
+    // between charges: a 160-health sentinel left at half health keeps firing.
+    const engagedWatcher =
+      enemy.kind === 'watcher' &&
+      visible &&
+      (enemy.state === 'attack' || enemy.health < ENEMY_STATS.watcher.maxHealth);
+    const urgency = engagedWatcher
+      ? WATCHER_CHARGE_URGENCY
+      : enemy.kind === 'skimmer' && dist < 6
+        ? 0.3
+        : 1;
     const score = (visible ? dist : dist * 4) * urgency;
     if (score < bestScore) {
       bestScore = score;
@@ -111,9 +136,32 @@ const pickTarget = (state: GameState): Enemy | null => {
 };
 
 /**
+ * Distance from the eye to the first cover block on the aim ray, when that block is nearer than
+ * the target and within the self-blast clearance. Null means the round reaches the target, open
+ * air, or cover far enough away to burst harmlessly.
+ */
+const coverOnAimRay = (
+  eye: Vec3,
+  yaw: number,
+  pitch: number,
+  target: Enemy,
+  obstacles: readonly Aabb[],
+): number | null => {
+  const hit = hitscan(
+    eye,
+    directionFromAngles(yaw, pitch),
+    [{ id: target.id, center: enemyCenter(target), radius: ENEMY_STATS[target.kind].radius }],
+    obstacles,
+    LAUNCHER_COVER_CLEARANCE,
+  );
+  return hit.targetId === null && hit.distance < LAUNCHER_COVER_CLEARANCE ? hit.distance : null;
+};
+
+/**
  * Trigger logic per weapon kind. The beam is held until charged and released when the aim
  * settles; the scatter gun waits for close range; the launcher wants striders or clusters at a
- * safe distance; the minigun is forgiving of aim because its spread is wide anyway.
+ * safe distance with no cover in the way of the round; the minigun is forgiving of aim because
+ * its spread is wide anyway.
  */
 const decideFire = (
   weapon: Weapon,
@@ -122,18 +170,24 @@ const decideFire = (
   dist: number,
   cluster: number,
   profile: BotProfile,
+  coverDist: number | null,
 ): boolean => {
   if (!target || weapon.magazine === 0) return false;
   const spec = weaponSpec(weapon);
   if (spec.chargeTime > 0) return weapon.charge < 1 || aimError >= profile.fireTolerance;
   if (spec.projectile) {
-    const worth = target.kind === 'strider' || cluster >= 2;
+    const worth = isHeavyTarget(target) || cluster >= 2;
+    if (coverDist !== null && coverDist < LAUNCHER_COVER_CLEARANCE) return false;
     return (
       worth && dist >= LAUNCHER_MIN && dist <= LAUNCHER_MAX && aimError < profile.fireTolerance
     );
   }
   if (spec.pellets > 1) return dist <= SCATTER_RANGE && aimError < profile.fireTolerance * 2;
   if (spec.spinUp > 0) return aimError < MINIGUN_TOLERANCE;
+  // A watcher at 24 to 32 m subtends less than the usual tolerance: wait for the reticle to
+  // settle on it rather than spending the magazine around it.
+  if (target.kind === 'watcher')
+    return aimError < Math.min(profile.fireTolerance, ENEMY_STATS.watcher.radius / dist);
   return aimError < profile.fireTolerance;
 };
 
@@ -153,6 +207,8 @@ const decideSwap = (
   const isHeavy = (w: Weapon): boolean => w.kind === 'beam' || w.kind === 'launcher';
   const striderInSight = target?.kind === 'strider';
   if (totalAmmo(weapon) === 0) return true;
+  // A watcher sits beyond the launcher, scatter and minigun; only a precise gun reaches it.
+  if (target?.kind === 'watcher') return !reachesWatcher(weapon) && reachesWatcher(offHand);
   if (weapon.kind === 'rifle' && striderInSight && isHeavy(offHand)) return true;
   return isHeavy(weapon) && target?.kind === 'skimmer' && dist < LAUNCHER_MIN;
 };
@@ -222,7 +278,8 @@ export const decideBot = (
     const dist = distanceXZ(eye, target.position);
     const retreating = shieldFrac < profile.retreatShield;
     if (retreating) forward = -1;
-    else if (dist > 22) forward = 1;
+    // A watcher backs off as fast as it is approached; closing on it only leaves cover behind.
+    else if (dist > 22 && target.kind !== 'watcher') forward = 1;
     else if (dist < 4 && target.kind === 'skimmer') forward = -1;
     if (retreating) strafe = strafeSign;
   }
@@ -237,7 +294,7 @@ export const decideBot = (
   let throwGrenade = false;
   let lastGrenadeAt = memory.lastGrenadeAt;
   if (target && player.grenades > 0 && state.time - lastGrenadeAt > 3) {
-    if (dist > 8 && dist < 22 && (cluster >= profile.grenadeCluster || target.kind === 'strider')) {
+    if (dist > 8 && dist < 22 && (cluster >= profile.grenadeCluster || isHeavyTarget(target))) {
       throwGrenade = true;
       lastGrenadeAt = state.time;
     }
@@ -247,7 +304,11 @@ export const decideBot = (
   const magazine = weapon.magazine;
   const reload = magazine === 0 || (magazine < weapon.magazineSize / 4 && !target);
   if (target && weapon.kind === 'scatter' && dist > SCATTER_RANGE && forward === 0) forward = 1;
-  const fire = decideFire(weapon, target, aimError, dist, cluster, profile);
+  const coverDist =
+    target && weaponSpec(weapon).projectile
+      ? coverOnAimRay(eye, yaw, pitch, target, state.arena.obstacles)
+      : null;
+  const fire = decideFire(weapon, target, aimError, dist, cluster, profile, coverDist);
 
   const swapWeapon = decideSwap(player, target, dist, state.time - memory.lastSwapAt);
   const lastSwapAt = swapWeapon ? state.time : memory.lastSwapAt;
