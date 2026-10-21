@@ -94,7 +94,7 @@ Source: [diagrams/containers.mmd](diagrams/containers.mmd).
 | Luminance gate | Playwright Chromium on software GL | Ten seeded frames measured against budgets | `scripts/frames.mjs` |
 | Recorder and score | Playwright Chromium, ffmpeg, `OfflineAudioContext` | A seeded film and its soundtrack | `scripts/record-demo.mjs`, `scripts/render-score.mjs` |
 | Reel | Playwright Chromium, ffmpeg | Title cards, two waves, stitched cut | `scripts/reel.mjs` |
-| CI | GitHub Actions, every action pinned to a commit SHA | Eight gate jobs and the Pages deploy | `.github/workflows/` |
+| CI | GitHub Actions, every action pinned to a commit SHA | Eight gate jobs, then the Pages build and deploy on `main` | `.github/workflows/` |
 
 ## Level 3: components
 
@@ -130,7 +130,7 @@ draws one frame.
 
 Three annotations on the diagram explain behavior that is easy to miss in
 the code. Hit-stop: an `enemyKilled` or `shieldBroken` event sets a
-countdown during which the accumulator fills at five percent speed, so time
+countdown during which the accumulator fills at a fifth of real speed (`HIT_STOP_SCALE`), so time
 crawls for a few frames. The clamp: the first frame after `start()` can
 carry a timestamp earlier than the one captured in `start()`, and a negative
 delta would make every decay term grow, so the delta is never negative. The
@@ -194,12 +194,14 @@ runs the same scripts.
 | `pnpm balance` | The balance gate; writes `test-results/balance/` |
 | `pnpm demo` | Films seed 7 and scores it into `demo.mp4` |
 
-The CI workflow in `.github/workflows/ci.yml` runs eight independent jobs
-on every push and pull request; a pull request push cancels a superseded
-run, a push to `main` always runs to completion. The deploy workflow runs
-on a push to `main` only. Every action is pinned to a commit SHA and
-checkouts do not persist credentials; the deploy job is the only one with
-write permission.
+The one workflow, `.github/workflows/ci.yml`, runs eight independent gate
+jobs on every push and pull request; a pull request push cancels a
+superseded run, a push to `main` always runs to completion. Two more jobs,
+Pages build and Pages deploy, run only on a push to `main` and only after
+every gate except the browser smoke tests has passed, so a merge never
+publishes a build that failed a gate. Every action is pinned to a commit
+SHA and checkouts do not persist credentials; the deploy job is the only
+one with write permission.
 
 | Job | Gates | Artifact |
 | --- | ----- | -------- |
@@ -211,9 +213,10 @@ write permission.
 | Balance gate | Twenty seeded games per profile within `tests/balance/gate.ts` | `balance-report`, also appended to the job summary |
 | Docs hygiene | Frontmatter, typos, Vale, internal links; external links advisory | none |
 | Security and workflow hygiene | `pnpm audit`, actionlint, zizmor and gitleaks, each pinned by checksum | none |
-| Deploy to GitHub Pages | `build` job uploads `dist/`, `deploy` job publishes it | the live site |
+| Pages build | `main` only, after the gates: `pnpm build` and `upload-pages-artifact` | `github-pages` |
+| Pages deploy | `main` only, after Pages build: `deploy-pages` with `pages: write` and an OIDC token | the live site |
 
-![Build and delivery: the eight CI jobs, the two-job Pages deploy, and the local recorder, reel and documentation pipelines](render/build.png)
+![Build and delivery: the eight gate jobs, the two Pages jobs behind them, and the local recorder, reel and documentation pipelines](render/build.png)
 
 Source: [diagrams/build.mmd](diagrams/build.mmd).
 

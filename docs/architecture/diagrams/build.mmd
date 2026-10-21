@@ -1,7 +1,7 @@
 %%{init: {"flowchart": {"curve": "basis"}} }%%
 flowchart LR
   push(["push or pull request"])
-  subgraph ciwf["ci.yml: eight independent jobs"]
+  subgraph ciwf["ci.yml: eight independent gate jobs on every push and pull request"]
     direction TB
     lint["Lint and type check<br/>pnpm lint, pnpm typecheck"]
     unit["Unit tests<br/>pnpm test: Vitest with coverage thresholds"]
@@ -12,10 +12,10 @@ flowchart LR
     docs["Docs hygiene<br/>pnpm lint:docs: frontmatter, typos, Vale, links"]
     security["Security and workflow hygiene<br/>pnpm audit, actionlint, zizmor, gitleaks"]
   end
-  subgraph pagewf["deploy-pages.yml: push to main"]
+  subgraph pagewf["ci.yml: push to main only, needs every gate but the smoke tests"]
     direction TB
-    pbuild["build job (contents: read)<br/>pnpm build, upload-pages-artifact"]
-    pdeploy["deploy job (pages: write, id-token: write)<br/>deploy-pages"]
+    pbuild["Pages build (contents: read)<br/>pnpm build, upload-pages-artifact"]
+    pdeploy["Pages deploy (pages: write, id-token: write)<br/>deploy-pages"]
     pbuild --> pdeploy
   end
   live(["ringfall.alexhowells.com"])
@@ -26,5 +26,5 @@ flowchart LR
     arch["pnpm docs:architecture<br/>regenerate this package and render its diagrams"]
   end
   push --> ciwf
-  push -->|"main only"| pagewf
+  ciwf -->|"main only, gates green"| pagewf
   pdeploy --> live

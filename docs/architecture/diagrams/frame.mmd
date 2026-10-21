@@ -3,7 +3,7 @@ flowchart TB
   raf["requestAnimationFrame(now)"]
   dt["frameDt = clamp(now - last, 0, 0.1) s<br/>never negative: decay terms would grow"]
   hitstop{"hitStop > 0?"}
-  slow["accumulator += frameDt * 0.05<br/>time crawls after a kill or a shield break"]
+  slow["accumulator += frameDt * HIT_STOP_SCALE (0.2)<br/>time crawls after a kill or a shield break"]
   full["accumulator += frameDt"]
   cap["accumulator = min(accumulator, 5/60)<br/>a backlog is dropped, not deferred"]
   loop{"accumulator >= 1/60<br/>and steps < 5?"}

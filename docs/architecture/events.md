@@ -26,7 +26,7 @@ Every member of the `GameEvent` union in `src/core/game.ts`, with the function i
 | `reload` | none | `stepWeapon` |  |  |  |  |  | `reload` (1 voice) |
 | `grenadeThrown` | `id: number` | `stepGrenades` | scene: named, no action |  | playtest: reacts |  |  | `grenadeThrown` (1 voice) |
 | `launcherFired` | `id: number` | `fireWeapon` | weapons: reacts |  |  |  |  | `launcherFired` (2 voices) |
-| `weaponSwapped` | `kind: WeaponKind`, `slot: SlotIndex` | `swapSlots` | scene: reacts; weapons: reacts |  |  |  |  | `weaponSwapped` (4 voices) |
+| `weaponSwapped` | `kind: WeaponKind`, `slot: SlotIndex` | `swapSlots` | scene: reacts; weapons: reacts | hud: reacts |  |  |  | `weaponSwapped` (4 voices) |
 | `chargeStarted` | `kind: WeaponKind` | `stepWeapon` | weapons: reacts |  |  |  |  | `chargeStarted` (no voices) |
 | `chargeReleased` | `kind: WeaponKind`, `charge: number` | `stepWeapon` | weapons: reacts |  |  |  |  | `chargeReleased` (no voices) |
 | `beamFired` | `from: Vec3`, `to: Vec3`, `hits: number` | `fireWeapon` | weapons: reacts |  |  |  |  | `beamFired` (3 voices) |
@@ -44,7 +44,7 @@ Every member of the `GameEvent` union in `src/core/game.ts`, with the function i
 | `watcherFired` | `id: number`, `from: Vec3`, `to: Vec3`, `hit: boolean` | `stepEnemies` | watcher-rig: reacts |  |  |  |  | `SILENT` |
 | `waveStarted` | `number: number` | `spawnWave` |  | hud: announces | playtest: reacts |  |  | `waveStarted` (1 voice) |
 | `waveCleared` | `number: number` | `stepWaves` |  | hud: announces | playtest: reacts |  |  | `waveCleared` (1 voice) |
-| `playerDied` | none | `hurtPlayer` |  |  |  |  |  | `playerDied` (1 voice) |
+| `playerDied` | none | `hurtPlayer` |  | hud: announces |  |  |  | `playerDied` (1 voice) |
 | `victory` | none | `stepWaves` |  | hud: announces |  |  |  | `victory` (1 voice) |
 | `secretFound` | `at: Vec3`, `score: number` | `shootSecret` |  | hud: announces |  |  |  | `SILENT` |
 

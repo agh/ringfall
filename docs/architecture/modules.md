@@ -13,7 +13,7 @@ created: 2026-10-21
 
 > [Ringfall](../../README.md) > [Architecture](README.md) > Module map
 
-Every TypeScript module under `src/` with its responsibility and what it imports, read from the import declarations by `scripts/architecture.mjs`. The tree holds 33 modules in 6 layers (`audio`, `core`, `hud`, `input`, `main`, `render`) joined by 113 internal imports. A dotted arrow in the diagrams is a type-only import, which Vite erases from the bundle; a solid arrow carries runtime code.
+Every TypeScript module under `src/` with its responsibility and what it imports, read from the import declarations by `scripts/architecture.mjs`. The tree holds 33 modules in 6 layers (`audio`, `core`, `hud`, `input`, `main`, `render`) joined by 112 internal imports. A dotted arrow in the diagrams is a type-only import, which Vite erases from the bundle; a solid arrow carries runtime code.
 
 ## Allowed dependencies
 
@@ -69,7 +69,7 @@ Source: [diagrams/render-components.mmd](diagrams/render-components.mmd).
 | `src/core/waves.ts` | `core` | Wave state machine, composition formula, `FINAL_WAVE`, the atmosphere table | `core/enemy` (types) |
 | `src/core/weapon.ts` | `core` | Six weapon kinds as data in `WEAPON_SPECS`; magazine, reload, trigger, charge, spin-up and falloff rules | `core/raycast`, `core/vec3` (types), `core/world` (types) |
 | `src/core/world.ts` | `core` | Seeded arena generation, cover boxes, the hidden switch, axis-separated collision | `core/rng` (types), `core/vec3` |
-| `src/hud/hud.ts` | `hud` | DOM heads-up display, announcements, hit marker, damage direction and the 2D-canvas motion tracker | `core/enemy`, `core/game`, `core/vec3` (types), `core/waves`, `core/weapon`, `core/world` |
+| `src/hud/hud.ts` | `hud` | DOM heads-up display, announcements, hit marker, damage direction and the 2D-canvas motion tracker | `core/game`, `core/vec3` (types), `core/waves`, `core/weapon`, `core/world` |
 | `src/input/input.ts` | `input` | Keyboard, mouse, wheel and pointer lock into an `InputFrame`; one-shot actions latched between steps | `core/game`, `core/vec3` |
 | `src/main.ts` | `main` | Fixed 60 Hz accumulator loop, hit-stop, overlay and pointer-lock lifecycle, settings panel, the `?record` capture hook | `audio/audio`, `audio/offline`, `core/bot`, `core/game`, `core/records`, `core/rng`, `core/settings`, `hud/hud`, `input/input`, `render/scene` |
 | `src/render/dispose.ts` | `render` | `disposeTree`: frees geometry, materials and textures under an object before it is dropped | `three` (types) |
