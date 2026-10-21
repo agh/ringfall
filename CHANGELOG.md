@@ -100,6 +100,12 @@ and this project adheres to
 
 ### Fixed
 
+- Design and UX review (#53): HUD labels and card copy never below 14 px and
+  scale to 4K; the card is a dialog that names Victory, Defeat or Paused and
+  takes focus when it returns; low ammo, an empty magazine and a kill are
+  signalled in words or size, not colour alone; a
+  `prefers-reduced-motion` rule stops the looping pulses.
+
 - Still too much flare after the bloom prefilter: bloom strength and radius
   halved again (0.15, 0.25), the flare ghosts at 0.3 opacity and the core
   sprite at two thirds of its size, and the day and dawn skies given a
