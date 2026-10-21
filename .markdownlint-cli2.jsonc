@@ -1,0 +1,12 @@
+{
+  "config": {
+    "extends": "./.markdownlint.json"
+  },
+  "ignores": [
+    "node_modules/**",
+    "dist/**",
+    "coverage/**",
+    "playwright-report/**",
+    "test-results/**"
+  ]
+}

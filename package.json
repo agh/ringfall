@@ -1,0 +1,38 @@
+{
+  "name": "ringfall",
+  "version": "2026.10.0",
+  "private": true,
+  "description": "Ringfall: a browser-native WebGL arena shooter inspired by classic sci-fi FPS design.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "lint": "biome ci . && markdownlint-cli2 \"**/*.md\"",
+    "lint:fix": "biome check --write .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "dependencies": {
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.12",
+    "@playwright/test": "1.64.1",
+    "@types/node": "26.6.5",
+    "@types/three": "0.186.0",
+    "@vitest/coverage-v8": "5.0.0",
+    "markdownlint-cli2": "0.23.2",
+    "typescript": "6.0.3",
+    "vite": "8.3.5",
+    "vitest": "5.0.0"
+  }
+}

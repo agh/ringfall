@@ -1,0 +1,24 @@
+import { defineConfig, devices } from '@playwright/test';
+
+// Sandboxes with a preinstalled Chromium can point Playwright at it instead of downloading one.
+const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
+
+export default defineConfig({
+  testDir: 'tests/e2e',
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 1 : 0,
+  reporter: process.env.CI ? 'github' : 'list',
+  use: {
+    baseURL: 'http://127.0.0.1:4173',
+    trace: 'on-first-retry',
+    ...(executablePath ? { launchOptions: { executablePath } } : {}),
+  },
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  webServer: {
+    command: 'pnpm vite preview --host 127.0.0.1 --port 4173',
+    url: 'http://127.0.0.1:4173',
+    reuseExistingServer: !process.env.CI,
+    timeout: 60_000,
+  },
+});
