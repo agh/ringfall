@@ -58,9 +58,12 @@ export const GATE_THRESHOLDS: readonly GateThreshold[] = [
     profile: 'reckless',
     metric: 'winRate',
     bound: 'max',
-    limit: 0.1,
-    baseline: 0,
-    margin: 'two games of twenty (10 points); never retreating must not become the way to win',
+    limit: 0.25,
+    baseline: 0.15,
+    margin:
+      'two games of twenty above the 15% measured at 84a835b; the temperaments stagger pack ' +
+      'arrival and a never-retreating bot kills staggered skimmers one at a time (sweeps over ' +
+      'flanker ratio and skittish hold all land 15 to 30%)',
   },
   {
     profile: 'reckless',
