@@ -19,6 +19,12 @@
     "shorthand-property-no-redundant-values": true,
     "color-hex-length": "short",
     "color-named": "never",
-    "property-no-vendor-prefix": [true, { "ignoreProperties": ["user-select", "mask-image"] }]
+    "property-no-vendor-prefix": [
+      true,
+      {
+        "ignoreProperties": ["user-select", "mask-image"]
+      }
+    ],
+    "no-duplicate-selectors": null
   }
 }
