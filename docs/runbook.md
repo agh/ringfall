@@ -37,19 +37,22 @@ The development server serves the source with hot reload on port 5173.
 pnpm dev            # http://localhost:5173
 ```
 
-Three query parameters change how the page starts. `?seed=N` fixes the
+Five query parameters change how the page starts. `?seed=N` fixes the
 arena layout and enemy jitter so a run is reproducible; without it the seed
 comes from the clock. `?bot` hands the controls to the scripted player in
 `src/core/bot.ts`. `?record&bot&seed=N` enters record mode, which suspends
 the animation loop and exposes `window.ringfallCapture` so a script can
 step the simulation one tick at a time. `window.ringfall.state()` is
-available on every page for inspection.
+available on every page for inspection. `?atmo=night` (or `dawn`, `day`,
+`dusk`) and `?weather=rain` (or `fog`, `clear`) pin the atmosphere from the
+first frame regardless of wave, for checks such as a night kill
+(`?record&bot&seed=7&atmo=night`).
 
 ## Build
 
 The build type checks first and then bundles to `dist/`. The preview server
-serves that directory on port 4173, which is also what Playwright and the
-`pnpm check` sequence use.
+serves that directory on port 4173, which is also the server Playwright starts
+for `pnpm test:e2e`.
 
 ```bash
 pnpm build          # tsc --noEmit && vite build
@@ -87,13 +90,14 @@ gh run watch
 
 The unit suite runs in Node against `src/core/` only, with V8 coverage
 thresholds of 85 percent for lines, functions, and statements and 75
-percent for branches. The playtest suite is the same runner pointed at
-`tests/unit/bot.test.ts` with coverage disabled, so it finishes in seconds
-and prints the balance numbers defined in [metrics.md](metrics.md).
+percent for branches. The balance gate is the same runner pointed at
+`tests/balance/` with coverage disabled, so it finishes in seconds,
+prints the balance numbers defined in [metrics.md](metrics.md), and writes
+`test-results/balance/balance-report.md`.
 
 ```bash
 pnpm test           # vitest run --coverage
-pnpm balance        # vitest run tests/unit/bot.test.ts --coverage.enabled=false
+pnpm balance        # vitest run tests/balance --coverage.enabled=false --silent=false --reporter=verbose
 pnpm test:watch     # vitest in watch mode
 ```
 
@@ -129,7 +133,7 @@ workflow.
 ## Film the demo and score it
 
 `pnpm demo` runs the two scripts in sequence with the settings used for
-the reel: seed 7, 40 seconds, 24 frames per second, a one second lead-in on
+the reel: seed 7, 40 seconds, 30 frames per second, a one second lead-in on
 the score. It needs a production build and `ffmpeg`.
 
 ```bash
@@ -167,6 +171,16 @@ the simulation time, wave, enemy count, shield, health, and kills, which
 is the quickest way to see that the bot is fighting. Films, frames, and
 the WAV are ignored by git. Each review of a film is logged in
 [journey/README.md](journey/README.md) with the seed and the frame range.
+
+### Cut the reel
+
+`node scripts/reel.mjs [--seed 7] [--fps 30] [--out ringfall-reel.mp4]`
+renders the title cards in `scripts/reel-cards/`, captures wave 1 by day
+and wave 2 at night, scores each segment, and stitches them. Steps are
+cached under `node_modules/.cache/ringfall-reel`; `--force` redoes one. It
+needs `pnpm build` and a full ffmpeg via `FFMPEG`. Under SwiftShader each
+captured frame takes about two seconds, so a 40 s film takes about 40
+minutes.
 
 ## Measure the frames (luminance gate)
 
@@ -214,8 +228,8 @@ The ffmpeg that Playwright bundles (`/opt/pw-browsers/ffmpeg-*/ffmpeg-linux`)
 is built for screencasts only: VP8 and WebM, no JPEG decoder, no H.264, no
 audio encoder. Point `FFMPEG` at a full build instead. The static binary
 from `pip install imageio-ffmpeg` (`imageio_ffmpeg/binaries/ffmpeg-linux-*`)
-or a system `ffmpeg` both work. A 24 fps capture made before the frame-rate
-guard was added holds three simulation ticks per frame; encode it at
+or a system `ffmpeg` both work. A 24 fps capture holds three simulation ticks per
+frame (the recorder rounds `60 / fps` and does not refuse such rates); encode it at
 `-framerate 20` so it plays in real time, and render the score for the
 simulated length (48 s for 960 frames) with a lead-in equal to the title
 frames divided by 20.
@@ -266,5 +280,6 @@ The error names a `chromium_headless_shell-NNNN` directory that does not
 exist. Either install the matching build with
 `pnpm exec playwright install --with-deps chromium`, or point
 `PLAYWRIGHT_CHROMIUM_EXECUTABLE` at an installed Chromium as shown above.
-The browser version must be one the pinned Playwright 1.64.1 drives; a
-much newer or older Chromium fails at launch with a protocol error.
+Playwright 1.64.1 expects Chromium build 1248; a nearby build (1194 on
+2026-10-21) launches and passes the smoke tests, and a much older one may
+fail at launch with a protocol error.

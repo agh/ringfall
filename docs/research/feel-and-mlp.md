@@ -10,8 +10,8 @@ created: 2026-10-21
 # What "S-tier console-shooter feel in a browser" actually requires
 
 This is a research note produced during the hackathon by a delegated
-research agent, then reviewed and lightly edited. Every claim carries a
-source. It informs [the specification](../spec.md) and the backlog; it is
+research agent, then reviewed and lightly edited. Claims carry a source
+where one exists; the frame-budget numbers are targets. It informs [the specification](../spec.md) and the backlog; it is
 not itself a commitment.
 
 ## The thesis in three sentences
@@ -54,7 +54,8 @@ point: Flee in Terror, Berserk, Retreat" ([Butcher & Griesemer][gdc2002]).
 The famous fleeing-minion story: "Initially nobody noticed so we had to keep adding
 clues... every single [minion] run away every single time a [leader] is
 killed... outrageously exaggerated panic run... I would still estimate that
-less than a third of our users made the connection" ([DU lecture][du]).
+less than a third of our users made the connection" (Butcher and
+Griesemer, quoted in [Sturtevant's DU lecture][du]).
 Isla: "subtlety flies straight over the player's head... you really have to
 crank it to 11" ([Game Developer][isla-subtlety]). The studio's behavior
 list includes a "Dive impulse: if I'm in immediate danger from a vehicle or
@@ -94,7 +95,7 @@ conference room will hit the fallback path.
 1. Bloom at reduced resolution on emissive plasma, shield flare and muzzle.
 2. Juice, not passes: camera kick, 50 to 100 ms hit-stop on a shield pop,
    short eased screenshake, enemy hit-flash. Near-zero cost
-   ([screenshake breakdown][screenshake]).
+   (Nijman, "The art of screenshake", cited in [brand.md](../brand.md)).
 3. One directional sun with a tight shadow frustum; three or fewer dynamic
    lights ([utsubo tips][utsubo-tips]).
 4. Instanced particles and props.
@@ -118,9 +119,9 @@ theatrical enemies**.
 | Priority | Item | Why it is lovable, not merely functional |
 | -------- | ---- | ---------------------------------------- |
 | MLP 1 | Shield pop and recharge as a full audiovisual event; enemies back off while the shield is down | The reference shooter's contract. The player feels the game letting them breathe. |
-| MLP 2 | Skimmers flee when a strider dies, with exaggerated animation and a bark | Fewer than a third of players noticed even at 11; the demo must crank to 12. |
-| MLP 3 | Striders dive from grenades and sidestep fire; seek cover on low shield | Makes bouncing grenades a conversation. |
-| MLP 4 | Weapon juice: camera kick, recoil, tracer, hit-flash, distinct chimes | Cheapest wow available. |
+| MLP 3 | Skimmers flee when a strider dies, with exaggerated animation and a bark | Fewer than a third of players noticed even at 11; the demo must crank to 12. |
+| MLP 4 | Striders dive from grenades and sidestep fire; seek cover on low shield | Makes bouncing grenades a conversation. |
+| MLP 2 | Weapon juice: camera kick, recoil, tracer, hit-flash, distinct chimes | Cheapest wow available. |
 | MLP 5 | Firing points: enemies choose scored positions rather than beelining | "Transparent thought process" needs positioning. |
 | MLP 6 | The ring overhead, sun, fog | The single image everyone remembers. |
 | MLP 7 | Procedural title chant plus scored stingers | Audio identity is what the audience hums in the lift. |
@@ -132,9 +133,9 @@ theatrical enemies**.
 
 ## Pacing a 5 to 10 minute demo
 
-Opdahl: the "biorhythm" is action and emotion moving in opposite
-directions; find where the player "feels like they're winning, reinforce
-that, and then ask why the situation turns" ([iTWire][itwire]).
+Opdahl: the "biorhythm" is action rising while emotion sometimes falls;
+find the moment where "we do feel like the player is winning", "reinforce
+that", then ask "why does it turn?" ([iTWire][itwire]).
 
 - **0:00 to 0:30 Arrival.** Chant only.
 - **0:30 to 1:30 Wave 1, "Scouts":** three skimmers. Teaches hitscan and
@@ -200,7 +201,6 @@ mode, long cathedral tail, then strings and a drum pulse.
 [utsubo-migrate]: https://www.utsubo.com/blog/webgpu-threejs-migration-guide
 [utsubo-tips]: https://www.utsubo.com/blog/threejs-best-practices-100-tips
 [n8ao]: https://github.com/N8python/n8ao
-[screenshake]: https://dkliao.itch.io/the-art-of-screenshake-recreation/devlog/451576/quick-breakdown-of-all-the-effects
 [firstround]: https://review.firstround.com/dont-serve-burnt-pizza-and-other-lessons-in-building-minimum-lovable-products
 [itwire]: https://itwire.com/opinion-and-analysis-sp-481/radioactive-it/designing-halo-reach-was-like-filming-titanic
 [hook]: https://www.gamedeveloper.com/design/the-30-second-hook
@@ -226,7 +226,6 @@ mode, long cathedral tail, then strings and a drum pulse.
 - <https://www.utsubo.com/blog/webgpu-threejs-migration-guide>
 - <https://www.utsubo.com/blog/threejs-best-practices-100-tips>
 - <https://github.com/N8python/n8ao>
-- <https://dkliao.itch.io/the-art-of-screenshake-recreation/devlog/451576/quick-breakdown-of-all-the-effects>
 - <https://review.firstround.com/dont-serve-burnt-pizza-and-other-lessons-in-building-minimum-lovable-products>
 - <https://www.cs.princeton.edu/courses/archive/spr99/cs325/formants.html>
 - <https://developer.mozilla.org/docs/Web/API/ConvolverNode>

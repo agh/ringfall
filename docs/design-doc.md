@@ -50,7 +50,7 @@ cheap to build and easy to test, so it is the product.
 - **NG1:** Multiplayer or networking of any kind. The only persistence is the
   player's personal bests in their own browser's local storage.
 - **NG2:** Mobile or touch controls.
-- **NG3:** Vehicles, multiple weapons, or pickups.
+- **NG3:** Vehicles.
 - **NG4:** Imported art, audio, or any franchise material (see
   [ADR-0003](adr/0003-original-ip-only.md)).
 
@@ -438,7 +438,7 @@ clock in production and is fixed in tests.
 - **HUD.** DOM elements updated every frame: wave and enemies left, score,
   shield and health bars, ammo with a low-ammo color, grenade pips, center
   announcements, a hit marker, a damage vignette, and a pulsing border when
-  the shield is down. The motion tracker is a 150 px canvas showing enemies
+  the shield is down. The motion tracker is a canvas sized `clamp(120px, 17vmin, 240px)` showing enemies
   and bolts within 28 m, rotated to the player's heading.
 - **Audio.** Every sound is an oscillator sweep or filtered noise burst
   created on demand. The context is unlocked on the first click.
