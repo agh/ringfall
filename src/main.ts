@@ -106,6 +106,8 @@ const main = (): void => {
   const params = new URLSearchParams(window.location.search);
   // `?seed=` is untrusted input: only a decimal uint32 is honoured, anything else is the clock.
   const seed = parseSeed(params.get('seed'), Date.now() >>> 0);
+  // A valid ?seed= pins the arena for every restart; without one each run is new.
+  const seedPinned = parseSeed(params.get('seed'), 0) > 0;
   const botMode = params.has('bot');
   const recordMode = params.has('record');
   let game = createGame({ seed });
@@ -191,7 +193,7 @@ const main = (): void => {
     if (!recordMode && game.status !== 'playing') requestFullscreen();
     if (game.status !== 'playing') {
       // An explicit ?seed= is a rematch of the same arena; otherwise every run is new.
-      const next = seedParam > 0 ? seed : Date.now() >>> 0;
+      const next = seedPinned ? seed : Date.now() >>> 0;
       game = createGame({ seed: next });
       rng = createRng(next ^ 0x9e3779b9);
       botRng = createRng(next ^ 0x7f4a7c15);
