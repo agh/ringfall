@@ -26,6 +26,7 @@ export const PICKUP_RADIUS = 1.2;
 export const PICKUP_DROP_CHANCE: Readonly<Record<EnemyKind, number>> = {
   skimmer: 0.18,
   strider: 0.6,
+  watcher: 0.6,
 };
 /** Metres ahead of the player the wave-start reward is placed. */
 export const WAVE_REWARD_DISTANCE = 6;

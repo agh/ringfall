@@ -10,6 +10,7 @@ import { createEnvironment, type Environment } from './environment';
 import { ParticleSystem } from './particles';
 import { PickupMeshes } from './pickups';
 import { PostStack } from './post';
+import { WatcherBeamLayer } from './watcher-rig';
 import { WeaponViewmodels } from './weapons';
 
 const FOG_DENSITY = 0.0032;
@@ -102,6 +103,7 @@ export class SceneRenderer {
   /** Wave whose atmosphere the environment was last told to blend towards. */
   private lastAtmosphereWave = 0;
   private readonly particles = new ParticleSystem();
+  private readonly watcherBeams = new WatcherBeamLayer();
   private readonly environment: Environment;
   private readonly enemies = new Map<number, EnemyRig>();
   private readonly bolts = new Map<number, THREE.Group>();
@@ -170,6 +172,7 @@ export class SceneRenderer {
     this.weaponViewmodels = new WeaponViewmodels(this.camera, this.particles);
     this.dynamic.add(this.weaponViewmodels.effects);
     this.pickupMeshes = new PickupMeshes(this.dynamic, this.particles);
+    this.dynamic.add(this.watcherBeams.group);
     this.post = new PostStack(this.renderer, this.scene, this.camera);
     window.ringfallDebug = {
       uniforms: () => this.post.debugUniforms(),
@@ -298,6 +301,7 @@ export class SceneRenderer {
   handle(events: readonly GameEvent[], now: number): void {
     this.weaponViewmodels.handle(events, now, this.camera);
     this.pickupMeshes.handle(events, now);
+    this.watcherBeams.handle(events, now);
     for (const e of events) {
       switch (e.type) {
         case 'shot':
@@ -351,7 +355,7 @@ export class SceneRenderer {
     this.syncAtmosphere(state.wave.number);
     this.environment.update(now, { particles: this.particles, eye: playerEye(state.player) });
     this.applyLighting();
-    this.syncEnemies(state.enemies, state.time);
+    this.syncEnemies(state.enemies, playerEye(state.player), state.time);
     this.syncBolts(state, now);
     this.syncGrenades(state, now);
     this.pickupMeshes.sync(state, now);
@@ -587,7 +591,7 @@ export class SceneRenderer {
     this.scene.add(sun.target);
   }
 
-  private syncEnemies(enemies: readonly Enemy[], simTime: number): void {
+  private syncEnemies(enemies: readonly Enemy[], eye: Vec3, simTime: number): void {
     const seen = new Set<number>();
     for (const enemy of enemies) {
       seen.add(enemy.id);
@@ -618,6 +622,7 @@ export class SceneRenderer {
       this.dynamic.remove(rig.group);
       this.enemies.delete(id);
     }
+    this.watcherBeams.update(enemies, eye, simTime);
   }
 
   private syncBolts(state: GameState, now: number): void {

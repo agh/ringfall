@@ -147,6 +147,14 @@ export type GameEvent =
   | { readonly type: 'playerDamaged'; readonly amount: number; readonly from: Vec3 | null }
   | { readonly type: 'shieldBroken' }
   | { readonly type: 'boltFired'; readonly id: number }
+  | { readonly type: 'watcherCharging'; readonly id: number; readonly at: Vec3 }
+  | {
+      readonly type: 'watcherFired';
+      readonly id: number;
+      readonly from: Vec3;
+      readonly to: Vec3;
+      readonly hit: boolean;
+    }
   | { readonly type: 'waveStarted'; readonly number: number }
   | { readonly type: 'waveCleared'; readonly number: number }
   | { readonly type: 'playerDied' }
@@ -475,6 +483,15 @@ const stepEnemies = (d: Draft, dt: number): void => {
       d.nextId += 1;
       d.bolts.push(createBolt(id, action.origin, action.direction, action.damage, d.time));
       d.events.push({ type: 'boltFired', id });
+    }
+    if (action?.type === 'watcherCharge')
+      d.events.push({ type: 'watcherCharging', id: enemy.id, at: action.at });
+    if (action?.type === 'watcherBeam') {
+      const { from, to, hit } = action;
+      d.events.push({ type: 'watcherFired', id: enemy.id, from, to, hit });
+      // The beam reuses the strider bolt sound until it has one of its own (issue #33 owns audio).
+      d.events.push({ type: 'boltFired', id: enemy.id });
+      if (hit) hurtPlayer(d, action.damage, from);
     }
     return enemy;
   });

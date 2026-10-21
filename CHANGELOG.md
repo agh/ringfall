@@ -10,6 +10,12 @@ and this project adheres to
 
 ### Added
 
+- The watcher, a third enemy archetype (#17): a tall perimeter sentinel
+  that holds 24 to 32 m, orbits the player and fires a telegraphed hitscan
+  beam that cover blocks; one from wave 5 and two from wave 7 by design,
+  behind `WATCHERS_IN_ROSTER` (off) until the balance pass. New
+  `watcherCharging` and `watcherFired` events, a tripod rig with an aiming
+  line, and bot rules that shoot a charging watcher first with a precise gun.
 - Renderer v2: scattering dawn sky, a ringworld you stand on, rolling
   terrain with mountains, image-based lighting, a GPU particle pool, an HDR
   composer with bloom and a custom feel pass (vignette, chromatic

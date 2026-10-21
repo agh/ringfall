@@ -15,8 +15,10 @@ import {
 import { createPickup, PICKUP_KINDS, WAVE_REWARD_DISTANCE } from '../../src/core/pickups';
 import { createRng } from '../../src/core/rng';
 import { distanceXZ, vec3 } from '../../src/core/vec3';
+import { WATCHER_CHARGE, WATCHER_COOLDOWN, WATCHER_STATS } from '../../src/core/watcher';
 import { WAVE_COUNTDOWN } from '../../src/core/waves';
 import { createWeapon, type WeaponKind } from '../../src/core/weapon';
+import { aabbFromCenter } from '../../src/core/world';
 
 const DT = 1 / 60;
 
@@ -376,6 +378,45 @@ describe('game', () => {
     const { events } = run(armed, IDLE_INPUT, 6);
     expect(events.some((e) => e.type === 'boltFired')).toBe(true);
     expect(events.some((e) => e.type === 'playerDamaged')).toBe(true);
+  });
+
+  it('a watcher kills a stationary player in the open in the expected time, and cover saves them', () => {
+    const base = openGame();
+    const watcher = { ...createEnemy(8, 'watcher', vec3(0, 0, -28), 0), state: 'chase' as const };
+    const exposed: GameState = {
+      ...base,
+      enemies: [watcher],
+      wave: { ...base.wave, phase: 'active' },
+    };
+    // 200 points of shield and health at 35 per beam is at least six beams: the first lands
+    // after the spawn-set attack delay plus the 1.2 s charge, the rest every charge-plus-cooldown.
+    // The cycle is longer than the shield's recharge delay, so the shield claws back part of each
+    // beam and a lone watcher needs more beams than the floor; it still gets there.
+    const floorBeams = Math.ceil(200 / WATCHER_STATS.damage);
+    const cycle = WATCHER_CHARGE + WATCHER_COOLDOWN;
+    const earliest = watcher.nextAttackAt + WATCHER_CHARGE + (floorBeams - 1) * cycle;
+    const { state, events } = run(exposed, IDLE_INPUT, 90);
+    expect(state.status).toBe('dead');
+    const fired = events.filter((e) => e.type === 'watcherFired');
+    expect(fired.length).toBeGreaterThanOrEqual(floorBeams);
+    expect(fired.every((e) => e.type === 'watcherFired' && e.hit)).toBe(true);
+    expect(events.filter((e) => e.type === 'watcherCharging')).toHaveLength(fired.length);
+    // The beam borrows the strider bolt sound until it has its own.
+    expect(events.filter((e) => e.type === 'boltFired')).toHaveLength(fired.length);
+    const damage = events.filter((e) => e.type === 'playerDamaged');
+    expect(damage).toHaveLength(fired.length);
+    expect(events.some((e) => e.type === 'playerDied')).toBe(true);
+    expect(state.time).toBeGreaterThanOrEqual(earliest);
+    expect(state.time).toBeLessThan(90);
+
+    // Wide enough that the watcher's slow orbit cannot find a line past it inside the run.
+    const wall = aabbFromCenter(0, -4, 30, 4, 1);
+    const sheltered: GameState = { ...exposed, arena: { ...exposed.arena, obstacles: [wall] } };
+    const safe = run(sheltered, IDLE_INPUT, 30);
+    expect(safe.state.status).toBe('playing');
+    expect(safe.events.some((e) => e.type === 'playerDamaged')).toBe(false);
+    expect(safe.events.some((e) => e.type === 'watcherCharging')).toBe(false);
+    expect(safe.state.player.vitality.shield).toBe(100);
   });
 
   it('clears a wave, awards the bonus, and advances', () => {
