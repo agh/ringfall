@@ -847,6 +847,21 @@ request.
 
 ![A drop pod with its Rose band falling toward the spawn ring under the ring arc](images/1800-dropship.jpg)
 
+## 18:50 The hero, re-rendered on the fixed renderer
+
+The banner, social card, README strip and the six-second loop were
+re-rendered from `8195bba`, after the bloom prefilter (#61), the second
+flare cut (#77), the explosion rework (#60), the dust and night pass (#90)
+and the weapon flash resizing (#67). The first pass kept the 17:40
+timestamps and showed that the simulation had moved too: seed 7 is a
+different game now (won at 89.6 s), so night t = 10 s had no kill in frame
+and dawn t = 95 s was post-win. The moments were re-found from the core's
+event log instead: hero at night t = 15.15 s (the laser's first kill), dawn
+t = 78.5 s, night t = 24.15 s, dusk t = 45 s, loop t = 4 to 10 s. Old
+versus new side by side: `images/1850-hero-rerender.jpg`.
+
+![Old versus new hero frames](images/1850-hero-rerender.jpg)
+
 ## Playtest reviews
 
 Each row is a human or agent watching the game play, not a screenshot.

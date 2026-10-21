@@ -1,4 +1,4 @@
-<p align="center"><img src="docs/banner.png" alt="Ringfall: an in-game render at night, seed 7, t = 10 s, with the wordmark" width="100%"></p>
+<p align="center"><img src="docs/banner.png" alt="Ringfall: an in-game render at night, seed 7, t = 15 s, with the wordmark" width="100%"></p>
 
 # Ringfall
 
@@ -7,7 +7,7 @@ want you dead. TypeScript + three.js, zero assets. Built in four hours on
 2026-10-21 by one person coaching thirty-three cloud agents; the
 [journey](docs/journey/README.md) has the clock.
 
-<p align="center"><sub>The banner is the game itself: seed 7 at night, t = 10 s, 3840x1600 with the post stack on. Recipe in <a href="docs/brand.md#hero-and-social">docs/brand.md</a>.</sub></p>
+<p align="center"><sub>The banner is the game itself: seed 7 at night, t = 15 s, 3840x1600 with the post stack on. Recipe in <a href="docs/brand.md#hero-and-social">docs/brand.md</a>.</sub></p>
 
 **[Play now](https://ringfall.alexhowells.com)** (deploys from `main`; `agh.github.io/ringfall` until DNS is set; neither is live as of 2026-10-21).
 
@@ -43,12 +43,12 @@ Requires a browser with WebGL 2 and pointer lock.
 
 | Dawn, wave 5 | Night, wave 2 | Dusk, wave 3 |
 | :---: | :---: | :---: |
-| ![Dawn: the sun flares behind the ring over the cover slabs](docs/journey/images/1740-hero-dawn-s7-t95.jpg) | ![Night: the beam weapon in hand, stars and trims](docs/journey/images/1740-hero-night-s7-t18.jpg) | ![Dusk: the laser in hand against a rose horizon](docs/journey/images/1740-hero-dusk-s7-t45.jpg) |
-| seed 7, t = 95 s, `atmo=dawn` | seed 7, t = 18 s, `atmo=night` | seed 7, t = 45 s, `atmo=dusk` |
+| ![Dawn: the sun rises behind the ridge, laser hit in wave 5](docs/journey/images/1850-hero-dawn-s7-t78.jpg) | ![Night: a skimmer in the laser sights, stars and trims](docs/journey/images/1850-hero-night-s7-t24.jpg) | ![Dusk: the laser in hand against a rose horizon](docs/journey/images/1850-hero-dusk-s7-t45.jpg) |
+| seed 7, t = 78.5 s, `atmo=dawn` | seed 7, t = 24.15 s, `atmo=night` | seed 7, t = 45 s, `atmo=dusk` |
 
 Every frame above is a headless render of the shipped build (`?record&bot&seed=7&nohud`), not an illustration.
 
-<p align="center"><img src="docs/hero/hero-loop.webp" alt="Six seconds of seed 7 at night, t = 8 to 14 s, the skimmer kill at 10 s" width="100%"><br><sub>Six seconds at 24 fps, seed 7, night, t = 8 to 14 s, from the same capture hook.</sub></p>
+<p align="center"><img src="docs/hero/hero-loop.webp" alt="Six seconds of seed 7 at night, t = 4 to 10 s, three skimmer kills" width="100%"><br><sub>Six seconds at 24 fps, seed 7, night, t = 4 to 10 s, from the same capture hook.</sub></p>
 
 ## How it works
 
