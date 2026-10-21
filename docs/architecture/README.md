@@ -50,15 +50,15 @@ are never typed by hand.
 
 Ringfall is one static page with no backend. The player opens it in a
 desktop browser with WebGL 2 and pointer lock; GitHub Pages serves it from
-the custom domain, and the page fetches nothing else at runtime except two
-font families from Google Fonts, which the content security policy in
-`index.html` names explicitly. The only data the page keeps is the player's
+the custom domain, and the page fetches nothing else at runtime; the two
+font families are self-hosted (`src/fonts.css`) and the content security
+policy in `index.html` allows no other origin. The only data the page keeps is the player's
 personal bests and settings, in that browser's local storage, and nothing
 leaves the device. The maintainer and the coding agents they run change the
 system through pull requests to the repository; every push runs the CI
 gates and a push to `main` deploys the build.
 
-![System context: the player, the static page, GitHub Pages, Google Fonts, local storage, the repository and its CI](render/context.png)
+![System context: the player, the static page, GitHub Pages, the self-hosted fonts, local storage, the repository and its CI](render/context.png)
 
 Source: [diagrams/context.mmd](diagrams/context.mmd).
 
@@ -209,7 +209,7 @@ one with write permission.
 | --- | ----- | -------- |
 | Lint and type check | Biome, markdownlint, strict TypeScript | none |
 | Unit tests | Every core rule and the coverage thresholds in `vitest.config.ts` | `coverage` |
-| Browser smoke tests | The built page loads, starts, advances, moves on keys, no page errors | `playwright-traces` (the `test-results/` directory) on failure |
+| Browser smoke tests | The built page loads, starts, advances, moves on keys, no page errors | `playwright-report` (the HTML report and the traces) on failure |
 | Luminance gate | Ten seeded frames within the mean and blob budgets in `scripts/frames.mjs` | `frames` |
 | Production build | `vite build` succeeds | `dist` |
 | Balance gate | Twenty seeded games per profile within `tests/balance/gate.ts` | `balance-report`, also appended to the job summary |

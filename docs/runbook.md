@@ -110,8 +110,8 @@ pnpm test:watch     # vitest in watch mode
 
 ## Playwright
 
-The smoke tests in `tests/e2e/` run against `vite preview`, so the
-production build must exist first. Each test has a 600 second budget and
+The smoke tests in `tests/e2e/` run against `vite preview`; `pnpm test:e2e`
+builds first (#96). Each test has a 600 second budget and
 waits up to 240 seconds for the simulation clock to pass 0.5 seconds,
 because software GL renders the post stack at a few frames per second.
 
@@ -162,7 +162,7 @@ node scripts/record-demo.mjs --seed 7 --seconds 45 --fps 30 --out demo.mp4
 
 `scripts/render-score.mjs` starts a second preview on port 4176, re-runs
 the same seed headlessly to recover the event timeline, renders every voice
-and effect into an `OfflineAudioContext`, writes `.record-score.wav`, and
+and effect into an `OfflineAudioContext`, writes a `score.wav` in a temporary directory, and
 muxes it into the silent film as 192 kbps AAC. Its flags and defaults are
 `--seed 7`, `--seconds 40`, `--lead-in 1`, `--video demo.mp4`, and
 `--out demo-scored.mp4`. The seed and seconds must match the capture or the

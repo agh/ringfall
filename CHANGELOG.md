@@ -136,7 +136,8 @@ and this project adheres to
   security jobs only; the luminance gate and the browser smoke tests still
   fail the run but no longer hold the deploy. The smoke tests wait up to
   four minutes for the first simulation step and the e2e job uploads the
-  Playwright traces on failure (#100).
+  Playwright traces, and since #96 the HTML report, as `playwright-report`
+  on failure (#100).
 - Pickups glow through their own emissive rig instead of one point light
   each (#29).
 - HUD and overlay styling moved onto the brand tokens and type scale, with
