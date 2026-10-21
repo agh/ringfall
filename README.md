@@ -46,6 +46,8 @@ Requires a browser with WebGL 2 and pointer lock.
 
 Every frame above is a headless render of the shipped build (`?record&bot&seed=7&nohud`), not an illustration.
 
+<p align="center"><img src="docs/hero/hero-loop.webp" alt="Six seconds of seed 7 at night, t = 8 to 14 s, the skimmer kill at 10 s" width="100%"><br><sub>Six seconds at 24 fps, seed 7, night, t = 8 to 14 s, from the same capture hook.</sub></p>
+
 ## How it works
 
 The simulation is a pure function over immutable state. `stepGame` in
