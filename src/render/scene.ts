@@ -5,25 +5,27 @@ import { GRENADE_BLAST_RADIUS } from '../core/grenade';
 import type { Vec3 } from '../core/vec3';
 import { WAVE_COUNTDOWN, waveAtmosphere } from '../core/waves';
 import { ARENA_HALF_SIZE, type Arena } from '../core/world';
+import { disposeTree } from './dispose';
 import { type EnemyRig, makeEnemyRig } from './enemies';
 import { createEnvironment, type Environment } from './environment';
 import { ParticleSystem } from './particles';
 import { PickupMeshes } from './pickups';
 import { PostStack } from './post';
+import { WatcherBeamLayer } from './watcher-rig';
 import { WeaponViewmodels } from './weapons';
 
 const FOG_DENSITY = 0.0032;
 /** Hard cap on camera shake in radians (docs/brand.md). */
 const SHAKE_CAP = 0.035;
 const BASE_FOV = 78;
-/** Sun flare core sprite scale at 9 km: about 4% of the frame height at the base FOV. */
-const FLARE_CORE_SIZE = 520;
+/** Sun flare core sprite scale at 9 km: about 2.7% of the frame height at the base FOV. */
+const FLARE_CORE_SIZE = 347;
 /**
  * Flare ghosts as fractions of the frame height, largest first along the axis. The largest
  * stays well under the third of the frame that issue #25 allows.
  */
 const FLARE_GHOST_HEIGHTS = [0.05, 0.08, 0.035] as const;
-const FLARE_GHOST_OPACITY = 0.6;
+const FLARE_GHOST_OPACITY = 0.3;
 
 interface Effect {
   readonly object: THREE.Object3D;
@@ -189,6 +191,7 @@ export class SceneRenderer {
   /** Wave whose atmosphere the environment was last told to blend towards. */
   private lastAtmosphereWave = 0;
   private readonly particles = new ParticleSystem();
+  private readonly watcherBeams = new WatcherBeamLayer();
   private readonly environment: Environment;
   private readonly enemies = new Map<number, EnemyRig>();
   private readonly bolts = new Map<number, THREE.Group>();
@@ -260,6 +263,7 @@ export class SceneRenderer {
     this.weaponViewmodels = new WeaponViewmodels(this.camera, this.particles);
     this.dynamic.add(this.weaponViewmodels.effects);
     this.pickupMeshes = new PickupMeshes(this.dynamic, this.particles);
+    this.dynamic.add(this.watcherBeams.group);
     this.post = new PostStack(this.renderer, this.scene, this.camera);
     window.ringfallDebug = {
       uniforms: () => this.post.debugUniforms(),
@@ -288,6 +292,8 @@ export class SceneRenderer {
   setArena(arena: Arena): void {
     if (this.arenaBuilt === arena) return;
     this.arenaBuilt = arena;
+    // Every arena allocates fresh ground maps, materials and box geometries; free the last set.
+    disposeTree(this.world);
     this.world.clear();
     const size = arena.halfSize * 2;
     const { map, normalMap } = makeFloorMaps();
@@ -403,6 +409,7 @@ export class SceneRenderer {
   handle(events: readonly GameEvent[], now: number): void {
     this.weaponViewmodels.handle(events, now, this.camera);
     this.pickupMeshes.handle(events, now);
+    this.watcherBeams.handle(events, now);
     for (const e of events) {
       switch (e.type) {
         case 'shot':
@@ -456,7 +463,7 @@ export class SceneRenderer {
     this.syncAtmosphere(state.wave.number);
     this.environment.update(now, { particles: this.particles, eye: playerEye(state.player) });
     this.applyLighting();
-    this.syncEnemies(state.enemies, state.time);
+    this.syncEnemies(state.enemies, playerEye(state.player), state.time);
     this.syncBolts(state, now);
     this.syncGrenades(state, now);
     this.pickupMeshes.sync(state, now);
@@ -705,7 +712,7 @@ export class SceneRenderer {
     this.scene.add(sun.target);
   }
 
-  private syncEnemies(enemies: readonly Enemy[], simTime: number): void {
+  private syncEnemies(enemies: readonly Enemy[], eye: Vec3, simTime: number): void {
     const seen = new Set<number>();
     for (const enemy of enemies) {
       seen.add(enemy.id);
@@ -736,6 +743,7 @@ export class SceneRenderer {
       this.dynamic.remove(rig.group);
       this.enemies.delete(id);
     }
+    this.watcherBeams.update(enemies, eye, simTime);
   }
 
   private syncBolts(state: GameState, now: number): void {
@@ -1135,8 +1143,10 @@ export class SceneRenderer {
   }
 
   private resize(): void {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    // A hidden iframe or a collapsed window reports zero; a zero aspect would put NaN in the
+    // projection matrix and every projected HUD point until the next resize.
+    const width = Math.max(1, window.innerWidth);
+    const height = Math.max(1, window.innerHeight);
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height, false);

@@ -9,9 +9,11 @@
   --rose: #fb7185;
   --hull: color-mix(in srgb, #101f36 85%, transparent);
   --slate: #8aa0b8;
+
   /* Derived: lifts for hover and gradient ends, never used as text on Ring or Bone. */
   --beacon-lift: color-mix(in srgb, var(--beacon) 50%, var(--bone));
   --abyss-lift: color-mix(in srgb, var(--abyss) 88%, var(--beacon));
+
   /* Type scale (docs/brand.md): nothing below 14 px; viewport-relative between the stops. */
   --text-label: clamp(14px, 1.6vmin, 16px);
   --text-body: clamp(14px, 1.9vmin, 16px);
@@ -21,7 +23,7 @@
   --text-wordmark: clamp(40px, 8vmin, 72px);
   --text-hero: clamp(36px, 8vmin, 96px);
   --font-display: "Chakra Petch", "Rajdhani", "Bahnschrift", "Segoe UI", sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", "Menlo", "Consolas", monospace;
   --u: clamp(2px, 0.45vmin, 6px); /* one HUD unit */
   --safe-x: max(env(safe-area-inset-left), env(safe-area-inset-right), 1.5vmin);
   --safe-y: max(env(safe-area-inset-top), env(safe-area-inset-bottom), 1.5vmin);
@@ -313,6 +315,7 @@ body {
     opacity: 1;
     transform: scale(1.08);
   }
+
   100% {
     opacity: 0;
     transform: scale(1);
@@ -369,7 +372,7 @@ body {
 
 .hud__arc-shield {
   fill: none;
-  stroke: url(#shield-grad);
+  stroke: url("#shield-grad");
   stroke-width: 10;
   stroke-dasharray: 100 100;
   stroke-dashoffset: 0;
@@ -519,6 +522,7 @@ body {
 .hud__magazine.is-bar {
   --pip-width: calc(var(--fill, 1) * 100%);
   --pip-height: calc(var(--u) * 1.6);
+
   width: calc(var(--u) * 36);
   margin-left: auto;
   background: color-mix(in srgb, var(--slate) 22%, transparent);
@@ -601,6 +605,7 @@ body {
   100% {
     opacity: 0.25;
   }
+
   50% {
     opacity: 0.9;
   }

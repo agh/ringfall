@@ -17,7 +17,7 @@ does not have to for every change.
 
 | Layer | Tool | What it proves | Where | Gate |
 | ----- | ---- | -------------- | ----- | ---- |
-| Static | Biome, tsc strict, markdownlint | Style, types, docs hygiene | `pnpm lint`, `pnpm typecheck` | CI lint job |
+| Static | Biome, tsc strict, markdownlint, Stylelint, Prettier (CSS), pnpm audit, actionlint, zizmor, gitleaks | Style, types, docs hygiene, CSS conventions, no known high-severity advisories, workflow syntax and permissions, no secrets in the tree or the history | `pnpm lint`, `pnpm typecheck`, `pnpm audit --audit-level=high`, the security job in `.github/workflows/ci.yml` | CI lint job, CI security job |
 | Unit | Vitest, Node | Every core rule: movement, collision, weapons, grenades, enemy AI, bolts, waves, vitality, the whole step | `tests/unit/` | 85% lines on `src/core`, 75% branches |
 | Playtest | Vitest, Node | A scripted player plays whole games; determinism, accuracy, wave clearing, profile differences | `tests/unit/bot.test.ts` | Floors in the test |
 | Balance gate | Vitest, Node | Twenty seeded games per profile stay within baseline-derived bounds; the report is a CI artifact | `tests/balance/` | CI balance job, thresholds in `tests/balance/gate.ts` |
@@ -175,7 +175,8 @@ that do not divide 60 are refused, as the recorder refuses them.
 - Pixel-exact rendering: software GL differs from hardware; we check
   structure (no errors, expected elements) not pixels.
 - Audio output: synthesis is verified by code review and by listening; the
-  event-to-sound mapping is unit-testable and will be (#9).
+  event-to-sound mapping is unit-tested in `tests/unit/sounds.test.ts`;
+  the synthesis itself is not.
 - Human feel: the bot measures fairness, not fun. A human playtest is the
   last gate before a release tag.
 
@@ -184,7 +185,7 @@ that do not divide 60 are refused, as the recorder refuses them.
 ```bash
 pnpm check          # lint, typecheck, unit with coverage, build
 pnpm test:e2e       # Playwright against vite preview
-pnpm balance        # the balance gate; report under test-results/balance/
+pnpm balance        # the balance gate; report under test-results/balance/ (pnpm test:e2e empties test-results/, so copy it first)
 PLAYWRIGHT_CHROMIUM_EXECUTABLE=/path/to/chrome pnpm test:e2e   # sandboxed browsers
 node scripts/record-demo.mjs --seed 7 --seconds 40 --fps 30    # film a run
 pnpm frames         # luminance gate: ten seeded frames against their budgets

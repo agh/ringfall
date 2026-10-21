@@ -38,6 +38,15 @@ export class AudioBank {
     this.music.setState(state);
   }
 
+  /**
+   * Cuts every held voice. The overlay freezes the simulation, so the chargeReleased that
+   * would end a held beam charge never arrives; without this the hum plays over the title.
+   */
+  silence(): void {
+    if (!this.ctx) return;
+    this.stopCharge(this.ctx.currentTime);
+  }
+
   handle(events: readonly GameEvent[]): void {
     if (!this.ctx || !this.master) return;
     for (const e of events) {

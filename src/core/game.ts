@@ -226,6 +226,14 @@ export type GameEvent =
       readonly activeAt: number;
       readonly leader: boolean;
     }
+  | { readonly type: 'watcherCharging'; readonly id: number; readonly at: Vec3 }
+  | {
+      readonly type: 'watcherFired';
+      readonly id: number;
+      readonly from: Vec3;
+      readonly to: Vec3;
+      readonly hit: boolean;
+    }
   | { readonly type: 'waveCleared'; readonly number: number }
   | { readonly type: 'playerDied' }
   /** The final leader has fallen; the tableau begins. The status turns `won` when it ends. */
@@ -649,7 +657,8 @@ const stepGrenades = (d: Draft, input: InputFrame, dt: number): void => {
     const radius = blastRadiusOf(g);
     const maxDamage = maxDamageOf(g);
     d.enemies.forEach((e, i) => {
-      if (e.state === 'dead') return;
+      // Spawning enemies are untouchable by rays and beams (liveTargets); blasts match that rule.
+      if (e.state === 'dead' || e.state === 'spawning') return;
       const dmg = blastDamage(distance(enemyCenter(e), g.position), radius, maxDamage);
       if (dmg > 0) hurtEnemy(d, i, dmg);
     });
@@ -677,6 +686,15 @@ const stepEnemies = (d: Draft, dt: number): void => {
       d.nextId += 1;
       d.bolts.push(createBolt(id, action.origin, action.direction, action.damage, d.time));
       d.events.push({ type: 'boltFired', id });
+    }
+    if (action?.type === 'watcherCharge')
+      d.events.push({ type: 'watcherCharging', id: enemy.id, at: action.at });
+    if (action?.type === 'watcherBeam') {
+      const { from, to, hit } = action;
+      d.events.push({ type: 'watcherFired', id: enemy.id, from, to, hit });
+      // The beam reuses the strider bolt sound until it has one of its own (issue #33 owns audio).
+      d.events.push({ type: 'boltFired', id: enemy.id });
+      if (hit) hurtPlayer(d, action.damage, from);
     }
     return enemy;
   });
@@ -768,7 +786,9 @@ const stepWaves = (d: Draft): void => {
     d.score += WAVE_BONUS;
     d.events.push({ type: 'waveCleared', number: wave.number });
   }
-  if (transition === 'won') {
+  // Vitality runs before this stage: a blast or a bolt that kills the player in the same step
+  // as the last enemy has already ended the run, and death is not overwritten by victory.
+  if (transition === 'won' && d.status === 'playing') {
     d.score += WAVE_BONUS;
     d.tableau = { startedAt: d.time, endsAt: d.time + TABLEAU_DURATION };
     d.pendingSpawns = [];

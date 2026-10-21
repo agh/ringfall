@@ -20,6 +20,19 @@ export const LEADER_STRIDER_DELAY = 4;
 /** Health multiplier of the Last Stand's armoured strider. */
 export const ARMOURED_HEALTH_SCALE = 3;
 
+/** One watcher holds the perimeter from this wave, two from the later one. */
+export const WATCHER_FROM = 5;
+export const WATCHER_PAIR_FROM = 7;
+/**
+ * Off until the balance pass for #17 lands: with watchers in the roster the steady bot clears
+ * 4.5 to 4.8 waves against the gate's 4.85 floor (see the pull request for the tables).
+ */
+export const WATCHERS_IN_ROSTER = false;
+
+/** Watchers the design puts in a wave, whether or not the roster flag is on. */
+export const watcherCount = (wave: number): number =>
+  wave >= WATCHER_PAIR_FROM ? 2 : wave >= WATCHER_FROM ? 1 : 0;
+
 export const createWaveState = (now: number): WaveState => ({
   number: 1,
   phase: 'countdown',
@@ -50,6 +63,10 @@ export interface WaveBeat {
 const rank = (kind: EnemyKind, count: number, delay = 0): readonly WaveSpawn[] =>
   Array.from({ length: count }, (): WaveSpawn => ({ kind, delay, healthScale: 1, leader: false }));
 
+/** The watchers a wave fields: the design's count while `WATCHERS_IN_ROSTER` is on, else none. */
+const watchers = (wave: number): readonly WaveSpawn[] =>
+  rank('watcher', WATCHERS_IN_ROSTER ? watcherCount(wave) : 0);
+
 const ARMOURED_STRIDER: WaveSpawn = {
   kind: 'strider',
   delay: 0,
@@ -63,18 +80,26 @@ const ARMOURED_STRIDER: WaveSpawn = {
  * `docs/design-doc.md` carries the table rendered from this constant.
  */
 export const WAVE_BEATS: readonly WaveBeat[] = [
-  { name: 'Scouts', ending: 'cleared', spawns: rank('skimmer', 3) },
+  { name: 'Scouts', ending: 'cleared', spawns: [...rank('skimmer', 3), ...watchers(1)] },
   {
     name: 'The Leader',
     ending: 'cleared',
-    spawns: [...rank('skimmer', 4), ...rank('strider', 1, LEADER_STRIDER_DELAY)],
+    spawns: [...rank('skimmer', 4), ...rank('strider', 1, LEADER_STRIDER_DELAY), ...watchers(2)],
   },
-  { name: 'Fallback', ending: 'cleared', spawns: [...rank('skimmer', 5), ...rank('strider', 2)] },
-  { name: 'The Push', ending: 'cleared', spawns: [...rank('skimmer', 6), ...rank('strider', 3)] },
+  {
+    name: 'Fallback',
+    ending: 'cleared',
+    spawns: [...rank('skimmer', 5), ...rank('strider', 2), ...watchers(3)],
+  },
+  {
+    name: 'The Push',
+    ending: 'cleared',
+    spawns: [...rank('skimmer', 6), ...rank('strider', 3), ...watchers(4)],
+  },
   {
     name: 'Last Stand',
     ending: 'leaderDown',
-    spawns: [...rank('skimmer', 6), ...rank('strider', 2), ARMOURED_STRIDER],
+    spawns: [...rank('skimmer', 6), ...rank('strider', 2), ARMOURED_STRIDER, ...watchers(5)],
   },
 ];
 

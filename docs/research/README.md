@@ -21,12 +21,13 @@ they are not commitments. Each report ends with its full source list.
 
 ## How the research was used
 
-The decisions below trace directly to a source in one of the reports.
+The decisions below trace directly to a source in one of the reports or in
+[brand.md](../brand.md).
 
 | Decision | Source | Report |
 | -------- | ------ | ------ |
 | Stay on `WebGLRenderer`; keep `EffectComposer` | three.js post-processing is WebGL-only; Linux WebGPU support uneven ([web.dev](https://web.dev/blog/webgpu-supported-major-browsers), [migration guide](https://www.utsubo.com/blog/webgpu-threejs-migration-guide)) | both |
-| Enemies ease off while the shield is down (#4) | Griesemer on the shield pacing contract ([Engadget](https://www.engadget.com/2011-07-14-half-minute-halo-an-interview-with-jaime-griesemer.html)) | feel-and-mlp |
+| Enemies ease off while the shield is down and the player is in cover (#4) | Griesemer on the shield pacing contract ([Engadget](https://www.engadget.com/2011-07-14-half-minute-halo-an-interview-with-jaime-griesemer.html)) | feel-and-mlp |
 | Skimmers flee on a strider death, cranked past subtle (#5) | the studio's fleeing-minion lesson and Isla on subtlety ([DU lecture](https://www.cs.du.edu/~sturtevant/s13-ai/lecture2.pdf), [Game Developer](https://gamedeveloper.com/programming/abandoning-subtlety-to-create-immersive-ai-encounters)) | feel-and-mlp |
 | Grenade dives and firing points (#6, #7) | the studio's behavior list and the GDC 2002 deck ([behavior list](https://learn.microsoft.com/en-us/halo-master-chief-collection/h2/ai/aibehaviorlist), [slides](https://www.jmeiners.com/shamans/papers/ai/the_illusion_of_intelligence.pdf)) | feel-and-mlp |
 | Five named waves instead of eight uniform ones (#8) | Opdahl on biorhythm and Isla's encounter shape ([iTWire](https://itwire.com/opinion-and-analysis-sp-481/radioactive-it/designing-halo-reach-was-like-filming-titanic), [Isla](https://web.cs.wpi.edu/~rich/courses/imgd4000-d11/lectures/halo3.pdf)) | feel-and-mlp |

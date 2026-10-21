@@ -7,7 +7,7 @@ want you dead. TypeScript + three.js, zero assets.
 
 <p align="center"><sub>The banner is the game itself: seed 7 at night, t = 10 s, 3840x1600 with the post stack on. Recipe in <a href="docs/brand.md#hero-and-social">docs/brand.md</a>.</sub></p>
 
-**[Play now](https://ringfall.alexhowells.com)** (deploys from `main`; `agh.github.io/ringfall` until DNS is set).
+**[Play now](https://ringfall.alexhowells.com)** (deploys from `main`; `agh.github.io/ringfall` until DNS is set; neither is live as of 2026-10-21).
 
 Ringfall takes its cues from the classic console sci-fi shooter loop: a
 regenerating energy shield over fixed health, a two-second rhythm of fire,
@@ -33,6 +33,7 @@ pnpm dev            # http://localhost:5173
 | Reload         | R                  |
 | Swap weapon    | Q or wheel         |
 | Jump / Sprint  | Space / Shift      |
+| Swap weapon    | Q                  |
 | Fullscreen     | F                  |
 | Release mouse  | Esc                |
 
@@ -45,6 +46,8 @@ Requires a browser with WebGL 2 and pointer lock.
 
 Every frame above is a headless render of the shipped build (`?record&bot&seed=7&nohud`), not an illustration.
 
+<p align="center"><img src="docs/hero/hero-loop.webp" alt="Six seconds of seed 7 at night, t = 8 to 14 s, the skimmer kill at 10 s" width="100%"><br><sub>Six seconds at 24 fps, seed 7, night, t = 8 to 14 s, from the same capture hook.</sub></p>
+
 ## How it works
 
 The simulation is a pure function over immutable state. `stepGame` in
@@ -54,7 +57,7 @@ events that happened during the step. Everything else reacts to those events:
 
 - `src/render/` mirrors the state into a three.js scene and plays effects
 - `src/hud/` draws vitals, ammo, wave status, and a motion tracker in the DOM
-- `src/audio/` synthesizes every sound with WebAudio oscillators
+- `src/audio/` synthesizes every sound with WebAudio oscillators and filtered noise
 - `src/input/` turns keyboard, mouse, and pointer lock into an `InputFrame`
 
 ```mermaid
@@ -81,10 +84,17 @@ tests in real Chromium.
 | [docs/evolution.md](docs/evolution.md) | How intent is proven in code, how regressions are prevented, how the product evolves with agents |
 | [docs/design-doc.md](docs/design-doc.md) | Architecture and every gameplay number with its rationale |
 | [docs/brand.md](docs/brand.md) | Palette, typography, geometry language, audio identity, feel values, PR checklist |
-| [docs/test-plan.md](docs/test-plan.md) | Static, unit, playtest, browser, visual, and recording layers |
-| [docs/research/](docs/research/) | Sourced research on the reference console shooter's design and on browser WebGL prior art |
+| [docs/test-plan.md](docs/test-plan.md) | Static, unit, playtest, balance gate, browser, visual, and recording layers |
+| [docs/research/](docs/research/) | Sourced research on the reference console shooter's design, on browser WebGL prior art, and on product management practice |
 | [docs/journey/](docs/journey/) | Time-indexed build log with captured frames |
 | [docs/adr/](docs/adr/) | Architecture decision records |
+| [docs/runbook.md](docs/runbook.md) | Run, build, deploy, test, film, and fix |
+| [docs/metrics.md](docs/metrics.md) | Every number the playtest harness reports |
+| [docs/decisions.md](docs/decisions.md) | Decision index with the commits that made them |
+| [docs/risks.md](docs/risks.md) | Risk register |
+| [docs/launch-checklist.md](docs/launch-checklist.md) | Go or no-go before a release tag |
+| [docs/glossary.md](docs/glossary.md) | Glossary |
+| [docs/audit.md](docs/audit.md) | Adversarial audits: findings and outcomes |
 
 The backlog lives in GitHub Issues: the MLP epic (#2) and the Later epic (#3).
 
@@ -103,9 +113,9 @@ pnpm demo                         # film seed 7 to demo.mp4 (needs pnpm build an
 ## Develop
 
 ```bash
-pnpm lint           # Biome (lint + format, CI mode)
+pnpm lint           # Biome (CI mode) and markdownlint
 pnpm typecheck      # tsc --noEmit, strict
-pnpm test           # Vitest unit tests with V8 coverage thresholds
+pnpm test           # Vitest unit tests and the balance gate, with V8 coverage thresholds
 pnpm test:e2e       # Playwright smoke tests against a production preview
 pnpm build          # Type check and Vite production build to dist/
 pnpm check          # All of the above except e2e, in CI's order

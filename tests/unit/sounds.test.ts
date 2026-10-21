@@ -46,6 +46,8 @@ const EVENT_TYPES = Object.keys({
   playerDied: true,
   victory: true,
   secretFound: true,
+  watcherCharging: true,
+  watcherFired: true,
 } satisfies Record<GameEvent['type'], true>) as GameEvent['type'][];
 
 const SOUND_KEYS = Object.keys(SOUNDS);
@@ -252,5 +254,13 @@ describe('sound table', () => {
     const [a1, b1] = vowelFormants(-Math.PI / 2);
     expect(a1).toBeCloseTo(300);
     expect(b1).toBeCloseTo(870);
+  });
+});
+
+describe('charge hum lifetime', () => {
+  it('is cut by every event that can end a run with the trigger held', () => {
+    // The simulation stops on victory and death, so no chargeReleased follows either.
+    expect(SOUNDS.victory.cutsCharge).toBe(true);
+    expect(SOUNDS.playerDied.cutsCharge).toBe(true);
   });
 });

@@ -51,7 +51,7 @@ cheap to build and easy to test, so it is the product.
 - **NG1:** Multiplayer or networking of any kind. The only persistence is the
   player's personal bests in their own browser's local storage.
 - **NG2:** Mobile or touch controls.
-- **NG3:** Vehicles, multiple weapons, or pickups.
+- **NG3:** Vehicles.
 - **NG4:** Imported art, audio, or any franchise material (see
   [ADR-0003](adr/0003-original-ip-only.md)).
 
@@ -132,11 +132,18 @@ in order, and freezes the result:
 | --------- | ------ | ------ | ------------------------------- | ------------------------------------------------ | ----- |
 | Skimmer   | 40     | 7 m/s  | Melee zap, 12 dmg every 0.9 s   | Closes to 2 m with lateral jitter so packs fan out | 100   |
 | Strider   | 120    | 3 m/s  | Bolt, 18 dmg every 1.4 s        | Holds 8 to 16 m, backs off when crowded, aims at the current eye position with 4 % spread | 300 |
+| Watcher   | 160    | 2 m/s  | Hitscan beam, 35 dmg: 1.2 s charge, 0.15 s beam, 3.5 s cooldown | Holds 24 to 32 m and never closes, orbits the player at half speed inside the band, charges only with line of sight to the eye, stands still while charging; the beam stops at cover | 400 |
 
-The rifle kills a skimmer in two shots and a strider in six. Two skimmers in
-contact strip a full shield in about four seconds; one strider's volley is
-dodgeable by strafing because the bolt takes roughly half a second to cross
-its range.
+The rifle kills a skimmer in two shots and a strider in six. A watcher takes
+eight. Two skimmers in contact strip a full shield in about four seconds;
+one strider's volley is dodgeable by strafing because the bolt takes roughly
+half a second to cross its range. The watcher's beam cannot be dodged, only
+blocked: it fires at the eye's position at the end of a 1.2 s telegraph (the
+lens goes from Rose to white and an aiming line is drawn to the player), so
+the counter is cover or killing it while it stands still to charge. Its
+cycle is longer than the shield's recharge delay, so the shield claws back
+part of each beam; alone and unanswered it still kills a full shield and
+health. Constants are in `src/core/watcher.ts`.
 
 #### Skimmer temperaments
 
@@ -266,17 +273,20 @@ lesson, a first spectacle, a breather, a push, and an ending. Enemies land
 on a 26 m ring around the arena centre, avoiding cover. Clearing a wave is
 worth 500. The victory pays the same bonus. The roster for the five waves
 is generated from the constants by `node scripts/wave-table.mjs --write`
-(`pnpm docs:waves`); do not edit the table by hand:
+(`pnpm docs:waves`); do not edit the table by hand. The Watchers column is
+the design from `watcherCount(wave)`; it joins the roster only when
+`WATCHERS_IN_ROSTER` in `src/core/waves.ts` is on, and it is off until the
+balance pass for #17 lands.
 
 <!-- wave-table:start -->
 
-| Wave | Name       | Skimmers | Striders | Notes                                                                           |
-| ---- | ---------- | -------- | -------- | ------------------------------------------------------------------------------- |
-| 1    | Scouts     | 3        | 0        |                                                                                 |
-| 2    | The Leader | 4        | 1        | 1 strider lands 4 s late                                                        |
-| 3    | Fallback   | 5        | 2        |                                                                                 |
-| 4    | The Push   | 6        | 3        |                                                                                 |
-| 5    | Last Stand | 6        | 3        | 1 armoured strider at 3x health; ends when the leader falls; the survivors flee |
+| Wave | Name       | Skimmers | Striders | Watchers | Notes                                                                           |
+| ---- | ---------- | -------- | -------- | -------- | ------------------------------------------------------------------------------- |
+| 1    | Scouts     | 3        | 0        | 0        |                                                                                 |
+| 2    | The Leader | 4        | 1        | 0        | 1 strider lands 4 s late                                                        |
+| 3    | Fallback   | 5        | 2        | 0        |                                                                                 |
+| 4    | The Push   | 6        | 3        | 0        |                                                                                 |
+| 5    | Last Stand | 6        | 3        | 1        | 1 armoured strider at 3x health; ends when the leader falls; the survivors flee |
 
 Every enemy arrives by drop pod: the `dropPod` event fires 1.5 s before the
 enemy goes active. Chapter 1 fields 24 skimmers and 9 striders in all;
@@ -349,15 +359,15 @@ clock in production and is fixed in tests.
   frame; the dust motes did the same in miniature. `src/render/post.ts`
   replaces it with a prefilter that keeps only the excess over the
   threshold, with a quadratic knee that starts at 1.0, capped at 1.5 per
-  pixel: strength 0.3, radius 0.35, threshold 1.3, knee 0.3, cap 1.5. The
+  pixel: strength 0.15, radius 0.25, threshold 1.3, knee 0.3, cap 1.5 (issue #71 halved the strength and radius again from 0.3 and 0.35). The
   values come from measured seed-7 frames (`docs/journey/README.md`,
   17:40): looking into the dawn sun the mean luminance of a 64 by 36
   downscale went from 136 to 106 of 255 and the saturated blob from 22% to
   14% of the frame height; at the first kill at night from 60 to 19. The
   budget is a mean under 150 by day and 110 at night.
-- **Sun flare.** An additive core sprite at the sun (scale 520 at 9 km,
-  about 4% of the frame height) and three ghosts on the sun-to-center axis,
-  sized as fractions of the frame height (5%, 8%, 3.5%) at opacity 0.6, so
+- **Sun flare.** An additive core sprite at the sun (scale 347 at 9 km,
+  about 2.7% of the frame height) and three ghosts on the sun-to-center axis,
+  sized as fractions of the frame height (5%, 8%, 3.5%) at opacity 0.3, so
   no ghost can reach the third of the frame the budget allows. Core and
   ghosts follow `sunDisc`, which is 0 at night, and are hidden rather than
   drawn transparent when it is. The moon is a 420-unit disc sprite whose
@@ -451,7 +461,7 @@ clock in production and is fixed in tests.
 - **HUD.** DOM elements updated every frame: wave and enemies left, score,
   shield and health bars, ammo with a low-ammo color, grenade pips, center
   announcements, a hit marker, a damage vignette, and a pulsing border when
-  the shield is down. The motion tracker is a 150 px canvas showing enemies
+  the shield is down. The motion tracker is a canvas sized `clamp(120px, 17vmin, 240px)` showing enemies
   and bolts within 28 m, rotated to the player's heading.
 - **Audio.** Every sound is an oscillator sweep or filtered noise burst
   created on demand. The context is unlocked on the first click.
