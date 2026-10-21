@@ -516,13 +516,13 @@ case). The old effect was a flash sphere, a flat disc and three big additive
 bursts; the grey "smoke" burst added light to the frame because the pool
 could only add. The pool now blends premultiplied alpha, which keeps the
 spark path byte-for-byte and lets a `smoke` puff or a `shard` chip lay its
-colour over the frame instead. The explosion became five things on their
+color over the frame instead. The explosion became five things on their
 own clocks: a 120 ms sprite flash, a thin crest torus that flattens as it
 expands, 32 sparks and 22 chips under gravity, a 56-puff column that rises
 and thins over 1.5 s, and a scorch disc that holds for four seconds. A
-kill now reads its colours off the rig that died: the light for the ring,
+kill now reads its colors off the rig that died: the light for the ring,
 the shell for the debris. Two things were learned on the way: the 64 px
-sprite cap means a smoke puff at 7 m is half a metre wide at most, so a
+sprite cap means a smoke puff at 7 m is half a meter wide at most, so a
 column needs count rather than size; and a torus scaled up to the blast
 radius thickens its tube with it, so the crest tube is 22 mm at unit
 radius. Frame means at 720p, HUD included, before and after, on a scale of
