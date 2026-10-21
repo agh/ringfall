@@ -53,6 +53,10 @@ export const SILENT = [
   'enemyFled',
   // The hidden switch's seven-note chime is a follow-up; the score tick is the only reaction here.
   'secretFound',
+  // The watcher's beam reuses the strider bolt sound: game.ts emits boltFired beside watcherFired.
+  // A charge hum and a beam of its own are for the audio pass.
+  'watcherCharging',
+  'watcherFired',
 ] as const satisfies readonly GameEvent['type'][];
 export type SilentEvent = (typeof SILENT)[number];
 

@@ -27,6 +27,13 @@ and this project adheres to
 
 - A unit test that fails if the pre-rename repository path reappears outside
   `docs/journey/`, and a runbook note on the rename order (#70).
+
+- The watcher, a third enemy archetype (#17): a tall perimeter sentinel
+  that holds 24 to 32 m, orbits the player and fires a telegraphed hitscan
+  beam that cover blocks; one from wave 5 and two from wave 7 by design,
+  behind `WATCHERS_IN_ROSTER` (off) until the balance pass. New
+  `watcherCharging` and `watcherFired` events, a tripod rig with an aiming
+  line, and bot rules that shoot a charging watcher first with a precise gun.
 - Four skimmer temperaments handed out round-robin per wave: chaser,
   ambusher (leads the player's velocity by 4 m), flanker (swings to the
   off-hand side) and skittish (holds at 10 m until a packmate is within

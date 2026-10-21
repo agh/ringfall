@@ -4,8 +4,10 @@ import {
   createWaveState,
   FINAL_WAVE,
   tickWave,
+  WATCHERS_IN_ROSTER,
   WAVE_CLEAR_PAUSE,
   WAVE_COUNTDOWN,
+  watcherCount,
   waveAtmosphere,
   waveComposition,
 } from '../../src/core/waves';
@@ -15,6 +17,12 @@ describe('waves', () => {
     expect(waveComposition(1)).toEqual(['skimmer', 'skimmer', 'skimmer']);
     expect(waveComposition(2).filter((k) => k === 'strider')).toHaveLength(1);
     expect(waveComposition(6).length).toBeGreaterThan(waveComposition(3).length);
+    const waves = [1, 2, 3, 4, 5, 6, 7, 8];
+    expect(waves.map(watcherCount)).toEqual([0, 0, 0, 0, 1, 1, 2, 2]);
+    const inRoster = (wave: number) => waveComposition(wave).filter((k) => k === 'watcher').length;
+    expect(waves.map(inRoster)).toEqual(
+      WATCHERS_IN_ROSTER ? waves.map(watcherCount) : waves.map(() => 0),
+    );
   });
 
   it('walks countdown -> active -> cleared -> next', () => {

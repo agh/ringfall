@@ -697,6 +697,24 @@ recipe is the "Hero and social" section of `docs/brand.md`.
 
 ![Contact sheet of the seven candidate hero frames](images/1740-hero-contact.jpg)
 
+## 17:50 The watcher, held at the gate
+
+Issue #17's third archetype went in as new files (`src/core/watcher.ts`,
+`src/render/watcher-rig.ts`) with one dispatch line in the enemy module, so
+it could land beside the agents splitting `updateEnemy`, rewriting the wave
+table and adding night emissives. The state machine, the cover-blocked
+beam, the rig's aspect ratio and the kill-time step are unit-tested. The
+balance gate is where it stopped: with one watcher from wave 5 the steady
+bot cleared 4.25 waves and won 5 % against floors of 4.85 and 10 %. Three
+bot rules (do not chase a unit that backs off, finish an engaged watcher,
+draw a precise gun and wait for the reticle) and a 3.5 s cooldown brought
+it to 4.55 to 4.80 waves and 0 to 5 % wins, still under the floor, so the
+roster entry shipped behind `WATCHERS_IN_ROSTER = false` with the tables
+in the pull request. The wave 5 frame was not captured: the record-mode bot
+on seed 7 was still in wave 3 at 394 s on this machine's software GL, and
+the hard stop came first. Next update: set by whoever takes the balance
+pass.
+
 ## Playtest reviews
 
 Each row is a human or agent watching the game play, not a screenshot.
