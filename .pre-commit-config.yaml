@@ -14,3 +14,11 @@ repos:
     rev: v2.5.12
     hooks:
       - id: biome-check
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint

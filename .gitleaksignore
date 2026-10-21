@@ -1,0 +1,5 @@
+# Gitleaks fingerprints (commit:file:rule:line) that were reviewed and are not
+# credentials. One fingerprint per line, preceded by a comment naming the
+# value's purpose. Format vendored from crefft's .gitleaksignore at
+# https://github.com/agh/crefft/blob/6e6481840e68a89874e0d90eaae3cf23e83379fb/.gitleaksignore
+# None yet: the full history of this repository scans clean.

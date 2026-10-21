@@ -1,0 +1,89 @@
+# Gitleaks configuration for Ringfall
+#
+# Vendored from crefft's .gitleaks.toml at
+# https://github.com/agh/crefft/blob/6e6481840e68a89874e0d90eaae3cf23e83379fb/.gitleaks.toml
+# with the title, the lockfile path, the documentation tree, and the list of
+# reviewed literals changed for this repository. Everything else is as
+# published upstream.
+#
+# This configuration keeps the full upstream ruleset and adds a *reviewed*
+# allowlist. Every entry below names the file and the reason it is safe.
+# Adding a new secret-shaped string to the docs MUST be accompanied by a
+# reviewed entry here: the check is blocking.
+#
+# Pinned tool: gitleaks 8.30.1 (see .github/workflows/ci.yml).
+# Schema reference: https://github.com/gitleaks/gitleaks#configuration
+
+title = "ringfall"
+
+[extend]
+# Inherit every upstream detection rule. Do not narrow this.
+useDefault = true
+
+# ---------------------------------------------------------------------------
+# 1. Paths that are never scanned.
+# ---------------------------------------------------------------------------
+[[allowlists]]
+description = "Generated and tool-managed directories"
+targets = ["file"]
+paths = [
+  '''^node_modules/''',
+  '''(^|/)\.git/''',
+  '''(^|/)pnpm-lock\.yaml$''',
+  '''^dist/''',
+  '''^coverage/''',
+  '''^playwright-report/''',
+  '''^test-results/''',
+]
+
+# ---------------------------------------------------------------------------
+# 2. Placeholder idioms inside documentation.
+#
+# Scoped with condition = "AND" so these relaxations apply *only* to Markdown
+# under the documentation tree and at the repository root. Source,
+# configuration, and vendored data are still scanned with the unmodified
+# upstream ruleset.
+# ---------------------------------------------------------------------------
+[[allowlists]]
+description = "Obvious placeholder idioms in Ringfall's own Markdown"
+targets = ["secret"]
+condition = "AND"
+paths = [
+  '''^docs/.*\.md$''',
+  '''^[A-Z0-9_-]+\.md$''',
+]
+regexes = [
+  # Sequential / keyboard-walk filler: abc123, 1234567890abcdef, deadbeef.
+  '''(?i)(abc123|abcdef0?123|0?123456789|deadbeef|cafebabe|foobar)''',
+  # Redaction markers: sk_test_xxxxxxxx, AKIA...XXXX.
+  '''[xX]{5,}''',
+  # Truncated with an ellipsis: age1ql3z7hjy54pw3hyww5..., sk-proj-abc123...
+  '''\.\.\.''',
+  # Self-describing placeholders: your_api_key_here, <YOUR-TOKEN>, ${API_KEY}.
+  '''(?i)(your[_-]|<[a-z0-9_-]+>|\$\{[a-z0-9_]+\}|changeme|replace[_-]?me)''',
+  # AWS's own published documentation key material.
+  '''(?i)EXAMPLE(KEY)?$''',
+]
+
+# ---------------------------------------------------------------------------
+# 3. Individually reviewed strings that do not fit a generic idiom.
+#
+# None yet. Upstream's entries name crefft guide examples that do not exist
+# here. Add one line per literal with the file and why it is not a credential.
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# 4. Stopwords applied to the generic-api-key heuristic.
+# ---------------------------------------------------------------------------
+[[allowlists]]
+description = "Documentation vocabulary that trips the generic entropy rule"
+targets = ["secret"]
+stopwords = [
+  "example",
+  "placeholder",
+  "redacted",
+  "sample",
+  "dummy",
+  "fake",
+  "notreal",
+]

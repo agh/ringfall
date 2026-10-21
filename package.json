@@ -13,8 +13,9 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "lint": "biome ci . && markdownlint-cli2 \"**/*.md\"",
-    "lint:fix": "biome check --write .",
+    "lint": "biome ci . && markdownlint-cli2 \"**/*.md\" && pnpm lint:css",
+    "lint:css": "stylelint \"**/*.css\" && prettier --check \"**/*.css\"",
+    "lint:fix": "biome check --write . && stylelint \"**/*.css\" --fix && prettier --write \"**/*.css\"",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --coverage",
     "test:watch": "vitest",
@@ -33,8 +34,25 @@
     "@types/three": "0.186.0",
     "@vitest/coverage-v8": "5.0.0",
     "markdownlint-cli2": "0.23.2",
+    "prettier": "3.9.10",
+    "stylelint": "16.1.0",
+    "stylelint-config-standard": "36.0.0",
     "typescript": "6.0.3",
     "vite": "8.3.5",
     "vitest": "5.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "js-yaml@>=5.0.0 <5.4.1": "5.5.0",
+      "katex@<0.18.2": "0.19.0",
+      "markdown-it@<14.3.3": "14.3.3",
+      "postcss-selector-parser@<7.1.6": "7.1.7",
+      "smol-toml@<1.9.0": "1.9.1"
+    },
+    "auditConfig": {
+      "ignoreGhsas": [
+        "GHSA-vfj7-8cjw-p6xm"
+      ]
+    }
   }
 }

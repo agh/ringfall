@@ -1,0 +1,24 @@
+{
+  "extends": ["stylelint-config-standard"],
+  "ignoreFiles": [
+    "coverage/**",
+    "dist/**",
+    "node_modules/**",
+    "playwright-report/**",
+    "test-results/**"
+  ],
+  "rules": {
+    "selector-class-pattern": [
+      "^[a-z][a-z0-9]*(-[a-z0-9]+)*(__[a-z0-9]+(-[a-z0-9]+)*)?(--[a-z0-9]+(-[a-z0-9]+)*)?$",
+      {
+        "message": "Expected class selector to be kebab-case, optionally with one BEM __element and one --modifier"
+      }
+    ],
+    "custom-property-pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+    "declaration-block-no-redundant-longhand-properties": true,
+    "shorthand-property-no-redundant-values": true,
+    "color-hex-length": "short",
+    "color-named": "never",
+    "property-no-vendor-prefix": [true, { "ignoreProperties": ["user-select", "mask-image"] }]
+  }
+}
