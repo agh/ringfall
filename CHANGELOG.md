@@ -162,10 +162,11 @@ and this project adheres to
 ### Fixed
 
 - Audio block of the quality pass (#105): noise buffers are built once per
-  context and warmed at unlock, so a wave start with nine drop pods no
-  longer spends about 20 ms filling them in one step; the combat pulse
-  looks two ticks ahead, so a timer tick a whole tick late no longer drops
-  a beat and shifts the grid.
+  context and warmed at unlock, instead of a fresh buffer filled on the main
+  thread for every shot, explosion and drop pod (141 fills and 11.7 MB over
+  a five-wave run before #107, which made the pod sound once per step); the
+  combat pulse looks two ticks ahead, so a timer tick a whole tick late no
+  longer drops a beat and shifts the grid.
 - Merge seams between features that landed from different branches (#97,
   pass C), each pinned by a deterministic test that runs both in one go:
   a skimmer already leaving after the final leader fell is no longer
