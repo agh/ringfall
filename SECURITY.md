@@ -10,6 +10,8 @@ build, the pinned dependencies, and the GitHub Actions workflows.
 
 ## Threat model
 
+The full model, with data-flow diagrams, threats per trust boundary, admin items and the review cadence, is [docs/threat-model.md](docs/threat-model.md); the ten lines below are its summary.
+
 1. **Assets**: the published build at the custom domain, the `main` branch, and the player's local storage; there are no accounts, secrets, or server-side data.
 2. **Untrusted input**: the query string (`?seed`, `?atmo`, `?weather`, `?bot`, `?record`, `?nopost`) and the `ringfall.records.v1` local storage value; both are parsed by allow-list in `src/core` and never reach markup.
 3. **Browser surface**: a strict Content Security Policy meta tag (same-origin scripts, no inline script, no `eval`, no workers, no objects) and `no-referrer`; GitHub Pages cannot set headers, so `frame-ancestors` and `Permissions-Policy` are unavailable.
