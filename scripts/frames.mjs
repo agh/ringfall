@@ -297,7 +297,8 @@ const captureGroup = async (browser, flags, group) => {
   for (const frame of [...group].sort((a, b) => a.t - b.t)) {
     const started = Date.now();
     state = await advanceTo(page, state, frame.t);
-    const png = await page.screenshot({ type: 'png' });
+    // Playwright's default is 30 s; a software-GL render of a late-wave frame can exceed it.
+    const png = await page.screenshot({ type: 'png', timeout: 600_000 });
     const file = `${frame.id}.png`;
     writeFileSync(resolve(out, file), png);
     const m = measure(png);
