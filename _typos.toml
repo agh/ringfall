@@ -39,6 +39,8 @@ aout = "aout"
 # Allo (allo.io) is the publisher cited in docs/research/product-management.md.
 Allo = "Allo"
 allo = "allo"
+# The git commit hash the second audit in docs/audit.md was taken against; typos splits it as "ba".
+ba1fa99 = "ba1fa99"
 
 [type.ts]
 locale = "en"
