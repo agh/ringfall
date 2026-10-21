@@ -9,7 +9,7 @@ want you dead. TypeScript + three.js, zero assets. Built in four hours on
 
 <p align="center"><sub>The banner is the game itself: seed 7 at night, t = 15 s, 3840x1600 with the post stack on. Recipe in <a href="docs/brand.md#hero-and-social">docs/brand.md</a>.</sub></p>
 
-**[Play now](https://ringfall.alexhowells.com)** (deploys from `main`; `agh.github.io/ringfall` until DNS is set; neither is live as of 2026-10-21).
+**[Play now](https://ringfall.alexhowells.com)** (deploys from `main`; `agh.github.io/ringfall` redirects there).
 
 Ringfall takes its cues from the classic console sci-fi shooter loop: a
 regenerating energy shield over fixed health, a two-second rhythm of fire,
@@ -35,9 +35,8 @@ pnpm dev            # http://localhost:5173
 | Reload         | R                  |
 | Swap weapon    | Q or wheel         |
 | Jump / Sprint  | Space / Shift      |
-| Swap weapon    | Q                  |
 | Fullscreen     | F                  |
-| Release mouse  | Esc                |
+| Pause          | Esc                |
 
 Requires a browser with WebGL 2 and pointer lock.
 
@@ -46,7 +45,7 @@ Requires a browser with WebGL 2 and pointer lock.
 | ![Dawn: the sun rises behind the ridge, laser hit in wave 5](docs/journey/images/1850-hero-dawn-s7-t78.jpg) | ![Night: a skimmer in the laser sights, stars and trims](docs/journey/images/1850-hero-night-s7-t24.jpg) | ![Dusk: the laser in hand against a rose horizon](docs/journey/images/1850-hero-dusk-s7-t45.jpg) |
 | seed 7, t = 78.5 s, `atmo=dawn` | seed 7, t = 24.15 s, `atmo=night` | seed 7, t = 45 s, `atmo=dusk` |
 
-Every frame above is a headless render of the shipped build (`?record&bot&seed=7&nohud`), not an illustration.
+Every frame in this README is a headless render (`?record&bot&seed=7&nohud`) of the build at 17:40 UTC on 2026-10-21, not an illustration. The waves were retuned after that capture, so the same seed and time now show a different moment.
 
 <p align="center"><img src="docs/hero/hero-loop.webp" alt="Six seconds of seed 7 at night, t = 4 to 10 s, three skimmer kills" width="100%"><br><sub>Six seconds at 24 fps, seed 7, night, t = 4 to 10 s, from the same capture hook.</sub></p>
 
