@@ -796,6 +796,7 @@ body {
   .hud:not([hidden]) .hud__weapon {
     animation: none;
   }
+}
 
 /* Settings panel on the title overlay (issue #37). Tokens from docs/brand.md. */
 .settings {
