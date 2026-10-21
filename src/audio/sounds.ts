@@ -48,7 +48,10 @@ export interface Sound {
 }
 
 /** Events that make no sound on purpose; the unit test refuses any event missing from both lists. */
-export const SILENT = ['pickupExpired'] as const satisfies readonly GameEvent['type'][];
+export const SILENT = [
+  'pickupExpired',
+  'enemyFled',
+] as const satisfies readonly GameEvent['type'][];
 export type SilentEvent = (typeof SILENT)[number];
 
 /** A shot's voice depends on the weapon, and the rifle's on whether it landed. */
@@ -153,6 +156,9 @@ export const SOUNDS: Readonly<Record<SoundKey, Sound>> = {
   waveCleared: { voices: [tone('sine', 400, 1000, 0.8, 0.5)] },
   victory: { voices: [tone('sine', 400, 1000, 0.8, 0.5)] },
   playerDied: { cutsCharge: true, voices: [tone('sawtooth', 500, 60, 1.4, 0.6)] },
+  // A routed skimmer's squeal: a rising chirp that answers the strider's death. The flee itself
+  // (`enemyFled`) is silent; the bark carries the sound so a pack of three squeals three times.
+  enemyBark: { voices: [tone('sine', 900, 1500, 0.14, 0.18, { jitter: true })] },
 };
 
 /** The table entry for an event, or null for an event in `SILENT`. */

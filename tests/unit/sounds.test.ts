@@ -35,6 +35,8 @@ const EVENT_TYPES = Object.keys({
   pickupExpired: true,
   explosion: true,
   enemyKilled: true,
+  enemyFled: true,
+  enemyBark: true,
   playerDamaged: true,
   shieldBroken: true,
   boltFired: true,
