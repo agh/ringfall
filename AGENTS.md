@@ -179,6 +179,17 @@ be earlier than `performance.now()` captured in `start()`. Every
 post stack looks broken.
 **Solution**: `src/main.ts` clamps `frameDt` to `[0, 0.1]`. Keep it that way.
 
+### Particle sizes are pixels at 300 m, not metres
+
+**Problem**: the particle vertex shader sets `gl_PointSize` to
+`size * 300 / depth`, so a size-10 spark eight metres away is 375 px and a
+burst of forty of them, additive, is a white screen. Three agents tuned
+lights and opacities before the size law was found.
+**Solution**: the shader caps sprites at 64 px and fades anything within
+two metres of the eye. Keep near-camera bursts to sizes under 1 and check
+a kill at night (`?record&bot&seed=7&atmo=night`, t = 10 s) after touching
+any burst.
+
 ### Software GL (SwiftShader) differs from hardware
 
 **Problem**: headless Chromium in CI and in sandboxes renders with

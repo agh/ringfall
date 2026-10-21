@@ -187,9 +187,25 @@ clock in production and is fixed in tests.
   1.0 so only emitters bloom, a custom feel pass (vignette, chromatic
   aberration that grows with damage, a hexagonal shield lattice that flares
   on hits, grain), then `OutputPass` for ACES tone mapping at exposure 0.38.
-  Lighting is a 3500 K sun at 11 degrees elevation, a hemisphere fill, and
-  image-based lighting baked from the sky itself with `PMREMGenerator`.
-  Exponential fog at density 0.0032.
+  Lighting is a sun, a hemisphere fill, and image-based lighting baked from
+  the sky itself with `PMREMGenerator`, with exponential fog; the values
+  come from the atmosphere rig below and blend over three seconds when the
+  wave changes.
+- **Atmosphere.** `waveAtmosphere(wave)` in `src/core/waves.ts` gives each
+  wave a time of day and a weather from `ATMOSPHERE_TABLE`: 1 day, 2 night,
+  3 dusk and rain, 4 night and fog, 5 dawn, 6 day and rain, 7 dusk, 8 night
+  and rain, then the table repeats. `src/render/environment.ts` holds one
+  rig per time of day (sun elevation and azimuth, sun colour and intensity,
+  hemisphere colours, fog colour and density, star opacity, exposure, moon,
+  ring glow, image-based-lighting intensity, dust) and two weather overlays:
+  rain greys the sun, thickens the cloud deck and fog, and streams 1,500
+  stretched drops a second through the particle pool with splashes at the
+  floor; fog raises the density to 0.018 so a 40 m enemy keeps about half
+  its contrast. Day is the 3500 K sun at 11 degrees with fog at 0.0032
+  (unchanged from the first renderer); night puts the sun a degree under the
+  horizon, lights the arena with a moon at 48 degrees and the ring's own
+  glow, and lifts exposure from 0.38 to 0.55. `?atmo=night` and
+  `?weather=rain` pin either part for review.
 - **Environment.** A scattering sky (three.js `Sky`, turbidity 4). The ring
   is a 6 km torus with a 360 m tube, centred 5.2 km overhead so its near
   side is buried and the arc rises from both horizons; its inner face is a
@@ -206,11 +222,24 @@ clock in production and is fixed in tests.
   while charging, and a walk cycle. Spawning enemies descend from six
   metres over one second. Dead enemies squash and tilt for 1.2 s, then
   despawn with a kill ring and a spark burst.
-- **Effects.** Tracers (60 ms), impact sparks, a muzzle flash sprite and point
-  light, recoil on the viewmodel, grenade explosions (a flash sphere and a
-  600-intensity point light over 350 ms, a ground shockwave ring, three
-  particle bursts), kill rings, and camera shake on damage and blasts capped
-  at 0.035 rad. Hit-stop of 50 ms (skimmer kill), 90 ms (strider kill) and
+- **Weapons on screen.** `src/render/weapons.ts` builds one viewmodel rig
+  per kind under the camera and draws the active one in 0.25 s
+  (`DRAW_TIME`); each has its own accent colour, muzzle flash sprite and
+  light, and tracer: a 1 px line for the laser, eight pellet traces for the
+  scatter, a glowing cylinder with sparks along it for the beam, a smoking
+  round and a drum that turns a notch per shot for the launcher, a spinning
+  barrel cluster for the minigun. Pickups (`src/render/pickups.ts`) are an
+  emblem over a post with a kind-coloured light and a 3 m column, a ring on
+  the ground when they land and when they are taken, and a fade over the
+  last three seconds of their life.
+- **Effects.** Impact sparks, recoil on the viewmodel, explosions (a flash
+  sphere at 0.55 opacity and a 140-intensity point light that is gone in a
+  quarter second, a ground shockwave ring, fire and smoke bursts), kill
+  rings, and camera shake on damage and blasts capped at 0.035 rad. A blast
+  within six metres of the camera is scaled down with distance so a
+  launcher round at the player's feet does not blind the frame. Particle
+  sprites are capped at 64 px and fade inside two metres of the eye, which
+  is what keeps a kill at night from whiting out the screen. Hit-stop of 50 ms (skimmer kill), 90 ms (strider kill) and
   120 ms (shield break) slows the simulation to 5 % in `src/main.ts`.
 - **HUD.** DOM elements updated every frame: wave and enemies left, score,
   shield and health bars, ammo with a low-ammo colour, grenade pips, centre

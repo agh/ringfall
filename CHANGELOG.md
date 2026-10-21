@@ -26,6 +26,19 @@ and this project adheres to
 - Personal bests kept in the browser's local storage: the end card compares
   the round with the previous best score, deepest wave, runs and clears.
   Storage that is missing, blocked, or corrupt yields a clean slate.
+- Six weapons (rifle, laser, scatter, beam, launcher, minigun) with their
+  own fire rules in `src/core/weapon.ts`, vended as pickups during waves
+  and as a wave reward, held in two slots with a swap key; the bot swaps
+  and collects them; the HUD names the weapon and the offhand.
+- A viewmodel, muzzle flash, tracer and sound per weapon, and pickup
+  emblems in the arena.
+- Day and night: each wave has a time of day and a weather (night, dusk,
+  dawn, rain, fog) that the renderer blends to over the countdown; a moon,
+  a glowing ring at night, rain through the particle pool.
+- A story reel pipeline (`scripts/reel.mjs`, `scripts/reel-cards/`): brand
+  cards, wave 1 by day and wave 2 by night from the deterministic bot, the
+  offline score, one MP4.
+- Pages deploys to ringfall.alexhowells.com.
 
 ### Fixed
 
@@ -33,6 +46,12 @@ and this project adheres to
   without bound; the delta is now clamped at zero.
 - The terrain under the arena z-fought the floor at range; it is sunk six
   metres.
+- Enemy deaths and explosions whited out the frame, worst at night. The
+  cause was the particle size law (a sprite's pixel size is 300 over its
+  depth, so a size-10 spark eight metres away was 375 px); sprites are now
+  capped at 64 px and fade within two metres of the eye, blasts are scaled
+  by distance from the camera, and the explosion light is a quarter of
+  what it was.
 
 ### Added (initial build)
 
