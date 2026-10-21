@@ -31,7 +31,9 @@ pnpm dev            # http://localhost:5173
 | Fire           | Left click         |
 | Grenade        | G or right click   |
 | Reload         | R                  |
+| Swap weapon    | Q or wheel         |
 | Jump / Sprint  | Space / Shift      |
+| Fullscreen     | F                  |
 | Release mouse  | Esc                |
 
 Requires a browser with WebGL 2 and pointer lock.
@@ -52,8 +54,19 @@ events that happened during the step. Everything else reacts to those events:
 
 - `src/render/` mirrors the state into a three.js scene and plays effects
 - `src/hud/` draws vitals, ammo, wave status, and a motion tracker in the DOM
-- `src/audio/` synthesises every sound with WebAudio oscillators
+- `src/audio/` synthesizes every sound with WebAudio oscillators
 - `src/input/` turns keyboard, mouse, and pointer lock into an `InputFrame`
+
+```mermaid
+flowchart LR
+  loop[Fixed-step loop] -->|InputFrame + dt| world[World simulation]
+  world --> player[Player]
+  world --> enemies[Enemies]
+  world -->|GameEvent list| bus((Event bus))
+  bus --> audio[Audio]
+  bus --> hud[HUD]
+  bus --> loop
+```
 
 Because `src/core/` never touches the DOM or WebGL, it is unit-tested in Node
 to a coverage threshold. The browser layers are covered by Playwright smoke

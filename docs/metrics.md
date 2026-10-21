@@ -2,7 +2,8 @@
 type: spec
 title: "Ringfall metrics: every number the playtest harness reports"
 status: draft
-authors: ["Ringfall hackathon team"]
+authors:
+  - name: "Ringfall hackathon team"
 created: 2026-10-21
 ---
 
