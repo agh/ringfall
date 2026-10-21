@@ -203,7 +203,6 @@ export class SceneRenderer {
   /** Wave whose atmosphere the environment was last told to blend towards. */
   private lastAtmosphereWave = 0;
   private readonly particles = new ParticleSystem();
-  private readonly dropship = new Dropship(this.dynamic);
   private readonly watcherBeams = new WatcherBeamLayer();
   private readonly environment: Environment;
   private readonly enemies = new Map<number, EnemyRig>();
@@ -214,6 +213,7 @@ export class SceneRenderer {
   private readonly grenades = new Map<number, THREE.Mesh>();
   /** Every borrowed point light comes from here, so the scene's light count never changes. */
   private readonly lights = new LightPool();
+  private readonly dropship = new Dropship(this.dynamic, this.lights);
   /** Ids seen this frame by the sync passes; one set, cleared between them. */
   private readonly seen = new Set<number>();
   private effects: Effect[] = [];

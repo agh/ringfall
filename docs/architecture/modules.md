@@ -13,7 +13,7 @@ created: 2026-10-21
 
 > [Ringfall](../../README.md) > [Architecture](README.md) > Module map
 
-Every TypeScript module under `src/` with its responsibility and what it imports, read from the import declarations by `scripts/architecture.mjs`. The tree holds 37 modules in 6 layers (`audio`, `core`, `hud`, `input`, `main`, `render`) joined by 127 internal imports. A dotted arrow in the diagrams is a type-only import, which Vite erases from the bundle; a solid arrow carries runtime code.
+Every TypeScript module under `src/` with its responsibility and what it imports, read from the import declarations by `scripts/architecture.mjs`. The tree holds 37 modules in 6 layers (`audio`, `core`, `hud`, `input`, `main`, `render`) joined by 128 internal imports. A dotted arrow in the diagrams is a type-only import, which Vite erases from the bundle; a solid arrow carries runtime code.
 
 ## Allowed dependencies
 
@@ -74,7 +74,7 @@ Source: [diagrams/render-components.mmd](diagrams/render-components.mmd).
 | `src/input/wheel.ts` | `input` | Wheel travel folded into swap notches: one swap per mouse click or per hundred trackpad pixels | none |
 | `src/main.ts` | `main` | Fixed 60 Hz accumulator loop, hit-stop, overlay and pointer-lock lifecycle, settings panel, the `?record` capture hook | `audio/audio`, `audio/offline`, `core/bot`, `core/game`, `core/records`, `core/rng`, `core/settings`, `hud/hud`, `input/input`, `render/scene` |
 | `src/render/dispose.ts` | `render` | `disposeTree`: frees geometry, materials and textures under an object before it is dropped | `three` (types) |
-| `src/render/dropship.ts` | `render` | The dropship: a Hull craft that crosses the arena on the first dropPod of a wave, and the pods that fall from it | `three`, `core/game` (types), `core/vec3` (types), `core/waves`, `core/world` |
+| `src/render/dropship.ts` | `render` | The dropship: a Hull craft that crosses the arena on the first dropPod of a wave, and the pods that fall from it | `three`, `core/game` (types), `core/vec3` (types), `core/waves`, `core/world`, `render/lights` (types) |
 | `src/render/enemies.ts` | `render` | Composite enemy rigs built from primitives, with their animation | `three`, `core/enemy`, `render/lights` (types), `render/watcher-rig` |
 | `src/render/environment.ts` | `render` | Sky, sun and moon, the ring, terrain, stars, the atmosphere rigs and weather overlays | `three`, `three/addons/objects/Sky.js`, `core/vec3` (types), `core/waves` (types), `render/particles` (types), `render/random` |
 | `src/render/lights.ts` | `render` | `LightPool`: a fixed set of point lights borrowed and returned, so the scene's light count never changes | `three` |

@@ -14,6 +14,7 @@ flowchart LR
     render_watcher-rig["watcher-rig.ts"]
     render_weapons["weapons.ts"]
   end
+  render_dropship -.-> render_lights
   render_enemies -.-> render_lights
   render_enemies --> render_watcher-rig
   render_environment -.-> render_particles
