@@ -22,7 +22,86 @@ interface Effect {
   readonly bornAt: number;
   readonly life: number;
   readonly update: (t: number) => void;
+  /** Frees per-effect GPU resources when the effect expires. */
+  readonly dispose?: (() => void) | undefined;
 }
+
+/** Brand palette tokens used by the effects (docs/brand.md). */
+const PALETTE = {
+  flare: 0xfbbf24,
+  dawn: 0xf6b26b,
+  rose: 0xfb7185,
+  slate: 0x8aa0b8,
+  hull: 0x101f36,
+} as const;
+/** Smoke: Slate warmed by the fireball at birth, Hull soot by the end. */
+const SMOKE_LIT = new THREE.Color(PALETTE.slate).lerp(new THREE.Color(PALETTE.dawn), 0.45);
+const SMOKE_SOOT = new THREE.Color(PALETTE.hull).multiplyScalar(0.6);
+/** The sprite flash of an explosion is over before the eye can resolve it (docs/design-doc.md). */
+const EXPLOSION_FLASH_LIFE = 0.12;
+/** How long a blast's scorch stays on the floor. */
+const SCORCH_LIFE = 4;
+/** Shared geometry for every explosion and kill: a thin crest torus, a floor disc, a kill ring. */
+const CREST_GEOMETRY = new THREE.TorusGeometry(1, 0.022, 8, 72);
+const SCORCH_GEOMETRY = new THREE.CircleGeometry(1, 40);
+const KILL_RING_GEOMETRY = new THREE.TorusGeometry(0.6, 0.06, 6, 32);
+
+let cachedFlashTexture: THREE.CanvasTexture | null = null;
+/** A radial glow for the explosion flash: hot white core, warm rim, soft edge. */
+const flashTexture = (): THREE.CanvasTexture => {
+  if (cachedFlashTexture) return cachedFlashTexture;
+  const size = 128;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+    g.addColorStop(0, 'rgba(255,255,255,1)');
+    g.addColorStop(0.25, 'rgba(255,240,210,0.9)');
+    g.addColorStop(0.6, 'rgba(255,200,120,0.35)');
+    g.addColorStop(1, 'rgba(255,180,100,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, size, size);
+  }
+  cachedFlashTexture = new THREE.CanvasTexture(canvas);
+  return cachedFlashTexture;
+};
+
+let cachedScorchTexture: THREE.CanvasTexture | null = null;
+/** Alpha for the scorch decal: a dark disc with a denser ring near its edge and a ragged rim. */
+const scorchTexture = (): THREE.CanvasTexture => {
+  if (cachedScorchTexture) return cachedScorchTexture;
+  const size = 128;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+    g.addColorStop(0, 'rgba(255,255,255,0.55)');
+    g.addColorStop(0.45, 'rgba(255,255,255,0.35)');
+    g.addColorStop(0.72, 'rgba(255,255,255,0.8)');
+    g.addColorStop(0.88, 'rgba(255,255,255,0.3)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, size, size);
+    // Rays of soot so the rim is not a perfect circle.
+    ctx.globalCompositeOperation = 'destination-out';
+    for (let i = 0; i < 18; i += 1) {
+      const angle = (i / 18) * Math.PI * 2 + Math.random() * 0.2;
+      const reach = size * (0.36 + Math.random() * 0.14);
+      ctx.beginPath();
+      ctx.moveTo(size / 2, size / 2);
+      ctx.lineTo(size / 2 + Math.cos(angle) * reach, size / 2 + Math.sin(angle) * reach);
+      ctx.lineWidth = 2 + Math.random() * 3;
+      ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+      ctx.stroke();
+    }
+  }
+  cachedScorchTexture = new THREE.CanvasTexture(canvas);
+  return cachedScorchTexture;
+};
 
 const toVector = (v: Vec3): THREE.Vector3 => new THREE.Vector3(v.x, v.y, v.z);
 
@@ -725,117 +804,263 @@ export class SceneRenderer {
   }
 
   private spawnExplosion(at: Vec3, now: number): void {
-    // A readable pop, not a whiteout: the flash stays under the bloom threshold and the light
-    // is gone in a quarter second, so the frame survives at night as well as by day. A blast
-    // under the player's feet (a launcher round, a bad grenade) is scaled down with distance so
-    // the point light does not blind the camera.
+    // An explosion that reads as one at any distance: a sprite flash gone in 120 ms, a light
+    // gone in a quarter second, a crest ring, debris with gravity, a smoke column that rises
+    // and thins over 1.5 s, and a scorch on the floor for 4 s. A blast under the player's
+    // feet (a launcher round, a bad grenade) is scaled down with distance so the flash and
+    // the light do not blind the camera.
     const near = THREE.MathUtils.clamp(toVector(at).distanceTo(this.camera.position) / 6, 0.2, 1);
-    const flashMaterial = new THREE.MeshBasicMaterial({
-      color: 0xffd27a,
+    const centre = toVector(at);
+
+    const flashMaterial = new THREE.SpriteMaterial({
+      map: flashTexture(),
+      color: PALETTE.dawn,
       transparent: true,
-      opacity: 0.55 * near,
-    });
-    const flash = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), flashMaterial);
-    flash.position.copy(toVector(at));
-    const light = new THREE.PointLight(0xffb347, 140 * near, GRENADE_BLAST_RADIUS * 3, 1.4);
-    flash.add(light);
-    this.addEffect(flash, now, 0.35, (t) => {
-      flash.scale.setScalar(0.4 + t * 2);
-      flashMaterial.opacity = 0.55 * near * (1 - t) ** 2;
-      light.intensity = 140 * near * Math.max(0, 1 - t / (0.25 / 0.35));
-    });
-    const waveMaterial = new THREE.MeshBasicMaterial({
-      color: 0xffd27a,
-      transparent: true,
-      opacity: 0.5,
-      side: THREE.DoubleSide,
+      opacity: 0.6 * near,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
-    const wave = new THREE.Mesh(new THREE.RingGeometry(0.8, 1, 48), waveMaterial);
-    wave.position.set(at.x, 0.15, at.z);
-    wave.rotation.x = -Math.PI / 2;
-    this.addEffect(wave, now, 0.5, (t) => {
-      wave.scale.setScalar(1 + t * GRENADE_BLAST_RADIUS * 1.6);
-      waveMaterial.opacity = 0.5 * (1 - t);
+    const flash = new THREE.Sprite(flashMaterial);
+    flash.position.copy(centre);
+    this.addEffect(
+      flash,
+      now,
+      EXPLOSION_FLASH_LIFE,
+      (t) => {
+        flash.scale.setScalar((1.2 + t * 2.4) * (0.5 + 0.5 * near));
+        flashMaterial.opacity = 0.6 * near * (1 - t);
+      },
+      () => flashMaterial.dispose(),
+    );
+
+    const light = new THREE.PointLight(PALETTE.dawn, 140 * near, GRENADE_BLAST_RADIUS * 3, 1.4);
+    light.position.copy(centre);
+    this.addEffect(light, now, 0.25, (t) => {
+      light.intensity = 140 * near * (1 - t);
     });
+
+    const crestMaterial = new THREE.MeshBasicMaterial({
+      color: PALETTE.dawn,
+      transparent: true,
+      opacity: 0.4,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const crest = new THREE.Mesh(CREST_GEOMETRY, crestMaterial);
+    crest.position.set(at.x, 0.3, at.z);
+    crest.rotation.x = -Math.PI / 2;
+    this.addEffect(
+      crest,
+      now,
+      0.45,
+      (t) => {
+        const eased = 1 - (1 - t) ** 3;
+        const radius = 0.6 + eased * GRENADE_BLAST_RADIUS * 1.3;
+        crest.scale.set(radius, radius, 1 - 0.7 * t);
+        crestMaterial.opacity = 0.4 * (1 - t);
+      },
+      () => crestMaterial.dispose(),
+    );
+
+    const scorchMaterial = new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      alphaMap: scorchTexture(),
+      transparent: true,
+      opacity: 0.75,
+      depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2,
+    });
+    const scorch = new THREE.Mesh(SCORCH_GEOMETRY, scorchMaterial);
+    scorch.position.set(at.x, 0.03, at.z);
+    scorch.rotation.set(-Math.PI / 2, 0, Math.random() * Math.PI * 2);
+    scorch.scale.setScalar(GRENADE_BLAST_RADIUS * 0.55);
+    this.addEffect(
+      scorch,
+      now,
+      SCORCH_LIFE,
+      (t) => {
+        scorchMaterial.opacity = 0.75 * (1 - THREE.MathUtils.smoothstep(t, 0.5, 1));
+      },
+      () => scorchMaterial.dispose(),
+    );
+
+    // Fireball: a few large, short embers at the core.
     this.particles.burst(
       {
         at,
-        count: 130,
-        color: 0xffd27a,
-        colorEnd: 0xff3d00,
-        speed: 11,
-        life: 0.8,
-        size: 16,
-        gravity: 3,
-        drag: 2.5,
+        count: 14,
+        color: PALETTE.flare,
+        colorEnd: PALETTE.dawn,
+        speed: 5,
+        life: 0.3,
+        size: 0.6,
+        drag: 4,
+      },
+      now,
+    );
+    // Debris: sparks that arc under gravity and dark chips that tumble.
+    this.particles.burst(
+      {
+        at,
+        count: 32,
+        color: PALETTE.flare,
+        colorEnd: PALETTE.dawn,
+        speed: 15,
+        life: 1.1,
+        size: 0.32,
+        gravity: 16,
+        drag: 0.5,
       },
       now,
     );
     this.particles.burst(
       {
         at,
-        count: 160,
-        color: 0x4a4a4a,
-        colorEnd: 0x111111,
-        speed: 7,
-        life: 1.6,
-        size: 22,
-        gravity: 1,
-        drag: 1.2,
-      },
-      now,
-    );
-    this.particles.burst(
-      {
-        at,
-        count: 90,
-        color: 0xffe08a,
-        colorEnd: 0xff6a00,
-        speed: 16,
-        life: 1.4,
-        size: 5,
+        count: 22,
+        color: PALETTE.slate,
+        colorEnd: PALETTE.hull,
+        speed: 9,
+        life: 1.2,
+        size: 0.5,
         gravity: 14,
-        drag: 0.4,
+        drag: 0.6,
+        shape: 'shard',
+      },
+      now,
+    );
+    // Smoke: a column that rises and thins, lit warm at birth and sooty by the end, and a
+    // low skirt that rolls outward along the floor.
+    this.particles.burst(
+      {
+        at,
+        count: 56,
+        color: SMOKE_LIT,
+        colorEnd: SMOKE_SOOT,
+        speed: 4.5,
+        spread: 0.45,
+        direction: { x: 0, y: 1, z: 0 },
+        life: 1.5,
+        size: 2.2,
+        gravity: -0.6,
+        drag: 1.6,
+        shape: 'smoke',
+      },
+      now,
+    );
+    this.particles.burst(
+      {
+        at: { x: at.x, y: Math.max(0.4, at.y - 0.5), z: at.z },
+        count: 30,
+        color: SMOKE_LIT,
+        colorEnd: SMOKE_SOOT,
+        speed: 6,
+        spread: 3,
+        direction: { x: 0, y: 0.25, z: 0 },
+        life: 1.2,
+        size: 1.4,
+        gravity: -0.3,
+        drag: 2.2,
+        shape: 'smoke',
       },
       now,
     );
   }
 
   private spawnDeath(at: Vec3, now: number): void {
+    // The squash-and-tilt of the corpse is in syncEnemies; this is the pop. The kill ring and
+    // the debris borrow the enemy's own accent and shell colours from its rig, so a kill is
+    // never brighter than the thing that died and a strider's death is not a skimmer's.
+    const { accent, shell } = this.enemyColoursNear(at);
     const material = new THREE.MeshBasicMaterial({
-      color: 0xffd166,
+      color: accent,
       transparent: true,
-      opacity: 0.5,
+      opacity: 0.3,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.6, 0.06, 6, 32), material);
+    const ring = new THREE.Mesh(KILL_RING_GEOMETRY, material);
     ring.position.copy(toVector(at));
     ring.rotation.x = Math.PI / 2;
-    this.addEffect(ring, now, 0.4, (t) => {
-      ring.scale.setScalar(1 + t * 3.5);
-      material.opacity = 0.5 * (1 - t);
-    });
+    this.addEffect(
+      ring,
+      now,
+      0.4,
+      (t) => {
+        ring.scale.setScalar(1 + t * 3.5);
+        material.opacity = 0.3 * (1 - t);
+      },
+      () => material.dispose(),
+    );
     this.particles.burst(
       {
         at,
-        count: 70,
-        color: 0xffd166,
-        colorEnd: 0xb45309,
+        count: 24,
+        color: accent,
+        colorEnd: shell,
         speed: 6,
-        life: 0.9,
-        size: 6,
-        gravity: 7,
-        drag: 1,
+        life: 0.7,
+        size: 0.28,
+        gravity: 9,
+        drag: 0.8,
       },
       now,
     );
     this.particles.burst(
-      { at, count: 16, color: 0xffe9b0, colorEnd: 0xffa040, speed: 2, life: 0.5, size: 4 },
+      {
+        at,
+        count: 14,
+        color: shell,
+        colorEnd: PALETTE.hull,
+        speed: 4.5,
+        life: 0.9,
+        size: 0.4,
+        gravity: 12,
+        drag: 0.7,
+        shape: 'shard',
+      },
       now,
     );
+    this.particles.burst(
+      {
+        at,
+        count: 8,
+        color: shell,
+        colorEnd: SMOKE_SOOT,
+        speed: 1.8,
+        direction: { x: 0, y: 1, z: 0 },
+        spread: 0.8,
+        life: 0.9,
+        size: 1,
+        drag: 1.5,
+        shape: 'smoke',
+      },
+      now,
+    );
+  }
+
+  /** Accent (its light) and shell (its first lit mesh) colours of the enemy rig nearest a point. */
+  private enemyColoursNear(at: Vec3): { accent: THREE.Color; shell: THREE.Color } {
+    let best: EnemyRig | null = null;
+    let bestDistance = 2.5;
+    for (const rig of this.enemies.values()) {
+      const d = Math.hypot(rig.group.position.x - at.x, rig.group.position.z - at.z);
+      if (d < bestDistance) {
+        bestDistance = d;
+        best = rig;
+      }
+    }
+    const colours = { accent: new THREE.Color(PALETTE.rose), shell: new THREE.Color(PALETTE.hull) };
+    if (!best) return colours;
+    let accent: THREE.Color | null = null;
+    let shell: THREE.Color | null = null;
+    best.group.traverse((o) => {
+      if (!accent && o instanceof THREE.PointLight) accent = o.color.clone();
+      if (!shell && o instanceof THREE.Mesh && o.material instanceof THREE.MeshStandardMaterial)
+        shell = o.material.color.clone();
+    });
+    return { accent: accent ?? colours.accent, shell: shell ?? colours.shell };
   }
 
   private addEffect(
@@ -843,9 +1068,10 @@ export class SceneRenderer {
     bornAt: number,
     life: number,
     update: (t: number) => void,
+    dispose?: () => void,
   ): void {
     this.dynamic.add(object);
-    this.effects.push({ object, bornAt, life, update });
+    this.effects.push({ object, bornAt, life, update, dispose });
   }
 
   private updateEffects(now: number): void {
@@ -853,6 +1079,7 @@ export class SceneRenderer {
       const t = (now - effect.bornAt) / effect.life;
       if (t >= 1) {
         this.dynamic.remove(effect.object);
+        effect.dispose?.();
         return false;
       }
       effect.update(t);

@@ -502,12 +502,58 @@ before (`1724-*`) and after (`1729-*`), at 1280 by 720.
 
 ![Title card after the pass](images/1729-title-after.jpg)
 
+## 17:30 An explosion, not a glowing blob
+
+Issue #26 asked for an explosion that reads at any distance and a frame
+budget to prove it: mean luminance under 150 by day and 110 at night at a
+grenade kill within 10 m, measured with the `?record&bot&seed=7&post` hook.
+The timeline for seed 7 was pulled from the headless harness first (the
+same seeds the browser uses), which put the useful moments at t = 9.95 s
+(a skimmer kill 8.4 m away, by night the frame the earlier fix was judged
+on), t = 46.95 s (a launcher round 3.0 m away that kills a skimmer at
+1.9 m) and t = 47.92 s (a round at the player's own feet, the `near`
+case). The old effect was a flash sphere, a flat disc and three big additive
+bursts; the grey "smoke" burst added light to the frame because the pool
+could only add. The pool now blends premultiplied alpha, which keeps the
+spark path byte-for-byte and lets a `smoke` puff or a `shard` chip lay its
+colour over the frame instead. The explosion became five things on their
+own clocks: a 120 ms sprite flash, a thin crest torus that flattens as it
+expands, 32 sparks and 22 chips under gravity, a 56-puff column that rises
+and thins over 1.5 s, and a scorch disc that holds for four seconds. A
+kill now reads its colours off the rig that died: the light for the ring,
+the shell for the debris. Two things were learned on the way: the 64 px
+sprite cap means a smoke puff at 7 m is half a metre wide at most, so a
+column needs count rather than size; and a torus scaled up to the blast
+radius thickens its tube with it, so the crest tube is 22 mm at unit
+radius. Frame means at 720p, HUD included, before and after, on a scale of
+255:
+
+| Moment (seed 7) | Day before | Day after | Night before | Night after |
+| --------------- | ---------- | --------- | ------------ | ----------- |
+| First kill, t = 10.0 s | 100 | 83 | 59 | 32 |
+| Launcher kill at 3 m, t = 47.0 s | 119 | 106 | 121 | 101 |
+| Peak over the 0.4 s after that kill | 125 | 128 | 121 | 105 |
+
+The day peak after the kill is the bot turning towards the sun with the
+shield lattice up; the same frame measured 125 before the change.
+
+![Night kill, before: the kill is a blob](images/1730-issue26-night-kill-before.jpg)
+
+![Night kill, after: ring, sparks, and the skimmer's own glow](images/1730-issue26-night-kill-after.jpg)
+
+![Launcher kill at 3 m by night, before](images/1730-issue26-grenade-kill-before.jpg)
+
+![Launcher kill at 3 m by night, after: crest, chips, and the shield lattice](images/1730-issue26-grenade-kill-after.jpg)
+
+![A blast in the open by day, 0.45 s on: smoke by the slab, the scorch under the pickup](images/1730-issue26-day-blast-smoke.jpg)
+
 ## Playtest reviews
 
 Each row is a human or agent watching the game play, not a screenshot.
 
 | When | Seed | What was watched | Verdict |
 | ---- | ---- | ---------------- | ------- |
+| 17:30 | 7 | The first kill at night (t = 10 s), the launcher kill at 3 m (t = 47 s) and a blast in the open (t = 45.5 s), by day and by night, at 50 ms steps, after the explosion rework | The crest reads as a pressure wave from 3 m and from 19 m (an arc on the floor past the cover); chips and sparks fall where the eye expects them; the smoke column shows by day and against lit walls at night, and is invisible against the night sky, which is right for soot. The scorch is the one thing that is still there a second later. The frame at the first kill is still dominated by the dying skimmer's own core and light, not by the kill effect. |
 | 17:00 | 7 | A 75 s bot run by day, frames every 3 s, and the night kill at 10 s, after the weapon integration | Weapon swaps read (beam at 18 s, scatter at 45 s, launcher at 48 s), pickup columns are visible from across the arena, the night frame keeps its stars and trims. The launcher round the bot fired at its own feet at 48 s still washes the frame pink with the shield-down effect; that is the jolt it should be, but the bot should not do it (issue for the bot: no launcher inside the blast radius). |
 | 15:56 | 7 | The whole 49 s film with its offline score: title, deploy, waves 1 to 4 | Reviewed frame-by-frame at 8 s, 22 s and 46 s and watched end to end at speed: the sun flare and bloom carry the opening, the bot's first kill lands at 4.8 s, wave 2 brings the first strider and bolts, the HUD reads at 720p. Weak points: around 8 s the bot turns into the sun and the frame whites out for about two seconds (this capture predates the exposure and haze reduction and HUD v2), and the bot stands in the open while reloading. Shipped as the first reel; a second capture with the current build was started at 16:00. |
 | 15:29 | 7 | Frames 100 to 225 of the first capture (wave 1, 24 fps) | Bot kills two skimmers by 8 s, loses the third behind cover and reloads in the open; the sun behind a slab blooms hard enough to hide the reticle for a second. Readable, dramatic, slightly over-bright. Exposure left as is for the reel; a bloom radius reduction is a candidate. |
