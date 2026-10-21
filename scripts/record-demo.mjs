@@ -9,11 +9,12 @@
  * once, so frames are pulled at whatever speed the GPU allows and reassembled at the target rate.
  * Requires a production build (`pnpm build`) and the Playwright-bundled ffmpeg.
  */
-import { spawn, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { chromium } from '@playwright/test';
 import { parseArgs, requireSeed } from './lib/args.mjs';
+import { startPreview } from './lib/preview.mjs';
 
 const args = parseArgs(
   process.argv.slice(2),
@@ -37,15 +38,7 @@ const totalFrames = seconds * fps;
 rmSync(framesDir, { recursive: true, force: true });
 mkdirSync(framesDir, { recursive: true });
 
-const server = spawn(
-  'pnpm',
-  ['exec', 'vite', 'preview', '--host', '127.0.0.1', '--port', String(port)],
-  {
-    stdio: 'ignore',
-  },
-);
-await new Promise((r) => setTimeout(r, 2500));
-
+const server = await startPreview(port);
 const browser = await chromium.launch({
   executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,
   args: [
@@ -55,38 +48,41 @@ const browser = await chromium.launch({
     '--ignore-gpu-blocklist',
   ],
 });
-const page = await browser.newPage({ viewport: { width, height } });
-page.on('pageerror', (e) => console.error('pageerror', e.message));
-await page.goto(`http://127.0.0.1:${port}/?record&bot&seed=${seed}`);
-await page.waitForFunction(() => Boolean(window.ringfallCapture));
-// A few title frames first so the cut opens on the wordmark.
-const titleFrames = fps;
-for (let i = 0; i < titleFrames; i += 1) {
-  const data = await page.screenshot({ type: 'jpeg', quality: 90 });
-  writeFileSync(`${framesDir}/f${String(i).padStart(5, '0')}.jpg`, data);
-}
-await page.evaluate(() => window.ringfallCapture.start());
-await page.waitForTimeout(300);
-const started = Date.now();
-for (let i = 0; i < totalFrames; i += 1) {
-  await page.evaluate(({ steps }) => window.ringfallCapture.advance(steps), {
-    steps: stepsPerFrame,
-  });
-  // The HUD lives in the DOM, so a page screenshot composites canvas and HUD in one go.
-  const shot = await page.screenshot({ type: 'jpeg', quality: 90 });
-  writeFileSync(`${framesDir}/f${String(titleFrames + i).padStart(5, '0')}.jpg`, shot);
-  if (i % fps === 0) {
-    const status = await page.evaluate(() => {
-      const s = window.ringfall.state();
-      return `t=${s.time.toFixed(1)} wave=${s.wave.number}/${s.wave.phase} enemies=${s.enemies.length} shield=${Math.round(s.player.vitality.shield)} hp=${s.player.vitality.health} kills=${s.kills} status=${s.status}`;
-    });
-    console.log(
-      `frame ${i}/${totalFrames} ${status} (${((Date.now() - started) / 1000).toFixed(0)}s)`,
-    );
+try {
+  const page = await browser.newPage({ viewport: { width, height } });
+  page.on('pageerror', (e) => console.error('pageerror', e.message));
+  await page.goto(`http://127.0.0.1:${port}/?record&bot&seed=${seed}`);
+  await page.waitForFunction(() => Boolean(window.ringfallCapture));
+  // A few title frames first so the cut opens on the wordmark.
+  const titleFrames = fps;
+  for (let i = 0; i < titleFrames; i += 1) {
+    const data = await page.screenshot({ type: 'jpeg', quality: 90 });
+    writeFileSync(`${framesDir}/f${String(i).padStart(5, '0')}.jpg`, data);
   }
+  await page.evaluate(() => window.ringfallCapture.start());
+  await page.waitForTimeout(300);
+  const started = Date.now();
+  for (let i = 0; i < totalFrames; i += 1) {
+    await page.evaluate(({ steps }) => window.ringfallCapture.advance(steps), {
+      steps: stepsPerFrame,
+    });
+    // The HUD lives in the DOM, so a page screenshot composites canvas and HUD in one go.
+    const shot = await page.screenshot({ type: 'jpeg', quality: 90 });
+    writeFileSync(`${framesDir}/f${String(titleFrames + i).padStart(5, '0')}.jpg`, shot);
+    if (i % fps === 0) {
+      const status = await page.evaluate(() => {
+        const s = window.ringfall.state();
+        return `t=${s.time.toFixed(1)} wave=${s.wave.number}/${s.wave.phase} enemies=${s.enemies.length} shield=${Math.round(s.player.vitality.shield)} hp=${s.player.vitality.health} kills=${s.kills} status=${s.status}`;
+      });
+      console.log(
+        `frame ${i}/${totalFrames} ${status} (${((Date.now() - started) / 1000).toFixed(0)}s)`,
+      );
+    }
+  }
+} finally {
+  await browser.close();
+  server.kill();
 }
-await browser.close();
-server.kill();
 
 const ffmpeg = process.env.FFMPEG ?? 'ffmpeg';
 const result = spawnSync(
