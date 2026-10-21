@@ -13,6 +13,8 @@ extend-exclude = [
   ".git/**",
   # The vendored Vale spelling rule encodes the rejected spellings on purpose.
   "styles/Crefft/US.yml",
+  # The @font-face unicode-range values (U+0100-02BA and friends) are hex code points, not words.
+  "src/fonts.css",
 ]
 ignore-hidden = false
 
