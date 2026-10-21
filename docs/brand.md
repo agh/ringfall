@@ -294,14 +294,19 @@ pin the atmosphere (`src/render/environment.ts`). Call
 so the last render sees a real 0.1 s delta for its effects, and take a PNG
 screenshot. One 4K frame costs about 30 s on software GL.
 
-**Chosen frames** (all seed 7, 3840x1600, post stack on):
+**Chosen frames** (all seed 7, 3840x1600, post stack on; current files captured
+from commit `8195bba` at 18:50 UTC on 2026-10-21, after the bloom prefilter,
+flare, explosion, dust and weapon-flash changes; the simulation changed too, so
+the moments below were re-found from the core's event log for seed 7, not
+carried over by timestamp):
 
 | Use | Moment | URL flags |
 | --- | ------ | --------- |
-| Hero, banner, social card | night, t = 10 s, wave 1 cleared, a skimmer kill glowing between the slabs | `atmo=night` |
-| Strip: dawn | t = 95 s, wave 5, the sun flares behind the ring, minigun in hand | `atmo=dawn` |
-| Strip: night | t = 18 s, wave 2, the beam in hand | `atmo=night` |
-| Strip: dusk | t = 45 s, wave 3, the laser against a rose horizon | `atmo=dusk` |
+| Hero, banner, social card | night, t = 15.15 s, wave 2, the laser's first kill 0.07 s after the hit, the ring top right | `atmo=night` |
+| Strip: dawn | t = 78.5 s, wave 5, the sun's aureole over the ridge, a laser hit mid-frame | `atmo=dawn` |
+| Strip: night | t = 24.15 s, wave 2, a skimmer's Rose ring in the laser sights | `atmo=night` |
+| Strip: dusk | t = 45 s, wave 3 cleared, the minigun and a strider burst against a rose horizon | `atmo=dusk` |
+| Loop | night, t = 4 to 10 s, three wave 1 kills, 24 fps, 960x400 | `atmo=night` |
 
 **Lockup.** Top-left, on a safe margin of 6% of the width on both axes. From
 the top: eyebrow "CHAPTER 1 · SECTOR 117" in Chakra Petch 600 at 1.2% of
@@ -315,8 +320,10 @@ else is added to the frame.
 
 **Crops and exports.** The banner is the full 2.4:1 frame: `docs/banner.png`
 at 1920x800 and `docs/hero/banner-2x.webp` at 3840x1600. The raw hero frame
-without type is `docs/hero/hero-night-seed7-t10.webp`. The social card is a
+without type is `docs/hero/hero-night-seed7-t15.webp`. The social card is a
 centered 2:1 crop of the same frame with the lockup re-set at 1.15x,
 exported to `docs/social-card.png` at 1280x640 (GitHub's repository
 preview size). Journey copies of every candidate and the contact sheet live
-under `docs/journey/images/1740-hero-*`.
+under `docs/journey/images/1740-hero-*` (17:40 build) and
+`docs/journey/images/1850-hero-*` (current); the old-versus-new sheet from
+the re-render is `docs/journey/images/1850-hero-rerender.jpg`.
