@@ -9,6 +9,7 @@ import {
   watcherLens,
 } from '../core/watcher';
 import type { EnemyRig } from './enemies';
+import type { LightPool } from './lights';
 
 /**
  * The watcher rig: a tall, thin tripod with one Rose lens on top. The silhouette is vertical
@@ -52,7 +53,7 @@ const lensColor = new THREE.Color();
 const rose = new THREE.Color(ROSE);
 const white = new THREE.Color(0xffffff);
 
-export const makeWatcherRig = (): EnemyRig => {
+export const makeWatcherRig = (lights: LightPool): EnemyRig => {
   const group = new THREE.Group();
   const { height } = WATCHER_STATS;
   const hip = new THREE.Group();
@@ -85,9 +86,9 @@ export const makeWatcherRig = (): EnemyRig => {
   const lensMaterial = new THREE.MeshBasicMaterial({ color: ROSE });
   const lens = new THREE.Mesh(WATCHER_LENS, lensMaterial);
   lens.position.y = height * 0.9 - hip.position.y;
-  const light = new THREE.PointLight(ROSE, 2, 10, 1.5);
-  light.position.copy(lens.position);
-  hip.add(mast, head, collar, lens, light);
+  hip.add(mast, head, collar, lens);
+  const light = lights.acquire(hip, ROSE, 2, 10, 1.5);
+  light?.position.copy(lens.position);
   group.add(hip);
   return {
     group,
@@ -100,9 +101,15 @@ export const makeWatcherRig = (): EnemyRig => {
       hip.position.y = height * 0.62 + Math.sin(t * 1.5 + enemy.id) * 0.05;
       lensColor.copy(rose).lerp(white, charge);
       lensMaterial.color.copy(lensColor);
-      light.color.copy(lensColor);
-      light.intensity = 2 + charge * 10;
+      if (light) {
+        light.color.copy(lensColor);
+        light.intensity = 2 + charge * 10;
+      }
       lens.scale.setScalar(1 + charge * 1.2 + (charge > 0 ? Math.sin(t * 40) * 0.1 : 0));
+    },
+    dispose: () => {
+      lights.release(light);
+      lensMaterial.dispose();
     },
   };
 };

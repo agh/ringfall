@@ -176,6 +176,30 @@ describe('game', () => {
     expect(s.player.position.y).toBe(0);
   });
 
+  it('grounds the player on a block they fall onto', () => {
+    const base = openGame();
+    const block = aabbFromCenter(0, 0, 4, 1, 4);
+    const dropped: GameState = {
+      ...base,
+      arena: { ...base.arena, obstacles: [block] },
+      player: { ...base.player, position: vec3(0, 3, 0), onGround: false },
+    };
+    const { state } = run(dropped, IDLE_INPUT, 1);
+    expect(state.player.position.y).toBe(1);
+    expect(state.player.onGround).toBe(true);
+    expect(state.player.verticalVelocity).toBe(0);
+  });
+
+  it('announces a shot before the kill it causes', () => {
+    const weak = { ...awake(1, 'skimmer', vec3(0, 0, -6)), health: 1 };
+    const armed = armedWith('rifle', [weak]);
+    const { events } = run(armed, { ...IDLE_INPUT, fire: true, pitch: pitchTo(0.6, 6) }, 0.3);
+    const shot = events.findIndex((e) => e.type === 'shot' && e.hitEnemy);
+    const kill = events.findIndex((e) => e.type === 'enemyKilled');
+    expect(shot).toBeGreaterThanOrEqual(0);
+    expect(kill).toBe(shot + 1);
+  });
+
   it('shoots an enemy standing in front of the player', () => {
     const base = openGame();
     const enemy = { ...createEnemy(99, 'skimmer', vec3(0, 0, -8), 0), state: 'chase' as const };
@@ -286,6 +310,50 @@ describe('game', () => {
     expect(dropped.events.find((e) => e.type === 'chargeReleased')).toMatchObject({
       charge: expect.closeTo(0.3 / 0.8, 1),
     });
+  });
+
+  it('every hitscan path stops at the first obstacle: the tracer end, each pellet, and the beam', () => {
+    // A slab 1 m thick, 3 m tall, its near face 6 m ahead of the eye; the enemy stands 12 m out,
+    // on the tracker but not in sight (issue #93). Nothing may reach it, and the `to` the
+    // renderer draws the tracer to must sit on the slab's near face, never beyond it.
+    const slab = { min: vec3(-3, 0, -7), max: vec3(3, 3, -6) };
+    const covered = (kind: WeaponKind, enemy: GameState['enemies'][number]): GameState => {
+      const g = armedWith(kind, [enemy]);
+      return { ...g, arena: { ...g.arena, obstacles: [slab] } };
+    };
+    const faceZ = slab.max.z;
+    for (const kind of ['rifle', 'laser', 'minigun', 'scatter'] as const) {
+      const enemy = awake(1, 'skimmer', vec3(0, 0, -12));
+      const start = covered(kind, enemy);
+      const { state, events } = run(
+        start,
+        { ...IDLE_INPUT, fire: true, pitch: pitchTo(0.6, 12) },
+        0.5,
+      );
+      const shots = events.filter((e) => e.type === 'shot');
+      expect(shots.length, kind).toBeGreaterThan(0);
+      for (const shot of shots) {
+        if (shot.type !== 'shot') continue;
+        expect(shot.hitEnemy, kind).toBe(false);
+        // The tracer ends on the near face: never past it, and not short of it either.
+        expect(shot.to.z, kind).toBeGreaterThanOrEqual(faceZ - 1e-6);
+        expect(shot.to.z, kind).toBeLessThan(faceZ + 0.05);
+      }
+      // Every pellet of every pull, not only the first one the event reports, was stopped.
+      expect(state.enemies.find((e) => e.id === 1)?.health, kind).toBe(enemy.health);
+    }
+
+    const beamState = covered('beam', awake(1, 'strider', vec3(0, 0, -12)));
+    const pitch = pitchTo(1.3, 12);
+    const held = run(beamState, { ...IDLE_INPUT, fire: true, pitch }, 1);
+    const released = run(held.state, { ...IDLE_INPUT, pitch }, 0.05);
+    const beam = released.events.find((e) => e.type === 'beamFired');
+    expect(beam).toMatchObject({ hits: 0 });
+    if (beam?.type === 'beamFired') {
+      expect(beam.to.z).toBeGreaterThanOrEqual(faceZ - 1e-6);
+      expect(beam.to.z).toBeLessThan(faceZ + 0.05);
+    }
+    expect(released.state.enemies.find((e) => e.id === 1)?.health).toBe(120);
   });
 
   it('minigun: fires slowly until it spins up, then at full rate, and cannot reload', () => {

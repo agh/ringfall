@@ -796,6 +796,39 @@ Policy, and two adversarial reviews (software: 40 findings, 19 fixed;
 documentation: 70 findings, 56 fixed, verdict unchanged at two and a half
 of five).
 
+## 18:35 Shots through walls, measured (issue #93)
+
+The reel review said the bot shoots through walls. The issue named three
+suspects (the bot fires at a target it cannot see, the tracer is drawn
+through the slab, a hitscan path hits through cover) and one measurement
+to settle it: replay seed 7 headlessly for 60 s and, for every `shot` and
+`beamFired`, compute line of sight from the eye to the target and whether
+the hit point lies past the first obstacle on its ray. Before the fix: 210
+shots, 94 with no line of sight (41 rifle, 22 laser, 31 minigun), 93
+stopped by a slab, 0 hit points beyond cover, 0 beams. Every blocked
+shot's `to` sat exactly on the slab face, and no tracer material disables
+the depth test, so suspects two and three were cleared by the numbers and
+the first was the whole story: `pickTarget` admits anything on the 28 m
+tracker and `decideFire` never asked whether the eye could see it. The
+reel moment is the rifle burst at 5.7 to 7.2 s, the skimmer behind the
+slab at 13 m, captured below at tick 386 (6.43 s) from the same seed on
+both builds.
+
+The fix is in the bot only: a hitscan weapon holds without line of sight,
+the beam keeps a charge it already has, the launcher still fires over
+cover under its clearance rule, and a target behind cover is walked at
+rather than waited for. After: 81 shots in the same 60 s, 0 without line
+of sight, 12 stopped by a slab (spread and jitter clipping an edge beside
+a visible target), 0 beyond cover. Holding fire alone was measured first
+and left the balance gate on its limits (steady 70% wins, 231 s mean) with
+the bot standing still behind cover; with the walk the steady profile wins
+85% at 154 s and the baseline in `tests/balance/gate.ts` was re-derived
+with the margins unchanged.
+
+![Before, seed 7 at 6.43 s: rifle tracer and impact flash on the slab, the skimmer on the tracker only](images/1826-issue93-before-wave1-6s.jpg)
+
+![After, same seed and tick: no shot, the bot at the slab's edge with the skimmer coming into view and 11 more rounds in the magazine](images/1835-issue93-after-wave1-6s.jpg)
+
 ## 17:54 Five reviewers, no GPU, one checklist
 
 Issue #53 asked for an adversarial design and user-experience review in
@@ -846,6 +879,21 @@ needs a camera the bot does not provide and is the open item on the pull
 request.
 
 ![A drop pod with its Rose band falling toward the spawn ring under the ring arc](images/1800-dropship.jpg)
+
+## 18:50 The hero, re-rendered on the fixed renderer
+
+The banner, social card, README strip and the six-second loop were
+re-rendered from `8195bba`, after the bloom prefilter (#61), the second
+flare cut (#77), the explosion rework (#60), the dust and night pass (#90)
+and the weapon flash resizing (#67). The first pass kept the 17:40
+timestamps and showed that the simulation had moved too: seed 7 is a
+different game now (won at 89.6 s), so night t = 10 s had no kill in frame
+and dawn t = 95 s was post-win. The moments were re-found from the core's
+event log instead: hero at night t = 15.15 s (the laser's first kill), dawn
+t = 78.5 s, night t = 24.15 s, dusk t = 45 s, loop t = 4 to 10 s. Old
+versus new side by side: `images/1850-hero-rerender.jpg`.
+
+![Old versus new hero frames](images/1850-hero-rerender.jpg)
 
 ## Playtest reviews
 

@@ -33,6 +33,16 @@ export interface PlaytestOptions {
 
 const DT = 1 / 60;
 
+/**
+ * Waves the player has cleared. During the countdown and the fight the current wave is not yet
+ * one of them; once it is `cleared` (the pause before the next countdown) or `won` it is, even
+ * if the player dies in that pause.
+ */
+export const wavesClearedOf = (state: GameState): number => {
+  const { number, phase } = state.wave;
+  return phase === 'cleared' || phase === 'won' || state.status === 'won' ? number : number - 1;
+};
+
 export const runPlaytest = (options: PlaytestOptions): PlaytestResult => {
   const profile = options.profile ?? STEADY_BOT;
   const maxSeconds = options.maxSeconds ?? 600;
@@ -87,7 +97,7 @@ export const runPlaytest = (options: PlaytestOptions): PlaytestResult => {
   return {
     seed: options.seed,
     outcome: state.status === 'playing' ? 'timeout' : state.status,
-    wavesCleared: state.status === 'won' ? state.wave.number : state.wave.number - 1,
+    wavesCleared: wavesClearedOf(state),
     seconds: state.time,
     kills: state.kills,
     score: state.score,

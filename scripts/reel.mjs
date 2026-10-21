@@ -174,8 +174,9 @@ const capturePlay = async (browser, segment, flags, skipUntil) => {
   if (force) rmSync(dir, { recursive: true, force: true });
   mkdirSync(dir, { recursive: true });
   // A browser that died mid-capture leaves frames behind; the run is deterministic, so the
-  // simulation is replayed to the frame after the last one on disk and the capture resumes.
-  const resumeFrom = readdirSync(dir).filter((f) => f.endsWith('.jpg')).length;
+  // simulation is replayed to the last frame on disk and the capture resumes there. That last
+  // frame is retaken: a crash mid-write leaves a truncated file that counts like a whole one.
+  const resumeFrom = Math.max(0, readdirSync(dir).filter((f) => f.endsWith('.jpg')).length - 1);
   const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1 });
   page.on('pageerror', (e) => console.error('pageerror', e.message));
   await page.goto(gameUrl(flags));

@@ -422,10 +422,21 @@ its top edge; that is the only gameplay effect.
   its drum a notch per shot; the minigun spins its barrel cluster.
   Pickups (`src/render/pickups.ts`) are an
   emissive emblem over a post with a kind-colored billboard halo and a 2 m
-  column whose alpha fades to nothing at the top, no light of their own (so
-  the scene's light count, and with it every compiled material, is the same
-  before and after a spawn), a ring on the ground when they land and when
-  they are taken, and a fade over the last three seconds of their life.
+  column whose alpha fades to nothing at the top, no light of their own, a
+  ring on the ground when they land and when they are taken, and a fade over
+  the last three seconds of their life.
+- **Point lights.** three.js compiles a program per lit material per light
+  count, so a light added for a bolt and removed a quarter second later
+  recompiled every lit material twice, on every shot and every kill. Every
+  point light now comes from a fixed pool of twelve (`LIGHT_POOL_SIZE`,
+  `src/render/lights.ts`) that is in the scene from the first frame: enemy
+  rigs, bolts, the beam and explosions borrow one and return it, a
+  returned light goes dark in place, and when the pool is empty the effect
+  simply has no light. Twelve covers a wave-8 roster with two bolts in
+  flight; the trade is that every lit fragment loops over twelve lights on
+  every frame, including the title card, where before it looped over the
+  lights present. A pool that grows with the wave, or lights culled by
+  distance, is the next step if an integrated GPU shows the cost.
 - **Effects.** Impact sparks, recoil on the viewmodel, kill rings, and camera
   shake on damage and blasts capped at 0.035 rad. An explosion is five things
   with their own clocks, so it reads at any distance and never whites out:

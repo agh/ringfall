@@ -116,8 +116,23 @@ export const moveWithCollision = (
   if (blockedAt(x, pos.y, z)) z = pos.z;
   let y = pos.y + delta.y;
   if (y < 0) y = 0;
-  if (delta.y !== 0 && blockedAt(x, y, z)) y = pos.y;
+  if (delta.y !== 0 && blockedAt(x, y, z)) {
+    // Falling onto a block lands on its top, so `groundHeightAt` reads it as ground on the same
+    // step; rising into one, or a sideways clip, stops at the old height.
+    y = delta.y < 0 ? (landingHeight(arena, vec3(x, pos.y, z), radius, y) ?? pos.y) : pos.y;
+  }
   return vec3(x, y, z);
+};
+
+/** Top of the highest block under a cylinder that was at `from.y` and would sink to `to`. */
+const landingHeight = (arena: Arena, from: Vec3, radius: number, to: number): number | null => {
+  let top: number | null = null;
+  for (const box of arena.obstacles) {
+    if (box.max.y <= from.y && box.max.y > to && circleHitsBoxXZ(from, radius, box)) {
+      top = Math.max(top ?? box.max.y, box.max.y);
+    }
+  }
+  return top;
 };
 
 /** True when the cylinder at `pos` is resting on the floor or on top of an obstacle. */

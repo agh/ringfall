@@ -1,14 +1,19 @@
 import * as THREE from 'three';
 import { ENEMY_STATS, type Enemy } from '../core/enemy';
+import type { LightPool } from './lights';
 import { makeWatcherRig } from './watcher-rig';
 
 /**
  * Composite enemy rigs. Emissive parts are tuned to catch bloom so enemies read at range, and
  * each rig owns its materials so one strider charging does not whiten every strider's lens.
+ * Each rig borrows its point light from the scene's pool, so the light count never changes,
+ * and frees what it owns in `dispose`; geometry and the shells are shared by every rig of a kind.
  */
 export interface EnemyRig {
   readonly group: THREE.Group;
   readonly animate: (enemy: Enemy, simTime: number) => void;
+  /** Returns the borrowed light and frees per-rig materials; call when the rig leaves the scene. */
+  readonly dispose: () => void;
   /**
    * 0 by day, 1 at night: lifts the rig's own emissives (skimmer ring and core, strider lens
    * and muzzle, their point lights) so the enemy reads after dark on its own light, not only
@@ -66,7 +71,7 @@ const STRIDER_LIGHT = 2;
 /** Point lights grow by this much of themselves at full night. */
 const LIGHT_NIGHT = 1.2;
 
-const makeSkimmer = (): EnemyRig => {
+const makeSkimmer = (lights: LightPool): EnemyRig => {
   const group = new THREE.Group();
   const stats = ENEMY_STATS.skimmer;
   const body = new THREE.Mesh(SKIMMER_BODY, skimmerShell);
@@ -84,11 +89,11 @@ const makeSkimmer = (): EnemyRig => {
   const coreMaterial = new THREE.MeshBasicMaterial({ color: SKIMMER_CORE_COLOR });
   const core = new THREE.Mesh(SKIMMER_CORE, coreMaterial);
   core.position.z = -0.42;
-  const light = new THREE.PointLight(0xffa040, SKIMMER_LIGHT, 7, 1.5);
-  light.position.set(0, 0, -0.5);
   const lift = new THREE.Group();
   lift.position.y = stats.height / 2;
-  lift.add(body, ring, core, light);
+  lift.add(body, ring, core);
+  const light = lights.acquire(lift, 0xffa040, SKIMMER_LIGHT, 7, 1.5);
+  light?.position.set(0, 0, -0.5);
   group.add(lift);
   let night = -1;
   return {
@@ -105,12 +110,17 @@ const makeSkimmer = (): EnemyRig => {
       night = factor;
       ringMaterial.emissiveIntensity = SKIMMER_RING_EMISSIVE + SKIMMER_RING_NIGHT * factor;
       coreMaterial.color.setHex(SKIMMER_CORE_COLOR).multiplyScalar(1 + SKIMMER_CORE_NIGHT * factor);
-      light.intensity = SKIMMER_LIGHT * (1 + LIGHT_NIGHT * factor);
+      if (light) light.intensity = SKIMMER_LIGHT * (1 + LIGHT_NIGHT * factor);
+    },
+    dispose: () => {
+      lights.release(light);
+      ringMaterial.dispose();
+      coreMaterial.dispose();
     },
   };
 };
 
-const makeStrider = (): EnemyRig => {
+const makeStrider = (lights: LightPool): EnemyRig => {
   const group = new THREE.Group();
   const stats = ENEMY_STATS.strider;
   const hip = new THREE.Group();
@@ -134,9 +144,9 @@ const makeStrider = (): EnemyRig => {
   const muzzleMaterial = new THREE.MeshBasicMaterial({ color: STRIDER_MUZZLE_COLOR });
   const muzzle = new THREE.Mesh(STRIDER_MUZZLE, muzzleMaterial);
   muzzle.position.set(0.55, 0.45, -0.68);
-  const light = new THREE.PointLight(STRIDER_EYE_COLOR, STRIDER_LIGHT, 8, 1.5);
-  light.position.copy(eye.position);
-  hip.add(torso, head, eye, cannon, muzzle, light);
+  hip.add(torso, head, eye, cannon, muzzle);
+  const light = lights.acquire(hip, STRIDER_EYE_COLOR, STRIDER_LIGHT, 8, 1.5);
+  light?.position.copy(eye.position);
   const legs: THREE.Mesh[] = [];
   for (const [angle, side] of [
     [-0.5, 1],
@@ -176,12 +186,17 @@ const makeStrider = (): EnemyRig => {
       muzzleMaterial.color
         .setHex(STRIDER_MUZZLE_COLOR)
         .multiplyScalar(1 + STRIDER_MUZZLE_NIGHT * factor);
-      light.intensity = STRIDER_LIGHT * (1 + LIGHT_NIGHT * factor);
+      if (light) light.intensity = STRIDER_LIGHT * (1 + LIGHT_NIGHT * factor);
+    },
+    dispose: () => {
+      lights.release(light);
+      eyeMaterial.dispose();
+      muzzleMaterial.dispose();
     },
   };
 };
 
-export const makeEnemyRig = (enemy: Enemy): EnemyRig => {
-  if (enemy.kind === 'watcher') return makeWatcherRig();
-  return enemy.kind === 'skimmer' ? makeSkimmer() : makeStrider();
+export const makeEnemyRig = (enemy: Enemy, lights: LightPool): EnemyRig => {
+  if (enemy.kind === 'watcher') return makeWatcherRig(lights);
+  return enemy.kind === 'skimmer' ? makeSkimmer(lights) : makeStrider(lights);
 };

@@ -9,11 +9,13 @@ export default defineConfig({
       provider: 'v8',
       include: ['src/core/**/*.ts'],
       reporter: ['text', 'lcov'],
+      // A few points under the measured 99.6 / 100 / 95.9 / 99.6 (#51, T9), so a new core
+      // module cannot land untested, while a handful of defensive branches may stay uncovered.
       thresholds: {
-        lines: 85,
-        functions: 85,
-        branches: 75,
-        statements: 85,
+        lines: 97,
+        functions: 97,
+        branches: 90,
+        statements: 97,
       },
     },
   },

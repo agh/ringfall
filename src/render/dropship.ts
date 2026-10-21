@@ -3,12 +3,15 @@ import type { GameEvent } from '../core/game';
 import type { Vec3 } from '../core/vec3';
 import { DROP_POD_LEAD } from '../core/waves';
 import { ARENA_HALF_SIZE } from '../core/world';
+import type { LightPool } from './lights';
 
 /**
  * The dropship moment: a dark craft crosses the arena when a wave's first pod launches, and each
  * `dropPod` falls from its path to the pod's landing point over the lead the simulation gives it.
  * Presentation only: the simulation already placed and timed the enemy, this module draws how it
  * got there. Hostile palette per `docs/brand.md`: Hull body, Rose underlight, no Beacon anywhere.
+ * The craft's and the pods' point lights come from the scene's `LightPool`, so a wave start
+ * never changes the scene's light count (see `src/render/lights.ts`).
  */
 
 /** Seconds the craft takes to cross from beyond one wall to beyond the other. */
@@ -53,6 +56,7 @@ const DUST_RING = new THREE.TorusGeometry(1, 0.08, 6, 36);
 
 interface Craft {
   readonly group: THREE.Group;
+  readonly light: THREE.PointLight | null;
   readonly from: THREE.Vector3;
   readonly to: THREE.Vector3;
   readonly startedAt: number;
@@ -60,6 +64,7 @@ interface Craft {
 
 interface Pod {
   readonly group: THREE.Group;
+  readonly light: THREE.PointLight | null;
   readonly from: THREE.Vector3;
   readonly to: THREE.Vector3;
   readonly launchedAt: number;
@@ -88,9 +93,7 @@ const makeCraft = (): THREE.Group => {
   const underlight = new THREE.Mesh(CRAFT_UNDERLIGHT, roseGlow);
   underlight.rotation.x = Math.PI / 2;
   underlight.position.y = -0.81;
-  const light = new THREE.PointLight(ROSE, 60, 30, 1.6);
-  light.position.y = -1.2;
-  group.add(body, prow, left, right, underlight, light);
+  group.add(body, prow, left, right, underlight);
   return group;
 };
 
@@ -101,8 +104,7 @@ const makePod = (): THREE.Group => {
   const band = new THREE.Mesh(POD_BAND, roseGlow);
   band.rotation.x = Math.PI / 2;
   band.position.y = -0.2;
-  const light = new THREE.PointLight(ROSE, 6, 8, 1.6);
-  group.add(body, band, light);
+  group.add(body, band);
   return group;
 };
 
@@ -125,7 +127,10 @@ export class Dropship {
   private readonly pods: Pod[] = [];
   private readonly dust: Dust[] = [];
 
-  constructor(private readonly parent: THREE.Object3D) {}
+  constructor(
+    private readonly parent: THREE.Object3D,
+    private readonly lights: LightPool,
+  ) {}
 
   handle(events: readonly GameEvent[], now: number): void {
     for (const e of events) {
@@ -147,7 +152,9 @@ export class Dropship {
     group.position.copy(from);
     group.lookAt(to);
     this.parent.add(group);
-    this.craft = { group, from, to, startedAt: now };
+    const light = this.lights.acquire(group, ROSE, 60, 30, 1.6);
+    if (light) light.position.y = -1.2;
+    this.craft = { group, light, from, to, startedAt: now };
   }
 
   private launchPod(at: Vec3, now: number): void {
@@ -158,6 +165,7 @@ export class Dropship {
     this.parent.add(group);
     this.pods.push({
       group,
+      light: this.lights.acquire(group, ROSE, 6, 8, 1.6),
       from,
       to,
       launchedAt: now,
@@ -171,6 +179,7 @@ export class Dropship {
     if (!craft) return;
     const t = (now - craft.startedAt) / CRAFT_FLIGHT_SECONDS;
     if (t >= 1) {
+      this.lights.release(craft.light);
       this.parent.remove(craft.group);
       this.craft = null;
       return;
@@ -206,6 +215,7 @@ export class Dropship {
       const since = now - pod.landsAt;
       pod.group.position.y = pod.to.y + 0.6 - since * 0.8;
       if (since > POD_LINGER) {
+        this.lights.release(pod.light);
         this.parent.remove(pod.group);
         this.pods.splice(i, 1);
       }
