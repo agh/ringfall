@@ -483,8 +483,7 @@ const fireWeapon = (d: Draft, w: Weapon, input: InputFrame): void => {
     const dir = aim();
     const beam = beamHits(origin, dir, targets, d.arena.obstacles, spec.range);
     const to = add(origin, scale(dir, beam.distance));
-    shootSecret(d, origin, dir, beam.distance);
-    for (const id of beam.targetIds) hurtEnemyById(d, id, spec.damage);
+    // The shot is announced before the damage it does, so a kill never precedes its cause.
     d.events.push({
       type: 'shot',
       from: origin,
@@ -494,28 +493,32 @@ const fireWeapon = (d: Draft, w: Weapon, input: InputFrame): void => {
       pellets: 1,
     });
     d.events.push({ type: 'beamFired', from: origin, to, hits: beam.targetIds.length });
+    shootSecret(d, origin, dir, beam.distance);
+    for (const id of beam.targetIds) hurtEnemyById(d, id, spec.damage);
     return;
   }
 
-  let hitAny = false;
+  const hits: Array<{ readonly id: number; readonly damage: number }> = [];
+  const rays: Array<{ readonly dir: Vec3; readonly distance: number }> = [];
   let to = origin;
   for (let i = 0; i < spec.pellets; i += 1) {
     const dir = aim();
     const hit = hitscan(origin, dir, targets, d.arena.obstacles, spec.range);
     if (i === 0) to = add(origin, scale(dir, hit.distance));
-    shootSecret(d, origin, dir, hit.distance);
-    if (hit.targetId === null) continue;
-    hitAny = true;
-    hurtEnemyById(d, hit.targetId, pelletDamage(spec, hit.distance));
+    rays.push({ dir, distance: hit.distance });
+    if (hit.targetId !== null)
+      hits.push({ id: hit.targetId, damage: pelletDamage(spec, hit.distance) });
   }
   d.events.push({
     type: 'shot',
     from: origin,
     to,
-    hitEnemy: hitAny,
+    hitEnemy: hits.length > 0,
     kind: w.kind,
     pellets: spec.pellets,
   });
+  for (const ray of rays) shootSecret(d, origin, ray.dir, ray.distance);
+  for (const hit of hits) hurtEnemyById(d, hit.id, hit.damage);
 };
 
 /** Parks the active weapon (charge and spin drop) and draws the other slot. */
