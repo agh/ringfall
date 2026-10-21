@@ -120,7 +120,7 @@ ringfall/
 │   ├── research/     # Sourced research reports
 │   ├── journey/      # Time-indexed build log and frames
 │   └── adr/          # Architecture decision records
-└── .github/workflows # ci.yml only: lint, unit, e2e, luminance, build, balance, docs, security, then Pages build and deploy
+└── .github/workflows # ci.yml: lint, unit, e2e, build, balance, docs, security, then Pages build and deploy; frames.yml: the optional luminance gate
 ```
 
 **Key Files:**

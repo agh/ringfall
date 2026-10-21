@@ -170,7 +170,7 @@ the rout below: steady win 20 % to 15 %, mean waves 5.40 to 5.05, accuracy
 cleared on 20 of 20 seeds by both profiles. Packs that arrive from four
 directions arrive staggered, and a player who never retreats kills them one
 at a time: the reckless win rate sat above the gate's 10 % reckless ceiling
-of the time (`tests/balance/gate.ts`; 80 % under the five beats, see
+of the time (`tests/balance/gate.ts`; 95 % since #98, see
 [test-plan.md](test-plan.md)) by one game of twenty, with every
 flanker and skittish setting tried between 0.3 and 0.6 of the distance and
 6 to 12 m of hold landing between 15 % and 30 %. Removing any one
@@ -432,8 +432,8 @@ its top edge; that is the only gameplay effect.
   `src/render/lights.ts`) that is in the scene from the first frame: enemy
   rigs, bolts, the beam and explosions borrow one and return it, a
   returned light goes dark in place, and when the pool is empty the effect
-  simply has no light. Twelve covers a wave-8 roster with two bolts in
-  flight; the trade is that every lit fragment loops over twelve lights on
+  simply has no light. Twelve covers the largest beat (six skimmers and three striders) with
+  two bolts in flight; the trade is that every lit fragment loops over twelve lights on
   every frame, including the title card, where before it looped over the
   lights present. A pool that grows with the wave, or lights culled by
   distance, is the next step if an integrated GPU shows the cost.
@@ -521,8 +521,8 @@ round cover convincingly enough for an arena with convex blocks.
 ## Testing Strategy
 
 - **Unit (Vitest, Node).** Every module in `src/core/` is covered
-  (`playtest.ts` through the bot tests). Coverage thresholds: 85 % lines,
-  functions, and statements, 75 % branches; the actual figures are printed by
+  (`playtest.ts` through the bot tests). Coverage thresholds: 97 % lines,
+  functions, and statements, 90 % branches; the actual figures are printed by
   `pnpm test` and quoted in the pull request with the command that produced
   them.
 - **Playtest (Vitest, Node).** A scripted player (`src/core/bot.ts`) plays
