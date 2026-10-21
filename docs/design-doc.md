@@ -124,6 +124,38 @@ contact strip a full shield in about four seconds; one strider's volley is
 dodgeable by strafing because the bolt takes roughly half a second to cross
 its range.
 
+### Weapons
+
+Values are `WEAPON_SPECS` in `src/core/weapon.ts`; spread is in radians,
+standing / moving. Damage falls linearly from full at the falloff start to
+20 % of full (`FALLOFF_FLOOR`) at the falloff end. A minigun fires at 25 %
+of its full rate (`MINIGUN_IDLE_RATE`) until it has spun up.
+
+| Kind     | Magazine | Reserve | Fire interval | Reload | Damage        | Range | Spread        | Pellets | Falloff    | Charge | Spin-up | Projectile |
+| -------- | -------- | ------- | ------------- | ------ | ------------- | ----- | ------------- | ------- | ---------- | ------ | ------- | ---------- |
+| Rifle    | 32       | 160     | 0.1 s         | 1.8 s  | 20            | 120 m | 0.004 / 0.012 | 1       | none       | none   | none    | no         |
+| Laser    | 12       | 60      | 0.35 s        | 2 s    | 45            | 160 m | 0 / 0.004     | 1       | none       | none   | none    | no         |
+| Scatter  | 6        | 36      | 0.6 s         | 2.4 s  | 14 per pellet | 30 m  | 0.09 / 0.09   | 8       | 6 to 14 m  | none   | none    | no         |
+| Beam     | 4        | 16      | 1.2 s         | 2.6 s  | 160           | 100 m | 0 / 0.002     | 1       | none       | 0.8 s  | none    | no         |
+| Launcher | 3        | 12      | 0.9 s         | 2.8 s  | 110           | 60 m  | 0 / 0.006     | 1       | none       | none   | none    | yes        |
+| Minigun  | 120      | 0       | 0.045 s       | 0 s    | 9             | 90 m  | 0.03 / 0.03   | 1       | none       | none   | 0.5 s   | no         |
+
+- **Rifle.** The starting weapon and the baseline: accurate, forgiving, never
+  dropped, and good enough to finish a run with.
+- **Laser.** Slow and exact: one shot kills a skimmer and three kill a
+  strider at any range, so it rewards standing still and punishes spraying.
+- **Scatter.** Eight pellets that delete a skimmer in one shot inside 6 m and
+  do almost nothing past 14 m, so it is the answer to a pack at the door.
+- **Beam.** Hold to charge for 0.8 s, release to pierce every enemy in a
+  line; it stops only at cover and exists to turn a strider column into one
+  shot.
+- **Launcher.** A fast, flat round that bursts on contact with a 4.5 m
+  blast; the only weapon that hits around the player's aim, and the one that
+  hurts them if they fire it at their feet.
+- **Minigun.** A single 120-round belt with no reserve and no reload, slow
+  until it has spun up for half a second; it is borrowed firepower that runs
+  out.
+
 ### Wave composition
 
 Wave *n* spawns `2 + n` skimmers and `floor(n / 2)` striders on a 26 m ring

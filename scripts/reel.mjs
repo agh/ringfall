@@ -37,6 +37,8 @@ const wave1Seconds = Number(args['wave1-seconds'] ?? 15);
 const wave2Seconds = Number(args['wave2-seconds'] ?? 17);
 const crossfade = Number(args.crossfade ?? 0.5);
 const night = args.night === 'none' ? '' : (args.night ?? 'atmo=night');
+// `--no-night` drops the wave 2 intertitle and segment: a day-only cut while that capture runs.
+const noNight = args['no-night'] === 'true';
 const dist = resolve(args.dist ?? 'dist');
 const work = resolve(args.work ?? 'node_modules/.cache/ringfall-reel');
 const out = resolve(args.out ?? 'ringfall-reel.mp4');
@@ -67,7 +69,9 @@ const cut = [
   { id: 'wave-2-card', kind: 'card', file: '06-wave-2.html', seconds: 2.5, audio: 'drone' },
   { id: 'wave2', kind: 'play', seconds: wave2Seconds, audio: 'wave2' },
   { id: 'outro', kind: 'card', file: '07-outro.html', seconds: 9, audio: 'drone' },
-];
+].filter((s) => !(noNight && (s.id === 'wave-2-card' || s.id === 'wave2')));
+const hasWave2 = cut.some((s) => s.id === 'wave2');
+const audioNames = [...new Set(cut.map((s) => s.audio))];
 const totalSeconds = cut.reduce((sum, s) => sum + s.seconds, 0) - crossfade * (cut.length - 1);
 
 const framesDir = (id) => resolve(work, 'frames', id);
@@ -248,10 +252,12 @@ const renderScores = async (browser) => {
     writeFileSync(wavFile(name), Buffer.from(base64, 'base64'));
     console.log(`score ${name}: ${(seconds + leadIn).toFixed(1)}s`);
   };
-  const wave2 = JSON.parse(readFileSync(metaFile('wave2'), 'utf8'));
   await render('drone', 0.5, Math.ceil(totalSeconds) + 2);
   await render('wave1', wave1Seconds + 1, 0);
-  await render('wave2', Math.ceil(wave2.simEnd) + 1, 0);
+  if (hasWave2) {
+    const wave2 = JSON.parse(readFileSync(metaFile('wave2'), 'utf8'));
+    await render('wave2', Math.ceil(wave2.simEnd) + 1, 0);
+  }
   await page.close();
 };
 
@@ -294,15 +300,15 @@ const encodeSegment = (segment) => {
 
 const stitch = () => {
   const durations = cut.map(encodeSegment);
-  const wave2 = JSON.parse(readFileSync(metaFile('wave2'), 'utf8'));
+  const wave2 = hasWave2 ? JSON.parse(readFileSync(metaFile('wave2'), 'utf8')) : { simStart: 0 };
   // Timeline start of each segment once crossfades overlap them.
   const starts = durations.map(
     (_, k) => durations.slice(0, k).reduce((sum, d) => sum + d, 0) - k * crossfade,
   );
   const total = starts[cut.length - 1] + durations[cut.length - 1];
   const inputs = cut.flatMap((s) => ['-i', segmentFile(s.id)]);
-  const audioIndex = { drone: cut.length, wave1: cut.length + 1, wave2: cut.length + 2 };
-  for (const name of ['drone', 'wave1', 'wave2']) inputs.push('-i', wavFile(name));
+  const audioIndex = Object.fromEntries(audioNames.map((name, i) => [name, cut.length + i]));
+  for (const name of audioNames) inputs.push('-i', wavFile(name));
 
   const filters = [];
   cut.forEach((s, k) => {
@@ -393,13 +399,15 @@ try {
   const wave1 = cut.find((s) => s.id === 'wave1');
   const wave2 = cut.find((s) => s.id === 'wave2');
   if (steps.has('wave1') && !done('wave1')) await capturePlay(browser, wave1, '', null);
-  if (steps.has('wave2') && !done('wave2')) {
+  if (steps.has('wave2') && hasWave2 && !done('wave2')) {
     const flags = night ? `&${night}` : '';
     const untilWave2 = (s) => s.wave >= 2 && s.phase === 'active';
     untilWave2.wave = 2;
     await capturePlay(browser, wave2, flags, untilWave2);
   }
-  if (steps.has('score') && (force || !existsSync(wavFile('wave2')))) await renderScores(browser);
+  if (steps.has('score') && (force || !audioNames.every((n) => existsSync(wavFile(n))))) {
+    await renderScores(browser);
+  }
 } finally {
   await browser.close();
   server?.kill();

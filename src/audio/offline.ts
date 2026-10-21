@@ -1,5 +1,13 @@
 import type { GameEvent } from '../core/game';
 import { runPlaytest } from '../core/playtest';
+import { WEAPON_SPECS, type WeaponKind } from '../core/weapon';
+import { CHARGE_HUM_FROM, CHARGE_HUM_TO } from './audio';
+
+/** D5, F5, A5 and A5, E6: the same chimes the live bank plays (see audio.ts). */
+const PICKUP_ARPEGGIO = [587.33, 698.46, 880];
+const SPAWN_CHIME = [880, 1318.51];
+/** Seconds the beam takes to charge, so the hum peaks exactly when the shot can fire. */
+const CHARGE = WEAPON_SPECS.beam.chargeTime;
 
 /**
  * Renders the score for a seeded bot run without real time: the deterministic simulation is
@@ -225,50 +233,141 @@ export const renderScore = async (options: ScoreOptions): Promise<string> => {
     }
   }
 
-  for (const { time, event } of events) {
-    const at = options.leadIn + time;
-    switch (event.type) {
-      case 'shot':
-        sweep(at, event.hitEnemy ? 1400 : 900, event.hitEnemy ? 1400 : 900, 0.05, 'square', 0.25);
+  const shot = (at: number, kind: WeaponKind, hitEnemy: boolean): void => {
+    switch (kind) {
+      case 'rifle':
+        sweep(at, hitEnemy ? 1400 : 900, hitEnemy ? 1400 : 900, 0.05, 'square', 0.25);
         noise(at, 0.06, 0.3, 1200);
         break;
-      case 'empty':
-        sweep(at, 240, 240, 0.08, 'square', 0.2);
+      case 'laser':
+        sweep(at, 2600, 1900, 0.09, 'sine', 0.35);
+        sweep(at, 5200, 5200, 0.02, 'sine', 0.1);
         break;
-      case 'reload':
-        sweep(at, 500, 500, 0.12, 'triangle', 0.25);
+      case 'scatter':
+        noise(at, 0.2, 0.7, 3200);
+        sweep(at, 110, 42, 0.28, 'sine', 0.7);
         break;
-      case 'enemyKilled':
-        sweep(at, 900, 200, 0.25, 'sawtooth', 0.35);
+      case 'minigun':
+        sweep(at, 1900, 1900, 0.018, 'square', 0.18);
+        noise(at, 0.035, 0.25, 2600);
         break;
-      case 'playerDamaged':
-        sweep(at, 180, 180, 0.1, 'sawtooth', 0.4);
-        break;
-      case 'shieldBroken':
-        sweep(at, 1200, 300, 0.5, 'sine', 0.5);
-        break;
-      case 'explosion':
-        noise(at, 0.6, 0.9, 1200);
-        sweep(at, 120, 40, 0.6, 'sine', 0.8);
-        break;
-      case 'boltFired':
-        sweep(at, 700, 350, 0.2, 'sine', 0.15);
-        break;
-      case 'grenadeThrown':
-        sweep(at, 400, 400, 0.05, 'triangle', 0.2);
-        break;
-      case 'waveStarted':
-        sweep(at, 300, 600, 0.6, 'triangle', 0.35);
-        break;
-      case 'waveCleared':
-      case 'victory':
-        sweep(at, 400, 1000, 0.8, 'sine', 0.45);
-        break;
-      case 'playerDied':
-        sweep(at, 500, 60, 1.4, 'sawtooth', 0.5);
+      case 'beam':
+      case 'launcher':
         break;
     }
-  }
+  };
+  const chime = (
+    at: number,
+    notes: readonly number[],
+    length: number,
+    gap: number,
+    gain: number,
+  ) => {
+    notes.forEach((hz, i) => {
+      sweep(at + i * gap, hz, hz, length, 'triangle', gain);
+      sweep(at + i * gap, hz * 2, hz * 2, length * 0.6, 'sine', gain * 0.3);
+    });
+  };
+  /** The charge hum rises from its start until the matching release cuts it. */
+  const chargeHum = (from: number, to: number): void => {
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(CHARGE_HUM_FROM, from);
+    osc.frequency.exponentialRampToValueAtTime(CHARGE_HUM_TO, from + CHARGE);
+    env.gain.setValueAtTime(0.001, from);
+    env.gain.exponentialRampToValueAtTime(0.3, from + CHARGE);
+    env.gain.setValueAtTime(0.3, Math.max(from + CHARGE, to));
+    env.gain.exponentialRampToValueAtTime(0.001, Math.max(from + CHARGE, to) + 0.03);
+    osc.connect(env).connect(sfx);
+    osc.start(from);
+    osc.stop(Math.max(from + CHARGE, to) + 0.05);
+  };
+
+  /** Every one-shot sound, in timeline order; the charge hum spans a start and its release. */
+  const scheduleEvents = (): void => {
+    let chargeFrom: number | null = null;
+    const cutCharge = (at: number): void => {
+      if (chargeFrom !== null) chargeHum(chargeFrom, at);
+      chargeFrom = null;
+    };
+    for (const { time, event } of events) {
+      const at = options.leadIn + time;
+      switch (event.type) {
+        case 'shot':
+          shot(at, event.kind, event.hitEnemy);
+          break;
+        case 'chargeStarted':
+          chargeFrom = at;
+          break;
+        case 'chargeReleased':
+          cutCharge(at);
+          break;
+        case 'weaponSwapped':
+          cutCharge(at);
+          sweep(at, 900, 900, 0.03, 'square', 0.2);
+          noise(at, 0.04, 0.3, 2200);
+          sweep(at + 0.07, 620, 620, 0.03, 'square', 0.2);
+          noise(at + 0.07, 0.04, 0.25, 1800);
+          break;
+        case 'pickupTaken':
+          cutCharge(at);
+          chime(at, PICKUP_ARPEGGIO, 0.14, 0.09, 0.22);
+          break;
+        case 'playerDied':
+          cutCharge(at);
+          sweep(at, 500, 60, 1.4, 'sawtooth', 0.5);
+          break;
+        case 'beamFired':
+          noise(at, 0.05, 0.8, 7000);
+          sweep(at, 320, 55, 0.45, 'sine', 0.7);
+          sweep(at, 1800, 400, 0.12, 'sawtooth', 0.15);
+          break;
+        case 'launcherFired':
+          sweep(at, 170, 48, 0.3, 'triangle', 0.7);
+          noise(at, 0.12, 0.4, 500);
+          break;
+        case 'pickupSpawned':
+          chime(at, SPAWN_CHIME, 0.18, 0.12, 0.15);
+          break;
+        case 'empty':
+          sweep(at, 240, 240, 0.08, 'square', 0.2);
+          break;
+        case 'reload':
+          sweep(at, 500, 500, 0.12, 'triangle', 0.25);
+          break;
+        case 'enemyKilled':
+          sweep(at, 900, 200, 0.25, 'sawtooth', 0.35);
+          break;
+        case 'playerDamaged':
+          sweep(at, 180, 180, 0.1, 'sawtooth', 0.4);
+          break;
+        case 'shieldBroken':
+          sweep(at, 1200, 300, 0.5, 'sine', 0.5);
+          break;
+        case 'explosion':
+          noise(at, 0.6, 0.9, 1200);
+          sweep(at, 120, 40, 0.6, 'sine', 0.8);
+          break;
+        case 'boltFired':
+          sweep(at, 700, 350, 0.2, 'sine', 0.15);
+          break;
+        case 'grenadeThrown':
+          sweep(at, 400, 400, 0.05, 'triangle', 0.2);
+          break;
+        case 'waveStarted':
+          sweep(at, 300, 600, 0.6, 'triangle', 0.35);
+          break;
+        case 'waveCleared':
+        case 'victory':
+          sweep(at, 400, 1000, 0.8, 'sine', 0.45);
+          break;
+      }
+    }
+    // A charge still held when the film ends keeps humming to the end.
+    if (chargeFrom !== null) chargeHum(chargeFrom, total);
+  };
+  scheduleEvents();
 
   const rendered = await ctx.startRendering();
   return toBase64(encodeWav(rendered));
