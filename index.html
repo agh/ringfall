@@ -21,7 +21,7 @@
   <body>
     <canvas id="scene" aria-label="Ringfall game view"></canvas>
 
-    <div id="hud" class="hud" hidden>
+    <section id="hud" class="hud" aria-label="Heads-up display" hidden>
       <div class="hud__frame" aria-hidden="true"></div>
 
       <div class="hud__compass" role="img" aria-label="Heading">
@@ -54,7 +54,7 @@
       <div class="hud__hitmarker" id="hitmarker" aria-hidden="true"></div>
       <div class="hud__damage-ring" id="damage-ring" aria-hidden="true"></div>
 
-      <div class="hud__message" id="hud-message" aria-live="polite"></div>
+      <div class="hud__message" id="hud-message" role="status" aria-live="polite"></div>
 
       <div class="hud__vitals" role="img" aria-label="Shield and health">
         <svg class="hud__arc" viewBox="0 0 400 120" aria-hidden="true">
@@ -92,16 +92,17 @@
 
       <div class="hud__damage" id="damage-flash" aria-hidden="true"></div>
       <div class="hud__lowshield" id="low-shield" aria-hidden="true"></div>
-    </div>
+    </section>
 
-    <div id="overlay" class="overlay">
+    <div id="overlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="overlay-title" aria-describedby="overlay-tagline">
       <div class="overlay__card">
         <div class="overlay__eyebrow">Chapter 1 · Sector 117</div>
-        <h1 class="overlay__title">RINGFALL</h1>
+        <h1 class="overlay__title" id="overlay-title">RINGFALL</h1>
+        <p class="overlay__result" id="overlay-result" hidden></p>
         <p class="overlay__tagline" id="overlay-tagline">
-          The ring is lit. Hold the arena until the sun clears the rim.
+          The ring is lit. Hold the arena through eight waves, until the sun clears the rim.
         </p>
-        <p class="overlay__stats" id="overlay-stats" hidden></p>
+        <p class="overlay__stats" id="overlay-stats" role="status" hidden></p>
         <button id="start" class="overlay__button" type="button">Deploy</button>
         <dl class="overlay__controls">
           <dt>Move</dt><dd>W A S D</dd>
@@ -112,8 +113,9 @@
           <dt>Swap weapon</dt><dd>Q or wheel</dd>
           <dt>Jump / Sprint</dt><dd>Space / Shift</dd>
           <dt>Fullscreen</dt><dd>F</dd>
+          <dt>Pause</dt><dd>Esc</dd>
         </dl>
-        <p class="overlay__footnote">WebGL 2 desktop browser. Deploy captures the mouse and fills the screen; Esc releases both.</p>
+        <p class="overlay__footnote">WebGL 2 desktop browser. Deploy captures the mouse and fills the screen; Esc pauses and releases both.</p>
       </div>
     </div>
 

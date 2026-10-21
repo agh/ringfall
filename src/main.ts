@@ -48,6 +48,7 @@ const main = (): void => {
   const startButton = byId<HTMLButtonElement>('start');
   const tagline = byId<HTMLParagraphElement>('overlay-tagline');
   const stats = byId<HTMLParagraphElement>('overlay-stats');
+  const result = byId<HTMLParagraphElement>('overlay-result');
 
   const renderer = new SceneRenderer(canvas);
   const hud = new Hud();
@@ -70,16 +71,32 @@ const main = (): void => {
 
   window.ringfall = { state: () => game };
 
+  /** The card names the outcome in a word and a colour: Victory, Defeat, or Paused. */
+  const showOutcome = (outcome: 'won' | 'lost' | 'paused'): void => {
+    result.hidden = false;
+    result.dataset.outcome = outcome;
+    result.textContent = outcome === 'won' ? 'Victory' : outcome === 'lost' ? 'Defeat' : 'Paused';
+    tagline.textContent =
+      outcome === 'won'
+        ? 'The arena is quiet. The ring still turns.'
+        : outcome === 'lost'
+          ? 'Shields down. Health gone. The ring does not care.'
+          : 'The run is waiting. Resume recaptures the mouse.';
+  };
+
   const showOverlay = (finished: boolean): void => {
     running = false;
     audio.setMusic('title');
     hud.hide();
     overlay.hidden = false;
+    // Esc mid-run is a pause, and the card says so; the run is still there behind the blur.
+    if (!finished && game.status === 'playing' && game.time > 0) {
+      showOutcome('paused');
+      startButton.textContent = 'Resume';
+    }
     if (finished) {
       const won = game.status === 'won';
-      tagline.textContent = won
-        ? 'The arena is quiet. The ring still turns.'
-        : 'Shields down. Health gone. The ring does not care.';
+      showOutcome(won ? 'won' : 'lost');
       const round = {
         score: game.score,
         wave: game.wave.number,
@@ -100,6 +117,8 @@ const main = (): void => {
       startButton.textContent = won ? 'Run it back' : 'Redeploy';
     }
     if (document.pointerLockElement) document.exitPointerLock();
+    // Keyboard players land on the one button that matters, whichever way the card came back.
+    startButton.focus({ preventScroll: true });
   };
 
   const requestFullscreen = (): void => {

@@ -47,6 +47,11 @@ and this project adheres to
 
 ### Fixed
 
+- Design and UX review (#53): HUD labels and card copy never below 14 px and
+  scale to 4K; the card is a dialog that names Victory, Defeat or Paused and
+  takes focus when it returns; low ammo, an empty magazine and a kill are
+  signalled in words or size, not colour alone; a
+  `prefers-reduced-motion` rule stops the looping pulses.
 - A negative first frame delta after Deploy made every decay term grow
   without bound; the delta is now clamped at zero.
 - The terrain under the arena z-fought the floor at range; it is sunk six

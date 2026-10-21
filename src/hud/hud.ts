@@ -1,4 +1,3 @@
-import { ENEMY_STATS } from '../core/enemy';
 import type { GameEvent, GameState } from '../core/game';
 import type { Vec3 } from '../core/vec3';
 import { FINAL_WAVE } from '../core/waves';
@@ -39,7 +38,7 @@ const fitCanvas = (
  * Everything is sized in viewport units by the stylesheet; canvases follow the device pixel ratio.
  */
 export class Hud {
-  private readonly root = byId<HTMLDivElement>('hud');
+  private readonly root = byId<HTMLElement>('hud');
   private readonly wave = byId<HTMLDivElement>('hud-wave');
   private readonly waveSub = byId<HTMLDivElement>('hud-wave-sub');
   private readonly score = byId<HTMLDivElement>('hud-score');
@@ -70,6 +69,7 @@ export class Hud {
   private damageTimer: number | null = null;
   private reticleTimer: number | null = null;
   private lastShield = 100;
+  private emptyAnnounced = false;
   private sweep = 0;
   private pendingDamage: Vec3[] = [];
 
@@ -155,13 +155,23 @@ export class Hud {
     this.drawCompass(state);
   }
 
+  private renderAmmo(w: Weapon, name: string): void {
+    const reloading = isReloading(w);
+    const lowAt = Math.max(1, Math.round(w.magazineSize * 0.2));
+    const low = w.magazine <= lowAt && !reloading;
+    // Low ammo is a word as well as a colour; an empty magazine says which key reloads, once.
+    this.ammoName.textContent = low ? `${name} · Low` : name;
+    this.ammoMag.textContent = reloading ? '--' : w.magazine.toString();
+    this.ammoMag.classList.toggle('is-low', low);
+    const empty = w.magazine === 0 && !reloading;
+    if (empty && !this.emptyAnnounced) this.announce('Reload · R', 1200);
+    this.emptyAnnounced = empty;
+    this.ammoReserve.textContent = `/ ${w.reserve}`;
+  }
+
   private renderWeapon(w: Weapon, offhand: Weapon | null): void {
     const spec = weaponSpec(w);
-    this.ammoName.textContent = spec.name;
-    this.ammoMag.textContent = isReloading(w) ? '--' : w.magazine.toString();
-    const lowAt = Math.max(1, Math.round(w.magazineSize * 0.2));
-    this.ammoMag.classList.toggle('is-low', w.magazine <= lowAt && !isReloading(w));
-    this.ammoReserve.textContent = `/ ${w.reserve}`;
+    this.renderAmmo(w, spec.name);
 
     // Charge (beam) and spin (minigun) share one bar; it only shows while something is building.
     const level = spec.chargeTime > 0 ? w.charge : spec.spinUp > 0 ? w.spin : 0;
@@ -407,7 +417,5 @@ export class Hud {
 }
 
 /** Exposed for the end-of-game card. */
-export const summarize = (state: GameState): string => {
-  const kinds = Object.keys(ENEMY_STATS).length;
-  return `Score ${state.score} · ${state.kills} kills across ${kinds} enemy types · reached wave ${state.wave.number}.`;
-};
+export const summarize = (state: GameState): string =>
+  `Score ${state.score} · ${state.kills} kills · wave ${state.wave.number} of ${FINAL_WAVE}.`;

@@ -62,6 +62,17 @@ a friend. Each MLP item names that moment.
 | 14 | Easter eggs: temperaments, sector number, crouch, switch | "IYKYK." | Not started | #14 |
 | 15 | Personal bests in the browser: this round against your previous best score, deepest wave, runs and clears | "I got further." | Done (`src/core/records.ts`, localStorage, nothing leaves the device) | n/a |
 
+### Review 2026-10-21 (#53)
+
+A five-reviewer design and user-experience pass over captured frames at
+1280x720 and 3840x2160 found the HUD labels at 9 to 12 px (checklist item 4
+says 14), no reduced-motion rule, no focus management on the card, a pause
+that looked like the title screen, and an end card that never said Victory
+or Defeat. Those are fixed. What the review left for the owner issues: the
+title choreography and Deploy moment (#9), the victory tableau and death
+camera (#8), the sun bloom hiding the reticle (renderer), and the settings
+toggles for shake and flash (#37).
+
 ## Later (explicit choices)
 
 | Item | Why deferred | Issue |

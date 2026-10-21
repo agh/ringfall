@@ -127,8 +127,13 @@ until spec item 11 measures them.
 
 **Accessibility.** A toggle sets the screen shake cap to zero. Every HUD
 colour pairing meets the contrast ratios in brand.md, and no text sits
-below 14 px. The game is playable with keyboard and mouse only, and no
-action depends on a sound cue alone.
+below 14 px, on the HUD or on the title and end cards, at any viewport
+from 1280x720 to 3840x2160. No state is signalled by colour alone: low
+ammo, a kill, a shield break and the outcome of a run each have a word or
+a shape as well. Looping animation stops under
+`prefers-reduced-motion: reduce`. The game is playable with keyboard and
+mouse only: the card is a dialog, and its one button takes focus every time
+the card returns. No action depends on a sound cue alone.
 
 **Compatibility.** Desktop browsers with WebGL 2 and pointer lock. Mobile
 and WebGPU are Later.

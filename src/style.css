@@ -11,7 +11,12 @@
   --slate: #8aa0b8;
   --font-display: "Chakra Petch", "Rajdhani", "Bahnschrift", "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  --u: clamp(2px, 0.45vmin, 6px); /* one HUD unit */
+  --u: clamp(
+    2px,
+    0.45vmin,
+    10px
+  ); /* one HUD unit; the 10px cap keeps 4K from shrinking the HUD to 720p pixels */
+  --text-min: 14px; /* brand.md checklist item 4: no text below 14 px */
   --safe-x: max(env(safe-area-inset-left), env(safe-area-inset-right), 1.5vmin);
   --safe-y: max(env(safe-area-inset-top), env(safe-area-inset-bottom), 1.5vmin);
 }
@@ -75,14 +80,14 @@ body {
 .hud__label {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: calc(var(--u) * 3.2);
+  font-size: max(var(--text-min), calc(var(--u) * 3.2));
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--slate);
 }
 
 .hud__sub {
-  font-size: calc(var(--u) * 3);
+  font-size: max(var(--text-min), calc(var(--u) * 3));
   color: var(--ring);
   opacity: 0.8;
   margin-top: calc(var(--u) * 0.5);
@@ -157,7 +162,7 @@ body {
   transform: translateX(-50%);
   white-space: nowrap;
   font-family: var(--font-display);
-  font-size: calc(var(--u) * 2.8);
+  font-size: max(var(--text-min), calc(var(--u) * 2.8));
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--slate);
@@ -262,6 +267,11 @@ body {
 .hud__hitmarker.is-active {
   opacity: 1;
   transition: none;
+}
+
+/* A kill reads by size as well as colour: the marker grows, not just turns Flare. */
+.hud__hitmarker.is-kill {
+  transform: translate(-50%, -50%) rotate(45deg) scale(1.6);
 }
 
 .hud__hitmarker.is-kill::before,
@@ -413,7 +423,7 @@ body {
   display: block;
   margin-top: calc(var(--u) * 0.8);
   font-family: var(--font-display);
-  font-size: calc(var(--u) * 2.8);
+  font-size: max(var(--text-min), calc(var(--u) * 2.8));
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--slate);
@@ -451,13 +461,13 @@ body {
 }
 
 .hud__ammo-reserve {
-  font-size: calc(var(--u) * 3.6);
+  font-size: max(var(--text-min), calc(var(--u) * 3.6));
   color: var(--ring);
 }
 
 .hud__ammo-name {
   font-family: var(--font-display);
-  font-size: calc(var(--u) * 2.8);
+  font-size: max(var(--text-min), calc(var(--u) * 2.8));
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--slate);
@@ -524,7 +534,7 @@ body {
 .hud__offhand {
   margin-top: calc(var(--u) * 1.2);
   font-family: var(--font-display);
-  font-size: calc(var(--u) * 2.8);
+  font-size: max(var(--text-min), calc(var(--u) * 2.8));
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--slate);
@@ -601,8 +611,8 @@ body {
 }
 
 .overlay__card {
-  width: min(560px, 100%);
-  padding: clamp(20px, 4vmin, 44px) clamp(20px, 4.5vmin, 48px);
+  width: min(max(560px, 48vmin), 100%);
+  padding: clamp(20px, 4vmin, 96px) clamp(20px, 4.5vmin, 108px);
   border: 1px solid var(--slate);
   background: var(--hull);
   box-shadow: 0 0 60px rgba(125, 211, 252, 0.12);
@@ -611,7 +621,7 @@ body {
 
 .overlay__eyebrow {
   font-family: var(--font-display);
-  font-size: clamp(11px, 1.6vmin, 14px);
+  font-size: clamp(14px, 1.6vmin, 30px);
   letter-spacing: 0.3em;
   text-transform: uppercase;
   color: var(--slate);
@@ -622,36 +632,60 @@ body {
   margin: 0;
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: clamp(40px, 8vmin, 72px);
+  font-size: clamp(40px, 8vmin, 160px);
   letter-spacing: 0.14em;
   text-indent: 0.14em;
   text-shadow: 0 0 30px rgba(125, 211, 252, 0.8);
 }
 
 .overlay__tagline {
-  margin: clamp(8px, 1.6vmin, 14px) 0 clamp(16px, 3vmin, 26px);
+  margin: clamp(8px, 1.6vmin, 30px) 0 clamp(16px, 3vmin, 56px);
   color: rgba(232, 228, 216, 0.8);
   line-height: 1.5;
-  font-size: clamp(13px, 1.9vmin, 16px);
+  font-size: clamp(14px, 1.9vmin, 36px);
+}
+
+/* Outcome line under the wordmark: Victory, Defeat or Paused, in words and a semantic colour. */
+.overlay__result {
+  margin: clamp(6px, 1vmin, 20px) 0 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(14px, 2vmin, 38px);
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
+  text-transform: uppercase;
+  color: var(--ring);
+}
+
+.overlay__result[data-outcome="won"] {
+  color: var(--beacon);
+}
+
+.overlay__result[data-outcome="lost"] {
+  color: var(--rose);
+}
+
+.overlay__result[hidden] {
+  display: none;
 }
 
 .overlay__stats {
-  margin: 0 0 clamp(14px, 2.4vmin, 20px);
+  margin: 0 0 clamp(14px, 2.4vmin, 44px);
   font-family: var(--font-display);
-  font-size: clamp(14px, 2.2vmin, 20px);
+  font-size: clamp(16px, 2.2vmin, 40px);
   letter-spacing: 0.06em;
   line-height: 1.5;
 }
 
 .overlay__button {
-  font: 700 clamp(16px, 2.6vmin, 22px) var(--font-display);
+  font: 700 clamp(16px, 2.6vmin, 48px) var(--font-display);
   letter-spacing: 0.3em;
   text-indent: 0.3em;
   text-transform: uppercase;
   color: var(--abyss);
   background: var(--beacon);
   border: 0;
-  padding: clamp(10px, 1.8vmin, 14px) clamp(28px, 5vmin, 44px);
+  padding: clamp(10px, 1.8vmin, 34px) clamp(28px, 5vmin, 96px);
   cursor: pointer;
   box-shadow: 0 0 24px rgba(125, 211, 252, 0.6);
   animation: breathe 2.2s ease-in-out infinite;
@@ -673,10 +707,10 @@ body {
 .overlay__controls {
   display: grid;
   grid-template-columns: auto auto;
-  gap: 5px 18px;
+  gap: calc(var(--u) * 1.4) calc(var(--u) * 5);
   justify-content: center;
-  margin: clamp(18px, 3vmin, 28px) 0 0;
-  font-size: clamp(11px, 1.6vmin, 13px);
+  margin: clamp(18px, 3vmin, 60px) 0 0;
+  font-size: clamp(14px, 1.6vmin, 28px);
   color: var(--slate);
 }
 
@@ -693,7 +727,28 @@ body {
 }
 
 .overlay__footnote {
-  margin: clamp(14px, 2.4vmin, 24px) 0 0;
-  font-size: clamp(10px, 1.4vmin, 12px);
+  margin: clamp(14px, 2.4vmin, 48px) 0 0;
+  font-size: clamp(14px, 1.4vmin, 24px);
   color: var(--slate);
+}
+
+/* Reduced motion: no looping pulses or glows; one-shot feedback stays but does not animate. */
+@media (prefers-reduced-motion: reduce) {
+  .overlay__button,
+  .hud__vitals.is-recharging .hud__arc-shield,
+  .hud__damage-seg {
+    animation: none;
+  }
+
+  .hud__lowshield.is-active {
+    animation: none;
+    opacity: 0.55;
+  }
+
+  .hud__reticle,
+  .hud__message,
+  .hud__damage,
+  .hud__hitmarker {
+    transition: none;
+  }
 }
