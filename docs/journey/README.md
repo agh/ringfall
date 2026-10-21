@@ -604,6 +604,19 @@ The remaining pairs (day 10 s and 18 s, night 8.5 s and 18 s, the moon)
 are filed beside them as `1715-bloom-before-*.jpg` and
 `1740-bloom-after-*.jpg`.
 
+## 17:40 The hero is a frame, not a drawing
+
+Seven moments of seed 7 were rendered headless at 3840x1600 with the post
+stack on and the HUD hidden (new `?nohud` dev flag): night at 10 s and 18 s,
+dawn at 2 s and 95 s, day at 10 s, dusk at 45 s, rain at 18 s. About 30 s a
+frame on software GL. The night kill at 10 s won the banner: dark sky for
+the wordmark, a warm skimmer burst between the slabs, the ring overhead.
+Dawn 95 s (sun flare), night 18 s (beam) and dusk 45 s (laser) make the
+README strip. The contact sheet is `images/1740-hero-contact.jpg`; the
+recipe is the "Hero and social" section of `docs/brand.md`.
+
+![Contact sheet of the seven candidate hero frames](images/1740-hero-contact.jpg)
+
 ## Playtest reviews
 
 Each row is a human or agent watching the game play, not a screenshot.

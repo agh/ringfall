@@ -192,7 +192,8 @@ and ring surface are procedural canvases).
 ## Player landing
 
 - Layout: full-bleed live scene behind a DOM overlay. Wordmark, one line of
-  copy, one button. Controls hint bottom-right. Nothing else.
+  copy, one button, the controls list, and a collapsed Settings strip
+  (sensitivity, field of view, shake, flash). Nothing else.
 - Motion, first second: the card fades up over 700 ms; the wordmark slides
   from 0.4em tracking to 0.14em over 900 ms; the Deploy button breathes
   (2.2 s cycle). Trim lines igniting across the arena and the button
@@ -219,8 +220,9 @@ is tiny, short and additive.
   worth 300 points or more), 120 ms on the player's shield break.
   Implemented as a time-scale in `src/main.ts`, not a frame skip.
 - Screen shake: magnitude is max(current, new), never additive; hard cap
-  0.035 rad. An accessibility toggle that sets the cap to zero is not yet
-  in the code.
+  0.035 rad. The Settings panel's screen-shake switch sets the cap to zero
+  and the hit-flash switch hides the lattice and damage flash
+  (`src/core/settings.ts`, kept in local storage).
 - HUD value tweens at most 500 ms (arcs 120 ms, flashes 400 ms); numbers
   never snap. Looping indicators (recharge 700 ms, low shield 900 ms) and
   the damage-direction fade (900 ms) are the only longer animations.
@@ -267,3 +269,46 @@ is tiny, short and additive.
 - <https://web.dev/articles/audio-scheduling>
 - <https://developer.valvesoftware.com/wiki/FOV>
 - <https://www.youtube.com/watch?v=AJdEqssNZ-U>
+
+## Hero and social
+
+The hero, the README banner and the social card are renders of the shipped
+build, never illustrations. Regenerate them with this recipe whenever the
+look changes.
+
+**Capture.** `pnpm build`, serve `dist/` with `pnpm exec vite preview`, open
+headless Chromium (SwiftShader flags as in `scripts/record-demo.mjs`) at a
+3840x1600 viewport with `deviceScaleFactor: 1`, and load
+`?record&bot&seed=7&nohud&atmo=night`. `?nohud` keeps the heads-up display
+hidden for the whole run (dev flag in `src/main.ts`); `atmo` and `weather`
+pin the atmosphere (`src/render/environment.ts`). Call
+`window.ringfallCapture.start()`, then `advance(ticks - 6)` and `advance(6)`
+so the last render sees a real 0.1 s delta for its effects, and take a PNG
+screenshot. One 4K frame costs about 30 s on software GL.
+
+**Chosen frames** (all seed 7, 3840x1600, post stack on):
+
+| Use | Moment | URL flags |
+| --- | ------ | --------- |
+| Hero, banner, social card | night, t = 10 s, wave 1 cleared, a skimmer kill glowing between the slabs | `atmo=night` |
+| Strip: dawn | t = 95 s, wave 5, the sun flares behind the ring, minigun in hand | `atmo=dawn` |
+| Strip: night | t = 18 s, wave 2, the beam in hand | `atmo=night` |
+| Strip: dusk | t = 45 s, wave 3, the laser against a rose horizon | `atmo=dusk` |
+
+**Lockup.** Top-left, on a safe margin of 6% of the width on both axes. From
+the top: eyebrow "CHAPTER 1 · SECTOR 117" in Chakra Petch 600 at 1.2% of
+the width, Ring, 0.08em tracking; the wordmark "RINGFALL" in Chakra Petch
+700 at 6.6% of the width, Bone, 0.14em tracking; a Beacon datum line as
+wide as the wordmark and 0.12% of the width thick; the one-liner and a
+provenance line in JetBrains Mono 500 at 1.35% of the width, Ring and
+Slate. A soft Abyss scrim (peak 55% alpha, blurred, top-left 62% of the
+frame) sits under the type so the stars never fight the letters. Nothing
+else is added to the frame.
+
+**Crops and exports.** The banner is the full 2.4:1 frame: `docs/banner.png`
+at 1920x800 and `docs/hero/banner-2x.webp` at 3840x1600. The raw hero frame
+without type is `docs/hero/hero-night-seed7-t10.webp`. The social card is a
+centred 2:1 crop of the same frame with the lockup re-set at 1.15x,
+exported to `docs/social-card.png` at 1280x640 (GitHub's repository
+preview size). Journey copies of every candidate and the contact sheet live
+under `docs/journey/images/1740-hero-*`.
