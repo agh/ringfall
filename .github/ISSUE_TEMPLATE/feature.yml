@@ -1,0 +1,54 @@
+name: Feature proposal
+description: Propose a change that makes one of the three loops in docs/spec.md better.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Every MLP item in `docs/spec.md` names the moment a first-time player would describe to a friend. A proposal that adds content without changing a loop belongs in the Later epic (#3).
+
+  - type: textarea
+    id: moment
+    attributes:
+      label: The player moment
+      description: What the player sees, hears, or feels, in the words they would use. One or two sentences.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: loop
+    attributes:
+      label: Which loop it improves
+      options:
+        - Three seconds (aim, fire, hit-marker, kill)
+        - Thirty seconds (engage, shield break, break contact, recharge, re-engage)
+        - Three minutes (a wave arrives, escalates, breaks, is cleared)
+        - None (Later)
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: What changes in `src/core/`, `src/render/`, `src/hud/`, or `src/audio/`, and which numbers in `docs/design-doc.md` move.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: layer
+    attributes:
+      label: Test layer that proves it
+      description: The layer from `docs/test-plan.md` whose passing would show the change works.
+      options:
+        - Unit (Vitest, src/core)
+        - Playtest bot (runPlaytest thresholds)
+        - Browser (Playwright smoke)
+        - Visual review (captured frame or film, logged in the journey)
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered

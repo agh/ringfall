@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
+    <meta
+      name="description"
+      content="Ringfall: a browser-native WebGL arena shooter. Regenerating shields, waves of enemies, and a ring on the horizon."
+    />
+    <title>Ringfall</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='11' fill='none' stroke='%237dd3fc' stroke-width='4'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <canvas id="scene" aria-label="Ringfall game view"></canvas>
+
+    <div id="hud" class="hud" hidden>
+      <div class="hud__frame" aria-hidden="true"></div>
+
+      <div class="hud__compass" role="img" aria-label="Heading">
+        <canvas id="compass" aria-hidden="true"></canvas>
+      </div>
+
+      <div class="hud__corner hud__corner--tl">
+        <div class="hud__label">Sector 117</div>
+        <div class="hud__wave" id="hud-wave">Wave 1</div>
+        <div class="hud__sub" id="hud-wave-sub"></div>
+      </div>
+      <div class="hud__corner hud__corner--tr">
+        <div class="hud__label">Score</div>
+        <div class="hud__score" id="hud-score">000000</div>
+        <div class="hud__sub" id="hud-kills">0 down</div>
+      </div>
+
+      <div class="hud__radar">
+        <canvas id="radar" aria-label="Motion tracker"></canvas>
+        <div class="hud__radar-label">Tracker · 28 m</div>
+      </div>
+
+      <div class="hud__reticle" id="reticle" aria-hidden="true">
+        <span class="hud__reticle-dot"></span>
+        <span class="hud__reticle-tick hud__reticle-tick--n"></span>
+        <span class="hud__reticle-tick hud__reticle-tick--s"></span>
+        <span class="hud__reticle-tick hud__reticle-tick--e"></span>
+        <span class="hud__reticle-tick hud__reticle-tick--w"></span>
+      </div>
+      <div class="hud__hitmarker" id="hitmarker" aria-hidden="true"></div>
+      <div class="hud__damage-ring" id="damage-ring" aria-hidden="true"></div>
+
+      <div class="hud__message" id="hud-message" aria-live="polite"></div>
+
+      <div class="hud__vitals" role="img" aria-label="Shield and health">
+        <svg class="hud__arc" viewBox="0 0 400 120" aria-hidden="true">
+          <defs>
+            <linearGradient id="shield-grad" x1="0" x2="1">
+              <stop offset="0" stop-color="#38bdf8" />
+              <stop offset="1" stop-color="#bae6fd" />
+            </linearGradient>
+          </defs>
+          <path class="hud__arc-track" d="M 30 110 A 170 170 0 0 1 370 110" pathLength="100" />
+          <path class="hud__arc-shield" id="shield-arc" d="M 30 110 A 170 170 0 0 1 370 110" pathLength="100" />
+          <path class="hud__arc-segments" d="M 30 110 A 170 170 0 0 1 370 110" pathLength="100" />
+          <path class="hud__arc-track hud__arc-track--health" d="M 60 112 A 140 140 0 0 1 340 112" pathLength="100" />
+          <path class="hud__arc-health" id="health-arc" d="M 60 112 A 140 140 0 0 1 340 112" pathLength="100" />
+        </svg>
+        <div class="hud__vitals-readout">
+          <span class="hud__shield-value" id="shield-value">100</span>
+          <span class="hud__vitals-label" id="shield-label">Shield</span>
+        </div>
+      </div>
+
+      <div class="hud__weapon" id="weapon">
+        <div class="hud__ammo">
+          <div class="hud__ammo-mag" id="ammo-mag">32</div>
+          <div class="hud__ammo-side">
+            <div class="hud__ammo-reserve" id="ammo-reserve">/ 160</div>
+            <div class="hud__ammo-name" id="ammo-name">Rifle</div>
+          </div>
+        </div>
+        <div class="hud__charge" id="charge" role="progressbar" aria-label="Charge" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0"><i></i></div>
+        <div class="hud__magazine" id="magazine" role="img" aria-label="Rounds in magazine"></div>
+        <div class="hud__offhand" id="offhand"></div>
+        <div class="hud__grenades" id="grenades" role="img" aria-label="Grenades"></div>
+      </div>
+
+      <div class="hud__damage" id="damage-flash" aria-hidden="true"></div>
+      <div class="hud__lowshield" id="low-shield" aria-hidden="true"></div>
+    </div>
+
+    <div id="overlay" class="overlay">
+      <div class="overlay__card">
+        <div class="overlay__eyebrow">Chapter 1 · Sector 117</div>
+        <h1 class="overlay__title">RINGFALL</h1>
+        <p class="overlay__tagline" id="overlay-tagline">
+          The ring is lit. Hold the arena until the sun clears the rim.
+        </p>
+        <p class="overlay__stats" id="overlay-stats" hidden></p>
+        <button id="start" class="overlay__button" type="button">Deploy</button>
+        <dl class="overlay__controls">
+          <dt>Move</dt><dd>W A S D</dd>
+          <dt>Look</dt><dd>Mouse</dd>
+          <dt>Fire</dt><dd>Left click</dd>
+          <dt>Grenade</dt><dd>G or right click</dd>
+          <dt>Reload</dt><dd>R</dd>
+          <dt>Swap weapon</dt><dd>Q or wheel</dd>
+          <dt>Jump / Sprint</dt><dd>Space / Shift</dd>
+          <dt>Fullscreen</dt><dd>F</dd>
+        </dl>
+        <p class="overlay__footnote">WebGL 2 desktop browser. Deploy captures the mouse and fills the screen; Esc releases both.</p>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
