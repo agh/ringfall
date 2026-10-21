@@ -121,7 +121,7 @@ export const createEnvironment = (arenaHalf: number): Environment => {
   const u = sky.material.uniforms;
   u.turbidity = { value: 4 };
   u.rayleigh = { value: 2.2 };
-  u.mieCoefficient = { value: 0.0045 };
+  u.mieCoefficient = { value: 0.003 };
   u.mieDirectionalG = { value: 0.82 };
   const sunDirection = new THREE.Vector3().setFromSphericalCoords(
     1,

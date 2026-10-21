@@ -108,6 +108,11 @@ export class SceneRenderer {
   private swayY = 0;
   private lastPlayerPos = new THREE.Vector3();
   private arenaBuilt: Arena | null = null;
+  private endCamera = 0;
+  private flareGhosts: Array<[THREE.Sprite, number]> = [];
+  private frameTimes: number[] = [];
+  private pixelRatio = Math.min(window.devicePixelRatio, 2);
+  private lastDprChange = 0;
   /** `?nopost` bypasses the composer: a diagnostic for GPUs that reject the HDR render target. */
   private readonly debugNoPost = new URLSearchParams(window.location.search).has('nopost');
 
@@ -130,7 +135,7 @@ export class SceneRenderer {
       // Lets the recorder read the canvas after a synchronous render.
       preserveDrawingBuffer: new URLSearchParams(window.location.search).has('record'),
     });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    this.renderer.setPixelRatio(this.pixelRatio);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -164,6 +169,7 @@ export class SceneRenderer {
       }),
     );
     this.buildLights();
+    this.buildFlare();
     this.buildViewmodel();
     this.post = new PostStack(this.renderer, this.scene, this.camera);
     (window as unknown as { ringfallDebug?: unknown }).ringfallDebug = {
@@ -376,6 +382,29 @@ export class SceneRenderer {
     this.updateEffects(now);
     this.particles.update(now);
 
+    // Airborne dust around the player: a few slow motes per frame, lit by bloom at the edges.
+    if (Math.random() < 0.6) {
+      const e = playerEye(state.player);
+      this.particles.burst(
+        {
+          at: {
+            x: e.x + (Math.random() - 0.5) * 14,
+            y: e.y + (Math.random() - 0.3) * 5,
+            z: e.z + (Math.random() - 0.5) * 14,
+          },
+          count: 1,
+          color: 0xe8e4d8,
+          colorEnd: 0xb8d8ea,
+          speed: 0.25,
+          life: 5,
+          size: 3,
+          gravity: -0.05,
+        },
+        now,
+      );
+    }
+    this.adaptResolution(frameDt);
+
     const eye = playerEye(state.player);
     const pos = toVector(eye);
     const moved = pos.distanceTo(this.lastPlayerPos);
@@ -392,6 +421,22 @@ export class SceneRenderer {
       state.player.yaw,
       Math.sin(this.bobPhase) * 0.004 * bobAmount,
     );
+    // End cameras: death sinks and rolls; victory lifts the gaze to the ring.
+    if (state.status !== 'playing') {
+      this.endCamera = Math.min(1, this.endCamera + frameDt / 1.6);
+      const t = 1 - (1 - this.endCamera) ** 3;
+      if (state.status === 'dead') {
+        this.camera.position.y -= 1.1 * t;
+        this.camera.rotation.z += 0.35 * t;
+        this.camera.rotation.x += -0.25 * t;
+      } else {
+        this.camera.rotation.x = THREE.MathUtils.lerp(state.player.pitch, 0.55, t);
+      }
+    } else {
+      this.endCamera = 0;
+    }
+    this.camera.updateMatrixWorld();
+    this.updateFlare();
     if (this.shake > 0) {
       this.camera.rotation.z += (Math.random() - 0.5) * 0.03 * this.shake;
       this.camera.rotation.x += (Math.random() - 0.5) * 0.015 * this.shake;
@@ -445,6 +490,72 @@ export class SceneRenderer {
       return;
     }
     this.post.render(now, frameDt, state.player.vitality.shield <= 0 && state.status === 'playing');
+  }
+
+  /**
+   * Procedural sun flare: an additive core sprite at the sun plus three ghosts placed along
+   * the sun-to-centre axis in screen space every frame. No occlusion query, so it works on a
+   * multisampled target and on software GL.
+   */
+  private buildFlare(): void {
+    const make = (size: number, inner: string, outer: string): THREE.Texture => {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+        g.addColorStop(0, inner);
+        g.addColorStop(0.35, outer);
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, size, size);
+      }
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      return texture;
+    };
+    const sprite = (texture: THREE.Texture, scale: number): THREE.Sprite => {
+      const sp = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: texture,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+          depthTest: false,
+          transparent: true,
+          fog: false,
+        }),
+      );
+      sp.scale.setScalar(scale);
+      sp.renderOrder = 10;
+      return sp;
+    };
+    const core = sprite(make(256, 'rgba(255,245,220,0.9)', 'rgba(255,200,120,0.18)'), 520);
+    core.position.copy(this.environment.sunDirection).multiplyScalar(9000);
+    this.scene.add(core);
+    this.flareGhosts = [
+      [sprite(make(128, 'rgba(125,211,252,0.5)', 'rgba(125,211,252,0.05)'), 0.16), 0.35],
+      [sprite(make(128, 'rgba(246,178,107,0.45)', 'rgba(246,178,107,0.04)'), 0.26), 0.6],
+      [sprite(make(128, 'rgba(184,216,234,0.4)', 'rgba(184,216,234,0.03)'), 0.1), 0.85],
+    ];
+    for (const [ghost] of this.flareGhosts) this.camera.add(ghost);
+  }
+
+  /** Places the flare ghosts on the line from the sun through the screen centre. */
+  private updateFlare(): void {
+    const sunNdc = this.environment.sunDirection.clone().multiplyScalar(9000).project(this.camera);
+    const visible = sunNdc.z < 1 && Math.abs(sunNdc.x) < 1.6 && Math.abs(sunNdc.y) < 1.6;
+    for (const [ghost, k] of this.flareGhosts) {
+      ghost.visible = visible;
+      if (!visible) continue;
+      // Ghost at NDC = sun * (1 - 2k): passes through the centre and out the other side.
+      const f = 1 - 2 * k;
+      const depth = 2;
+      const h = Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2)) * depth;
+      ghost.position.set(sunNdc.x * f * h * this.camera.aspect, sunNdc.y * f * h, -depth);
+      const fade = 1 - Math.min(1, Math.hypot(sunNdc.x, sunNdc.y) / 1.5);
+      ghost.material.opacity = 0.9 * fade;
+    }
   }
 
   private buildLights(): void {
@@ -795,6 +906,32 @@ export class SceneRenderer {
       effect.update(t);
       return true;
     });
+  }
+
+  /**
+   * Dynamic resolution: a rolling one-second average of frame time steps the pixel ratio
+   * down when the GPU falls behind and back up when it has headroom, so the game holds its
+   * frame rate on an integrated GPU without a settings menu.
+   */
+  private adaptResolution(frameDt: number): void {
+    if (frameDt <= 0) return;
+    this.frameTimes.push(frameDt);
+    if (this.frameTimes.length > 60) this.frameTimes.shift();
+    if (this.frameTimes.length < 30) return;
+    const now = performance.now();
+    if (now - this.lastDprChange < 2000) return;
+    const avg = this.frameTimes.reduce((a, b) => a + b, 0) / this.frameTimes.length;
+    const max = Math.min(window.devicePixelRatio, 2);
+    let next = this.pixelRatio;
+    if (avg > 0.022 && this.pixelRatio > 0.75) next = Math.max(0.75, this.pixelRatio - 0.25);
+    else if (avg < 0.012 && this.pixelRatio < max) next = Math.min(max, this.pixelRatio + 0.25);
+    if (next !== this.pixelRatio) {
+      this.pixelRatio = next;
+      this.lastDprChange = now;
+      this.renderer.setPixelRatio(next);
+      this.resize();
+      this.frameTimes = [];
+    }
   }
 
   private resize(): void {

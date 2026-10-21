@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Play the current build
+    url: https://agh.github.io/hack/
+    about: The main branch deploys here on every push; check the problem against it first.
+  - name: Documentation
+    url: https://github.com/agh/hack/blob/main/docs/spec.md
+    about: The Chapter 1 specification, with links to the design doc, brand, test plan, and runbook.
+  - name: Security
+    url: https://github.com/agh/hack/security/advisories/new
+    about: Report a vulnerability privately; see SECURITY.md.

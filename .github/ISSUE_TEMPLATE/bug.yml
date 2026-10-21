@@ -1,0 +1,71 @@
+name: Bug report
+description: Something in the game, the build, or the tooling does not behave as the documents say.
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The simulation is deterministic, so a seed and a step count reproduce a gameplay bug exactly. Open the page with `?seed=N` to fix the seed; `docs/runbook.md` lists the other query parameters and the known faults.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What is wrong, in one or two sentences.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Include the seed if the bug is in gameplay, and the command if it is in the tooling.
+      placeholder: |
+        1. Open https://agh.github.io/hack/?seed=7
+        2. Click Deploy
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: Cite the document or test that says so, where one exists.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: The contents of `VERSION`, or the short commit hash of the deployed build.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser and GPU
+      options:
+        - Chromium family, hardware GPU
+        - Chromium family, software GL (headless, CI, sandbox)
+        - Firefox
+        - Safari
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console output or logs
+      description: Page errors, test output, or the recorder's status lines.
+      render: shell

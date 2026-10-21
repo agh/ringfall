@@ -85,7 +85,7 @@ export type GameEvent =
   | { readonly type: 'grenadeThrown'; readonly id: number }
   | { readonly type: 'explosion'; readonly at: Vec3 }
   | { readonly type: 'enemyKilled'; readonly id: number; readonly at: Vec3; readonly score: number }
-  | { readonly type: 'playerDamaged'; readonly amount: number }
+  | { readonly type: 'playerDamaged'; readonly amount: number; readonly from: Vec3 | null }
   | { readonly type: 'shieldBroken' }
   | { readonly type: 'boltFired'; readonly id: number }
   | { readonly type: 'waveStarted'; readonly number: number }
@@ -162,11 +162,11 @@ interface Draft {
   rng: Rng;
 }
 
-const hurtPlayer = (d: Draft, amount: number): void => {
+const hurtPlayer = (d: Draft, amount: number, from: Vec3 | null): void => {
   if (d.status !== 'playing') return;
   const outcome = applyDamage(d.player.vitality, amount, d.time);
   d.player = { ...d.player, vitality: outcome.vitality };
-  d.events.push({ type: 'playerDamaged', amount });
+  d.events.push({ type: 'playerDamaged', amount, from });
   if (outcome.shieldBroken) d.events.push({ type: 'shieldBroken' });
   if (outcome.died) {
     d.status = 'dead';
@@ -275,7 +275,8 @@ const stepGrenades = (d: Draft, input: InputFrame, dt: number): void => {
       if (dmg > 0) hurtEnemy(d, i, dmg);
     });
     const selfDistance = distance(playerCenter(d.player), g.position);
-    if (selfDistance < GRENADE_BLAST_RADIUS) hurtPlayer(d, blastDamage(selfDistance) * 0.5);
+    if (selfDistance < GRENADE_BLAST_RADIUS)
+      hurtPlayer(d, blastDamage(selfDistance) * 0.5, g.position);
   }
   d.grenades = remaining;
 };
@@ -285,7 +286,7 @@ const stepEnemies = (d: Draft, dt: number): void => {
   const eye = playerEye(d.player);
   d.enemies = d.enemies.map((e) => {
     const { enemy, action } = updateEnemy(e, d.arena, feet, eye, dt, d.time, d.rng);
-    if (action?.type === 'melee') hurtPlayer(d, action.damage);
+    if (action?.type === 'melee') hurtPlayer(d, action.damage, enemy.position);
     if (action?.type === 'bolt') {
       const id = d.nextId;
       d.nextId += 1;
@@ -305,7 +306,7 @@ const stepBolts = (d: Draft, dt: number): void => {
   for (const bolt of d.bolts) {
     const step = stepBolt(bolt, d.arena, center, PLAYER_RADIUS + 0.5, dt, d.time);
     if (step.kind === 'flying') next.push(step.bolt);
-    if (step.kind === 'hitPlayer') hurtPlayer(d, bolt.damage);
+    if (step.kind === 'hitPlayer') hurtPlayer(d, bolt.damage, bolt.position);
   }
   d.bolts = next;
 };

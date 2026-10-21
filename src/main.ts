@@ -99,8 +99,22 @@ const main = (): void => {
     if (document.pointerLockElement) document.exitPointerLock();
   };
 
+  const requestFullscreen = (): void => {
+    const root = document.documentElement;
+    if (document.fullscreenElement || !root.requestFullscreen) return;
+    root.requestFullscreen({ navigationUI: 'hide' }).catch(() => {
+      // Refused (iframe without allow, or no gesture): the game still runs in the tab.
+    });
+  };
+  window.addEventListener('keydown', (e) => {
+    if (e.code !== 'KeyF' || e.repeat) return;
+    if (document.fullscreenElement) void document.exitFullscreen();
+    else requestFullscreen();
+  });
+
   const start = async (): Promise<void> => {
     audio.unlock();
+    if (!recordMode) requestFullscreen();
     if (game.status !== 'playing') {
       const next = Date.now() >>> 0;
       game = createGame({ seed: next });
@@ -130,6 +144,9 @@ const main = (): void => {
     if (!input.locked && running && game.status === 'playing') showOverlay(false);
   });
 
+  /** Seconds of hit-stop remaining; the loop runs the sim at 5% speed while it is positive. */
+  let hitStop = 0;
+
   /** One simulation step from either the human or the bot, plus event fan-out. */
   const simulate = (now: number): void => {
     let input = input_take();
@@ -143,6 +160,10 @@ const main = (): void => {
       renderer.handle(game.events, now / 1000);
       hud.handle(game.events);
       audio.handle(game.events);
+      for (const e of game.events) {
+        if (e.type === 'shieldBroken') hitStop = Math.max(hitStop, 0.12);
+        if (e.type === 'enemyKilled') hitStop = Math.max(hitStop, e.score >= 300 ? 0.09 : 0.05);
+      }
     }
     audio.setMusic(game.wave.phase === 'active' && game.enemies.length > 0 ? 'combat' : 'calm');
   };
@@ -185,7 +206,13 @@ const main = (): void => {
       return;
     }
     if (running) {
-      accumulator += frameDt;
+      // Hit-stop: time slows to a crawl for a few frames on a kill or a shield break.
+      if (hitStop > 0) {
+        hitStop = Math.max(0, hitStop - frameDt);
+        accumulator += frameDt * 0.05;
+      } else {
+        accumulator += frameDt;
+      }
       let steps = 0;
       while (accumulator >= FIXED_DT && steps < MAX_STEPS_PER_FRAME) {
         simulate(now);
