@@ -827,24 +827,26 @@ export class SceneRenderer {
   }
 
   private spawnExplosion(at: Vec3, now: number): void {
+    // A readable pop, not a whiteout: the flash stays under the bloom threshold and the light
+    // is gone in a quarter second, so the frame survives at night as well as by day.
     const flashMaterial = new THREE.MeshBasicMaterial({
-      color: 0xfff1c4,
+      color: 0xffd27a,
       transparent: true,
-      opacity: 1,
+      opacity: 0.55,
     });
     const flash = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), flashMaterial);
     flash.position.copy(toVector(at));
-    const light = new THREE.PointLight(0xffb347, 600, GRENADE_BLAST_RADIUS * 3, 1.4);
+    const light = new THREE.PointLight(0xffb347, 140, GRENADE_BLAST_RADIUS * 3, 1.4);
     flash.add(light);
     this.addEffect(flash, now, 0.35, (t) => {
-      flash.scale.setScalar(0.4 + t * 3);
-      flashMaterial.opacity = (1 - t) ** 2;
-      light.intensity = 600 * (1 - t);
+      flash.scale.setScalar(0.4 + t * 2);
+      flashMaterial.opacity = 0.55 * (1 - t) ** 2;
+      light.intensity = 140 * Math.max(0, 1 - t / (0.25 / 0.35));
     });
     const waveMaterial = new THREE.MeshBasicMaterial({
       color: 0xffd27a,
       transparent: true,
-      opacity: 0.8,
+      opacity: 0.5,
       side: THREE.DoubleSide,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
@@ -854,13 +856,13 @@ export class SceneRenderer {
     wave.rotation.x = -Math.PI / 2;
     this.addEffect(wave, now, 0.5, (t) => {
       wave.scale.setScalar(1 + t * GRENADE_BLAST_RADIUS * 1.6);
-      waveMaterial.opacity = 0.8 * (1 - t);
+      waveMaterial.opacity = 0.5 * (1 - t);
     });
     this.particles.burst(
       {
         at,
-        count: 260,
-        color: 0xfff1c4,
+        count: 130,
+        color: 0xffd27a,
         colorEnd: 0xff3d00,
         speed: 11,
         life: 0.8,
@@ -904,7 +906,7 @@ export class SceneRenderer {
     const material = new THREE.MeshBasicMaterial({
       color: 0xffd166,
       transparent: true,
-      opacity: 1,
+      opacity: 0.7,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
@@ -913,7 +915,7 @@ export class SceneRenderer {
     ring.rotation.x = Math.PI / 2;
     this.addEffect(ring, now, 0.4, (t) => {
       ring.scale.setScalar(1 + t * 3.5);
-      material.opacity = 1 - t;
+      material.opacity = 0.7 * (1 - t);
     });
     this.particles.burst(
       {
@@ -930,7 +932,7 @@ export class SceneRenderer {
       now,
     );
     this.particles.burst(
-      { at, count: 40, color: 0xffffff, colorEnd: 0xffa040, speed: 2, life: 0.5, size: 18 },
+      { at, count: 40, color: 0xffffff, colorEnd: 0xffa040, speed: 2, life: 0.5, size: 10 },
       now,
     );
   }

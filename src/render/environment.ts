@@ -179,7 +179,7 @@ const TIME_PRESETS: Record<TimeOfDay, () => Rig> = {
     moonColor: color(0xb4c6dc),
     ringGlow: 0.22,
     environmentIntensity: 0.18,
-    dust: 0.15,
+    dust: 0.08,
   }),
 };
 
