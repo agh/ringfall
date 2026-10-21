@@ -17,7 +17,7 @@ Later epic (#3). For a bug, give the seed if the bug is in gameplay,
 because the simulation is deterministic and a seed reproduces it exactly.
 For a feature, name the player moment and the test layer that would prove
 it, as the form asks. Check the problem against the latest release and the
-deployed page at <https://agh.github.io/ringfall/> before filing.
+deployed page at <https://ringfall.alexhowells.com> before filing.
 
 Support is best effort, for the latest release only, with no service
 levels, promised response times, or guaranteed fixes.

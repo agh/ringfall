@@ -100,7 +100,8 @@ sun and recolour the rig per wave, and rain and fog weathers grey it.
   Tabular numerals for free, so health and ammo never jitter.
 - Alt: keep **Rajdhani** (OFL) as the display fallback.
 
-Both families load from Google Fonts with `display=swap`; the fallback
+Both families are self-hosted (`src/fonts.css`, latin and latin-ext
+subsets, OFL texts beside the files) with `display=swap`; the fallback
 stack is Rajdhani, Bahnschrift, Segoe UI for display and the system
 monospace for body.
 
