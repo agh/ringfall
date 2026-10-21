@@ -483,42 +483,48 @@ const fireWeapon = (d: Draft, w: Weapon, input: InputFrame): void => {
     const dir = aim();
     const beam = beamHits(origin, dir, targets, d.arena.obstacles, spec.range);
     const to = add(origin, scale(dir, beam.distance));
-    // The shot is announced before the damage it does, so a kill never precedes its cause.
-    d.events.push({
-      type: 'shot',
-      from: origin,
-      to,
-      hitEnemy: beam.targetIds.length > 0,
-      kind: w.kind,
-      pellets: 1,
-    });
-    d.events.push({ type: 'beamFired', from: origin, to, hits: beam.targetIds.length });
+    // The shot is announced ahead of the damage it does, so a kill never precedes its cause;
+    // the damage itself is applied in the same order as before, which keeps the rng sequence.
+    const mark = d.events.length;
     shootSecret(d, origin, dir, beam.distance);
     for (const id of beam.targetIds) hurtEnemyById(d, id, spec.damage);
+    d.events.splice(
+      mark,
+      0,
+      {
+        type: 'shot',
+        from: origin,
+        to,
+        hitEnemy: beam.targetIds.length > 0,
+        kind: w.kind,
+        pellets: 1,
+      },
+      { type: 'beamFired', from: origin, to, hits: beam.targetIds.length },
+    );
     return;
   }
 
-  const hits: Array<{ readonly id: number; readonly damage: number }> = [];
-  const rays: Array<{ readonly dir: Vec3; readonly distance: number }> = [];
+  let hitAny = false;
   let to = origin;
+  const mark = d.events.length;
   for (let i = 0; i < spec.pellets; i += 1) {
     const dir = aim();
     const hit = hitscan(origin, dir, targets, d.arena.obstacles, spec.range);
     if (i === 0) to = add(origin, scale(dir, hit.distance));
-    rays.push({ dir, distance: hit.distance });
-    if (hit.targetId !== null)
-      hits.push({ id: hit.targetId, damage: pelletDamage(spec, hit.distance) });
+    shootSecret(d, origin, dir, hit.distance);
+    if (hit.targetId === null) continue;
+    hitAny = true;
+    hurtEnemyById(d, hit.targetId, pelletDamage(spec, hit.distance));
   }
-  d.events.push({
+  // Announced ahead of everything the pellets did (see the beam above).
+  d.events.splice(mark, 0, {
     type: 'shot',
     from: origin,
     to,
-    hitEnemy: hits.length > 0,
+    hitEnemy: hitAny,
     kind: w.kind,
     pellets: spec.pellets,
   });
-  for (const ray of rays) shootSecret(d, origin, ray.dir, ray.distance);
-  for (const hit of hits) hurtEnemyById(d, hit.id, hit.damage);
 };
 
 /** Parks the active weapon (charge and spin drop) and draws the other slot. */
