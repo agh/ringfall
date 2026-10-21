@@ -1,8 +1,9 @@
 ---
 type: research
 title: "Adversarial audit: how much of this is slop, and what was done about it"
-status: reference
-authors: ["Ringfall audit agent (Claude), acted on by the hackathon team"]
+status: approved
+authors:
+  - name: "Ringfall audit agent (Claude), acted on by the hackathon team"
 created: 2026-10-21
 ---
 
@@ -26,7 +27,7 @@ marks, consistent spelling). The slop was structural: documents written in
 the present tense for features that did not exist, four non-goal lines
 contradicting a shipped feature, tests named for more than they asserted,
 self-approved frontmatter, and a rounding bug that made the recorder's
-headline promise (a frame-exact film with a synchronised score) false at
+headline promise (a frame-exact film with a synchronized score) false at
 the frame rate the demo script used.
 
 ## Findings and outcomes
@@ -38,7 +39,7 @@ the frame rate the demo script used.
 | High | A bot test titled "reckless dies sooner" asserted the opposite with a 0.5 factor chosen to pass | Tests renamed to what they assert; a printed balance report replaces the claim |
 | High | The bot read enemy health and targeted enemies beyond sight and tracker range while documents said it sees what a player sees | Fixed: candidates are visible or within 28 m, health is not used; documents now say exactly that |
 | High | Spec claimed a five-to-ten-minute demo ending on a tableau and "thousands of games a minute"; measured: no wins in 40 games, a few hundred games a minute | Spec reworded with measured numbers; the tableau is marked as not built (#8) |
-| High | Brand document called itself the source of truth while CSS used other fonts and off-token colours | HUD v2 applied the fonts and tokens; status set to draft |
+| High | Brand document called itself the source of truth while CSS used other fonts and off-token colors | HUD v2 applied the fonts and tokens; status set to draft |
 | High | Product documents described hit-stop, a shake cap, and a toggle in the present tense | Hit-stop and the cap were built in the HUD pass; the toggle is still unbuilt and the requirement says so |
 | High | Three documents said the smoke test waits for a wave to spawn; it stopped doing so deliberately | Fixed |
 | Medium | Hard-coded coverage figures and test counts in three places | Replaced with thresholds and the command that prints the actuals |
@@ -53,7 +54,7 @@ the frame rate the demo script used.
 ## What the audit found genuinely good
 
 The pure core (verified by grep), the draft-and-freeze step with a
-passed-in random source, tests that exposed real behaviour, the storage
+passed-in random source, tests that exposed real behavior, the storage
 module's tolerant design, the GPU particle pool, accurately quoted
 decision-bearing citations, and a journey log that names the squash and
 the overruled calls.

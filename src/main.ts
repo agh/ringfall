@@ -174,7 +174,7 @@ const main = (): void => {
     }
     input.reset();
     overlay.hidden = true;
-    hud.show();
+    if (!params.has('nohud')) hud.show(); // `?nohud`: dev flag, keeps the HUD hidden for clean hero captures.
     running = true;
     audio.setMusic('calm');
     accumulator = 0;
