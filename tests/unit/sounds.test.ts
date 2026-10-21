@@ -253,3 +253,11 @@ describe('sound table', () => {
     expect(b1).toBeCloseTo(870);
   });
 });
+
+describe('charge hum lifetime', () => {
+  it('is cut by every event that can end a run with the trigger held', () => {
+    // The simulation stops on victory and death, so no chargeReleased follows either.
+    expect(SOUNDS.victory.cutsCharge).toBe(true);
+    expect(SOUNDS.playerDied.cutsCharge).toBe(true);
+  });
+});

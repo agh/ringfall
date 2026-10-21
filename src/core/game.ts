@@ -586,7 +586,8 @@ const stepGrenades = (d: Draft, input: InputFrame, dt: number): void => {
     const radius = blastRadiusOf(g);
     const maxDamage = maxDamageOf(g);
     d.enemies.forEach((e, i) => {
-      if (e.state === 'dead') return;
+      // Spawning enemies are untouchable by rays and beams (liveTargets); blasts match that rule.
+      if (e.state === 'dead' || e.state === 'spawning') return;
       const dmg = blastDamage(distance(enemyCenter(e), g.position), radius, maxDamage);
       if (dmg > 0) hurtEnemy(d, i, dmg);
     });
@@ -662,7 +663,9 @@ const stepWaves = (d: Draft): void => {
     d.score += WAVE_BONUS;
     d.events.push({ type: 'waveCleared', number: wave.number });
   }
-  if (transition === 'won') {
+  // Vitality runs before this stage: a blast or a bolt that kills the player in the same step
+  // as the last enemy has already ended the run, and death is not overwritten by victory.
+  if (transition === 'won' && d.status === 'playing') {
     d.score += WAVE_BONUS;
     d.status = 'won';
     d.events.push({ type: 'victory' });

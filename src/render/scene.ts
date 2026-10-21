@@ -5,6 +5,7 @@ import { GRENADE_BLAST_RADIUS } from '../core/grenade';
 import type { Vec3 } from '../core/vec3';
 import { WAVE_COUNTDOWN, waveAtmosphere } from '../core/waves';
 import { ARENA_HALF_SIZE, type Arena } from '../core/world';
+import { disposeTree } from './dispose';
 import { type EnemyRig, makeEnemyRig } from './enemies';
 import { createEnvironment, type Environment } from './environment';
 import { ParticleSystem } from './particles';
@@ -288,6 +289,8 @@ export class SceneRenderer {
   setArena(arena: Arena): void {
     if (this.arenaBuilt === arena) return;
     this.arenaBuilt = arena;
+    // Every arena allocates fresh ground maps, materials and box geometries; free the last set.
+    disposeTree(this.world);
     this.world.clear();
     const size = arena.halfSize * 2;
     const { map, normalMap } = makeFloorMaps();
@@ -1135,8 +1138,10 @@ export class SceneRenderer {
   }
 
   private resize(): void {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    // A hidden iframe or a collapsed window reports zero; a zero aspect would put NaN in the
+    // projection matrix and every projected HUD point until the next resize.
+    const width = Math.max(1, window.innerWidth);
+    const height = Math.max(1, window.innerHeight);
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height, false);

@@ -34,6 +34,17 @@ describe('waves', () => {
     expect(next.wave.phase).toBe('countdown');
   });
 
+  it('moves to the final wave, not to victory, when the one before it clears', () => {
+    // Nothing else pins FINAL_WAVE: a `>= FINAL_WAVE - 1` slip passed every other test.
+    const w = { number: FINAL_WAVE - 1, phase: 'active' as const, phaseEndsAt: 0 };
+    const cleared = tickWave(w, 0, 100);
+    expect(cleared.wave.phase).toBe('cleared');
+    const next = tickWave(cleared.wave, 0, cleared.wave.phaseEndsAt);
+    expect(next.transition).toBe('next');
+    expect(next.wave.number).toBe(FINAL_WAVE);
+    expect(next.wave.phase).not.toBe('won');
+  });
+
   it('declares victory after the final wave', () => {
     const w = { number: FINAL_WAVE, phase: 'active' as const, phaseEndsAt: 0 };
     const won = tickWave(w, 0, 100);

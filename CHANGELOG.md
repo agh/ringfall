@@ -92,6 +92,20 @@ and this project adheres to
   sprite at two thirds of its size, and the day and dawn skies given a
   thinner, tighter mie lobe so the sun reads as a disc; facing the sun the
   saturated blob went from 13% to 3% of the frame height (#71).
+
+- Adversarial software review (#51): a death in the same step as the last
+  kill is no longer overwritten by victory; blasts spare spawning enemies
+  as shots do; the fixed-step loop drops, rather than defers, steps past
+  its per-frame cap; resuming after Esc keeps the look direction and shows a pause card; one-shot key latches are cleared on reset; the beam
+  charge hum is cut on victory and whenever the overlay returns; the
+  arena rebuild and expired explosion and death effects dispose their GPU
+  resources; a zero-height viewport no longer puts NaN in the projection;
+  the recorder refuses frame rates that do not divide 60, as the audit
+  claimed it already did; the purity test and the Biome denied-globals
+  list cover `crypto`, `globalThis`, `structuredClone`, `Intl`, timers,
+  storage and `console`; the Pages deploy waits for a green CI run; the
+  browser smoke tests fail on page errors in every test and check for a
+  WebGL 2 context; `tests/scratch/` is ignored by git, Biome and tsc.
 - The frame bloomed and flared too much: the bloom prefilter passed the
   whole HDR texel, so the sky's sun disc and the dust motes flooded the
   frame with halos. The prefilter now keeps only the excess over the

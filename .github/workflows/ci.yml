@@ -135,7 +135,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm balance
-      - if: always()
+      - if: always() && hashFiles('test-results/balance/balance-report.md') != ''
         run: cat test-results/balance/balance-report.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
