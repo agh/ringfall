@@ -13,7 +13,7 @@ created: 2026-10-21
 
 > [Ringfall](../../README.md) > [Architecture](README.md) > Event catalogue
 
-Every member of the `GameEvent` union in `src/core/game.ts`, with the function in `stepGame` that pushes it, the presentation code that switches on it, and its entry in the sound table. `scripts/architecture.mjs` reads the union, the `events.push` sites, the `switch (e.type)` and `e.type ===` tests in the consumer files, and `SOUNDS` and `SILENT` in `src/audio/sounds.ts`. The union has 24 events; 3 are silent on purpose and the rest have a sound. A consumer cell names the file and what it does: `reacts` runs code, `announces` prints a HUD message, `named, no action` lists the case and breaks.
+Every member of the `GameEvent` union in `src/core/game.ts`, with the function in `stepGame` that pushes it, the presentation code that switches on it, and its entry in the sound table. `scripts/architecture.mjs` reads the union, the `events.push` sites, the `switch (e.type)`, `e.type ===` and `e.type !==` tests in the consumer files, and `SOUNDS` and `SILENT` in `src/audio/sounds.ts`. The union has 26 events; 5 are silent on purpose and the rest have a sound. A consumer cell names the file and what it does: `reacts` runs code, `announces` prints a HUD message, `named, no action` lists the case and breaks.
 
 `src/core/bot.ts` is scanned and consumes no event: the bot reads `GameState` directly, as a player reads the screen.
 
@@ -40,6 +40,8 @@ Every member of the `GameEvent` union in `src/core/game.ts`, with the function i
 | `playerDamaged` | `amount: number`, `from: Vec3 \| null` | `hurtPlayer` | scene: reacts | hud: reacts | playtest: reacts |  |  | `playerDamaged` (1 voice) |
 | `shieldBroken` | none | `hurtPlayer` | scene: reacts | hud: announces | playtest: reacts |  | main: reacts | `shieldBroken` (1 voice) |
 | `boltFired` | `id: number` | `stepEnemies` | scene: named, no action |  |  |  |  | `boltFired` (1 voice) |
+| `watcherCharging` | `id: number`, `at: Vec3` | `stepEnemies` |  |  |  |  |  | `SILENT` |
+| `watcherFired` | `id: number`, `from: Vec3`, `to: Vec3`, `hit: boolean` | `stepEnemies` | watcher-rig: reacts |  |  |  |  | `SILENT` |
 | `waveStarted` | `number: number` | `spawnWave` |  | hud: announces | playtest: reacts |  |  | `waveStarted` (1 voice) |
 | `waveCleared` | `number: number` | `stepWaves` |  | hud: announces | playtest: reacts |  |  | `waveCleared` (1 voice) |
 | `playerDied` | none | `hurtPlayer` |  |  |  |  |  | `playerDied` (1 voice) |

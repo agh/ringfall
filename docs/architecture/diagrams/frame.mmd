@@ -5,6 +5,7 @@ flowchart TB
   hitstop{"hitStop > 0?"}
   slow["accumulator += frameDt * 0.05<br/>time crawls after a kill or a shield break"]
   full["accumulator += frameDt"]
+  cap["accumulator = min(accumulator, 5/60)<br/>a backlog is dropped, not deferred"]
   loop{"accumulator >= 1/60<br/>and steps < 5?"}
   take["input.take()<br/>held keys live, one-shot keys latched"]
   bot["?bot: decideBot(state) replaces the frame"]
@@ -16,8 +17,8 @@ flowchart TB
   draw["renderer.render(state, now, frameDt)<br/>mirrors state, decays effects, post stack"]
   capture["?record: the loop is suspended;<br/>window.ringfallCapture.advance(n) runs this box n times<br/>and renders once, so a recorder pulls frames at any speed"]
   raf --> dt --> hitstop
-  hitstop -->|"yes"| slow --> loop
-  hitstop -->|"no"| full --> loop
+  hitstop -->|"yes"| slow --> cap
+  hitstop -->|"no"| full --> cap --> loop
   loop -->|"yes: one fixed step"| take --> bot --> step --> fan --> stop --> music --> loop
   loop -->|"no"| hudr --> draw --> raf
   capture -.-> step

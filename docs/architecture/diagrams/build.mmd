@@ -1,7 +1,7 @@
 %%{init: {"flowchart": {"curve": "basis"}} }%%
 flowchart LR
   push(["push or pull request"])
-  subgraph ciwf["ci.yml: seven independent jobs"]
+  subgraph ciwf["ci.yml: eight independent jobs"]
     direction TB
     lint["Lint and type check<br/>pnpm lint, pnpm typecheck"]
     unit["Unit tests<br/>pnpm test: Vitest with coverage thresholds"]
@@ -10,6 +10,7 @@ flowchart LR
     build["Production build<br/>pnpm build, dist/ uploaded"]
     balance["Balance gate<br/>pnpm balance: twenty seeds per profile within bounds"]
     docs["Docs hygiene<br/>pnpm lint:docs: frontmatter, typos, Vale, links"]
+    security["Security and workflow hygiene<br/>pnpm audit, actionlint, zizmor, gitleaks"]
   end
   subgraph pagewf["deploy-pages.yml: push to main"]
     direction TB

@@ -94,7 +94,7 @@ Source: [diagrams/containers.mmd](diagrams/containers.mmd).
 | Luminance gate | Playwright Chromium on software GL | Ten seeded frames measured against budgets | `scripts/frames.mjs` |
 | Recorder and score | Playwright Chromium, ffmpeg, `OfflineAudioContext` | A seeded film and its soundtrack | `scripts/record-demo.mjs`, `scripts/render-score.mjs` |
 | Reel | Playwright Chromium, ffmpeg | Title cards, two waves, stitched cut | `scripts/reel.mjs` |
-| CI | GitHub Actions, every action pinned to a commit SHA | Seven gate jobs and the Pages deploy | `.github/workflows/` |
+| CI | GitHub Actions, every action pinned to a commit SHA | Eight gate jobs and the Pages deploy | `.github/workflows/` |
 
 ## Level 3: components
 
@@ -121,7 +121,8 @@ module imports three.js directly.
 `requestAnimationFrame` callback adds the elapsed wall time, clamped to
 between zero and a tenth of a second, to an accumulator, then steps the
 simulation at exactly 1/60 s while at least that much time is banked,
-capped at five steps per frame. Each step takes one `InputFrame` from the
+capped at five steps per frame; anything banked beyond that cap is dropped
+rather than deferred, so a stalled tab never fast-forwards. Each step takes one `InputFrame` from the
 input controller (or from the bot in `?bot` mode), calls `stepGame`, and
 fans the returned events out to the renderer, the HUD and the audio bank,
 in that order. After the steps the HUD renders the state and the renderer
@@ -181,7 +182,8 @@ runs the same scripts.
 | `pnpm dev` | Vite dev server with hot reload on port 5173 |
 | `pnpm build` | `tsc --noEmit`, then `vite build` to `dist/` |
 | `pnpm preview` | Serves `dist/` on port 4173; Playwright and the harnesses use it |
-| `pnpm lint`, `pnpm lint:fix` | Biome in CI mode plus markdownlint; the fix variant rewrites |
+| `pnpm lint`, `pnpm lint:fix` | Biome in CI mode, markdownlint, stylelint and Prettier on CSS; the fix variant rewrites |
+| `pnpm audit` | Production dependency advisories at high severity or above |
 | `pnpm typecheck` | Strict `tsc --noEmit` |
 | `pnpm test` | Vitest unit and balance suites with V8 coverage thresholds on `src/core/` |
 | `pnpm test:e2e` | Playwright smoke tests in real Chromium against `vite preview` |
@@ -192,7 +194,7 @@ runs the same scripts.
 | `pnpm balance` | The balance gate; writes `test-results/balance/` |
 | `pnpm demo` | Films seed 7 and scores it into `demo.mp4` |
 
-The CI workflow in `.github/workflows/ci.yml` runs seven independent jobs
+The CI workflow in `.github/workflows/ci.yml` runs eight independent jobs
 on every push and pull request; a pull request push cancels a superseded
 run, a push to `main` always runs to completion. The deploy workflow runs
 on a push to `main` only. Every action is pinned to a commit SHA and
@@ -208,9 +210,10 @@ write permission.
 | Production build | `vite build` succeeds | `dist` |
 | Balance gate | Twenty seeded games per profile within `tests/balance/gate.ts` | `balance-report`, also appended to the job summary |
 | Docs hygiene | Frontmatter, typos, Vale, internal links; external links advisory | none |
+| Security and workflow hygiene | `pnpm audit`, actionlint, zizmor and gitleaks, each pinned by checksum | none |
 | Deploy to GitHub Pages | `build` job uploads `dist/`, `deploy` job publishes it | the live site |
 
-![Build and delivery: the seven CI jobs, the two-job Pages deploy, and the local recorder, reel and documentation pipelines](render/build.png)
+![Build and delivery: the eight CI jobs, the two-job Pages deploy, and the local recorder, reel and documentation pipelines](render/build.png)
 
 Source: [diagrams/build.mmd](diagrams/build.mmd).
 

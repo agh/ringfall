@@ -14,6 +14,7 @@ flowchart LR
     core_settings["settings.ts"]
     core_vec3["vec3.ts"]
     core_vitality["vitality.ts"]
+    core_watcher["watcher.ts"]
     core_waves["waves.ts"]
     core_weapon["weapon.ts"]
     core_world["world.ts"]
@@ -29,6 +30,7 @@ flowchart LR
   core_bot -.-> core_world
   core_enemy -.-> core_rng
   core_enemy --> core_vec3
+  core_enemy --> core_watcher
   core_enemy --> core_world
   core_game --> core_enemy
   core_game --> core_grenade
@@ -56,6 +58,11 @@ flowchart LR
   core_projectile -.-> core_world
   core_raycast --> core_vec3
   core_raycast -.-> core_world
+  core_watcher -.-> core_enemy
+  core_watcher --> core_raycast
+  core_watcher -.-> core_rng
+  core_watcher --> core_vec3
+  core_watcher --> core_world
   core_waves -.-> core_enemy
   core_weapon --> core_raycast
   core_weapon -.-> core_vec3

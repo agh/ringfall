@@ -54,6 +54,8 @@ const RESPONSIBILITIES = {
   'src/core/vec3.ts':
     'Immutable vector helpers and `directionFromAngles`, the single source of the yaw and pitch convention',
   'src/core/rng.ts': 'Seeded mulberry32 generator so every run is reproducible',
+  'src/core/watcher.ts':
+    'The watcher archetype: holds a perimeter band, strafes, telegraphs and fires a hitscan beam that cover stops',
   'src/core/bot.ts':
     'Scripted player: reads the state a human could see and returns an `InputFrame`',
   'src/core/playtest.ts': 'Headless games at 60 Hz, balance summaries and the gate evaluation',
@@ -71,6 +73,10 @@ const RESPONSIBILITIES = {
   'src/render/pickups.ts': 'Pickup emblems, halos and the spawn and take flourishes',
   'src/render/particles.ts':
     'GPU particle pool: one `Points` draw call, birth state written once, integrated in the vertex shader',
+  'src/render/watcher-rig.ts':
+    'The watcher rig: a tall tripod with a lens that brightens over the charge, and the beam layer',
+  'src/render/dispose.ts':
+    '`disposeTree`: frees geometry, materials and textures under an object before it is dropped',
   'src/render/post.ts': 'HDR composer: render pass, capped bloom prefilter, feel pass, ACES output',
   'src/hud/hud.ts':
     'DOM heads-up display, announcements, hit marker, damage direction and the 2D-canvas motion tracker',
@@ -101,6 +107,7 @@ const CONSUMERS = [
   { file: 'src/render/scene.ts', column: 'Renderer' },
   { file: 'src/render/weapons.ts', column: 'Renderer' },
   { file: 'src/render/pickups.ts', column: 'Renderer' },
+  { file: 'src/render/watcher-rig.ts', column: 'Renderer' },
   { file: 'src/hud/hud.ts', column: 'HUD' },
   { file: 'src/core/playtest.ts', column: 'Playtest' },
   { file: 'src/core/bot.ts', column: 'Bot' },
@@ -450,14 +457,16 @@ const classifyClause = (sf, body) => {
   return /this\.announce\(/.test(body.getText(sf)) ? 'announces' : 'reacts';
 };
 
-const isTypeEquality = (node) =>
+/** `x.type === 'literal'` or `x.type !== 'literal'` (a guard that continues past other events). */
+const isTypeTest = (node) =>
   ts.isBinaryExpression(node) &&
-  node.operatorToken.kind === ts.SyntaxKind.EqualsEqualsEqualsToken &&
+  (node.operatorToken.kind === ts.SyntaxKind.EqualsEqualsEqualsToken ||
+    node.operatorToken.kind === ts.SyntaxKind.ExclamationEqualsEqualsToken) &&
   ts.isPropertyAccessExpression(node.left) &&
   node.left.name.text === 'type' &&
   ts.isStringLiteral(node.right);
 
-/** A switch on `x.type` or a `x.type === 'literal'` test: the event types a file reacts to. */
+/** A switch on `x.type` or a `x.type === 'literal'` test (or its `!==` guard): what a file reacts to. */
 const readConsumer = (file) => {
   const sf = parse(join(ROOT, file));
   const handled = new Map();
@@ -474,7 +483,7 @@ const readConsumer = (file) => {
         note(clause.expression.text, classifyClause(sf, effectiveClause(clauses, i)));
       });
     }
-    if (isTypeEquality(node)) note(node.right.text, 'reacts');
+    if (isTypeTest(node)) note(node.right.text, 'reacts');
   });
   return handled;
 };
@@ -575,7 +584,7 @@ const eventsMarkdown = () => {
     '',
     '> [Ringfall](../../README.md) > [Architecture](README.md) > Event catalogue',
     '',
-    `Every member of the ${tick('GameEvent')} union in ${tick('src/core/game.ts')}, with the function in ${tick('stepGame')} that pushes it, the presentation code that switches on it, and its entry in the sound table. ${tick('scripts/architecture.mjs')} reads the union, the ${tick('events.push')} sites, the ${tick('switch (e.type)')} and ${tick('e.type ===')} tests in the consumer files, and ${tick('SOUNDS')} and ${tick('SILENT')} in ${tick('src/audio/sounds.ts')}. The union has ${events.length} events; ${silentCount} are silent on purpose and the rest have a sound. A consumer cell names the file and what it does: ${tick('reacts')} runs code, ${tick('announces')} prints a HUD message, ${tick('named, no action')} lists the case and breaks.`,
+    `Every member of the ${tick('GameEvent')} union in ${tick('src/core/game.ts')}, with the function in ${tick('stepGame')} that pushes it, the presentation code that switches on it, and its entry in the sound table. ${tick('scripts/architecture.mjs')} reads the union, the ${tick('events.push')} sites, the ${tick('switch (e.type)')}, ${tick('e.type ===')} and ${tick('e.type !==')} tests in the consumer files, and ${tick('SOUNDS')} and ${tick('SILENT')} in ${tick('src/audio/sounds.ts')}. The union has ${events.length} events; ${silentCount} are silent on purpose and the rest have a sound. A consumer cell names the file and what it does: ${tick('reacts')} runs code, ${tick('announces')} prints a HUD message, ${tick('named, no action')} lists the case and breaks.`,
     '',
   ];
   if (idle.length > 0) {
