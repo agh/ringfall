@@ -10,6 +10,14 @@ and this project adheres to
 
 ### Added
 
+- Four skimmer temperaments handed out round-robin per wave: chaser,
+  ambusher (leads the player's velocity by 4 m), flanker (swings to the
+  off-hand side) and skittish (holds at 10 m until a packmate is within
+  6 m of the player). The HUD names the arena Sector 117 from a core
+  constant. A crouch on C or Ctrl lowers the eye by 0.6 m; three crouches
+  within 1.5 s over a fallen strider earn a one-word bark from a surviving
+  skimmer. One cover block per arena hides a switch on its outward face;
+  shooting it once scores 1000 and the end card counts secrets found.
 - Renderer v2: scattering dawn sky, a ringworld you stand on, rolling
   terrain with mountains, image-based lighting, a GPU particle pool, an HDR
   composer with bloom and a custom feel pass (vignette, chromatic

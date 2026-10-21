@@ -3,7 +3,7 @@ import { BOLT_LIFETIME, createBolt, stepBolt } from '../../src/core/projectile';
 import { vec3 } from '../../src/core/vec3';
 import { type Arena, aabbFromCenter } from '../../src/core/world';
 
-const open: Arena = { halfSize: 30, obstacles: [] };
+const open: Arena = { halfSize: 30, obstacles: [], secret: null };
 
 describe('projectile', () => {
   it('flies forward until it hits the player', () => {
@@ -20,7 +20,11 @@ describe('projectile', () => {
   });
 
   it('stops on cover, the floor, the arena edge, and expiry', () => {
-    const covered: Arena = { halfSize: 30, obstacles: [aabbFromCenter(0, -5, 2, 3, 2)] };
+    const covered: Arena = {
+      halfSize: 30,
+      obstacles: [aabbFromCenter(0, -5, 2, 3, 2)],
+      secret: null,
+    };
     const bolt = createBolt(1, vec3(0, 1, -10), vec3(0, 0, 1), 18, 0);
     expect(stepBolt(bolt, covered, vec3(0, 1, 50), 0.9, 1, 0.1).kind).toBe('hitWorld');
     const down = createBolt(2, vec3(0, 0.1, 0), vec3(0, -1, 0), 18, 0);

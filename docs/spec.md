@@ -59,7 +59,7 @@ a friend. Each MLP item names that moment.
 | 11 | Frame budget on an integrated GPU | It runs on the laptop in the room | Not measured | #11 |
 | 12 | Playtest bot as a CI gate | We know it is fair | Harness done; gate not | #12 |
 | 13 | Demo recording pipeline | The awards reel | Done (recorder, offline score, mux); CI artifact not | #13 |
-| 14 | Easter eggs: temperaments, sector number, crouch, switch | "IYKYK." | Not started | #14 |
+| 14 | Easter eggs: temperaments, sector number, crouch, switch | "IYKYK." | Core done (temperaments, Sector 117, crouch and bark, switch scoring); glyph, tint and chime are render and audio follow-ups | #14 |
 | 15 | Personal bests in the browser: this round against your previous best score, deepest wave, runs and clears | "I got further." | Done (`src/core/records.ts`, localStorage, nothing leaves the device) | n/a |
 
 ## Later (explicit choices)
