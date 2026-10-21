@@ -18,6 +18,11 @@ and this project adheres to
   kills and shield breaks, the survivors flee off the arena, and the state
   holds a 5 s tableau before the run is won. `scripts/wave-table.mjs`
   generates the design doc's composition table from the constants.
+- Enemy theatre: when a strider dies, every skimmer within 25 m breaks and
+  runs for 4 s at 1.3x speed without attacking, then returns to the chase.
+  New enemy state `flee` and two events for the presentation layers,
+  `enemyFled { id, kind }` and `enemyBark { id, line }`, with three original
+  bark lines (`src/core/enemy.ts`).
 - Renderer v2: scattering dawn sky, a ringworld you stand on, rolling
   terrain with mountains, image-based lighting, a GPU particle pool, an HDR
   composer with bloom and a custom feel pass (vignette, chromatic
@@ -50,8 +55,6 @@ and this project adheres to
 
 ### Fixed
 
-- `pnpm balance` prints its summary table again; Vitest 5 intercepts
-  `console.log` unless told not to.
 - A negative first frame delta after Deploy made every decay term grow
   without bound; the delta is now clamped at zero.
 - The terrain under the arena z-fought the floor at range; it is sunk six
