@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { Vec3 } from '../core/vec3';
+import { renderRandom } from './random';
 
 /**
  * GPU particle pool. The CPU writes a particle's birth state once; the vertex shader integrates
@@ -35,8 +36,8 @@ export type ParticleShape = 'spark' | 'smoke' | 'shard';
 
 const SHAPE_INDEX: Readonly<Record<ParticleShape, number>> = { spark: 0, smoke: 1, shard: 2 };
 
+/** The birth position rides the built-in `position` attribute; the shader integrates from it. */
 const VERTEX = /* glsl */ `
-  attribute vec3 aStart;
   attribute vec3 aVelocity;
   attribute vec3 aColor;
   attribute vec3 aColorEnd;
@@ -54,7 +55,7 @@ const VERTEX = /* glsl */ `
     float age = uTime - aParams.x;
     float t = clamp(age / aParams.y, 0.0, 1.0);
     float drag = exp(-aDrag * age);
-    vec3 pos = aStart + aVelocity * (aDrag > 0.0 ? (1.0 - drag) / aDrag : age)
+    vec3 pos = position + aVelocity * (aDrag > 0.0 ? (1.0 - drag) / aDrag : age)
       + vec3(0.0, -0.5 * aParams.w * age * age, 0.0);
     vColor = mix(aColor, aColorEnd, t);
     float alive = step(0.0, age) * (1.0 - step(1.0, t));
@@ -118,6 +119,12 @@ const FRAGMENT = /* glsl */ `
   }
 `;
 
+/** Scratch objects for `burst`: a burst of forty allocates nothing per particle. */
+const scratchColor = new THREE.Color();
+const scratchColorEnd = new THREE.Color();
+const scratchDir = new THREE.Vector3();
+const scratchVelocity = new THREE.Vector3();
+
 export class ParticleSystem {
   readonly points: THREE.Points;
   private readonly capacity: number;
@@ -132,8 +139,9 @@ export class ParticleSystem {
   private readonly shape: Float32Array;
   private readonly geometry = new THREE.BufferGeometry();
   private readonly material: THREE.ShaderMaterial;
-  private dirtyLo = Number.POSITIVE_INFINITY;
-  private dirtyHi = 0;
+  /** First slot written since the last upload, and how many followed it around the ring. */
+  private dirtyStart = 0;
+  private dirtyCount = 0;
 
   constructor(capacity = 12000) {
     this.capacity = capacity;
@@ -153,7 +161,6 @@ export class ParticleSystem {
       return a;
     };
     this.geometry.setAttribute('position', attr(this.start, 3));
-    this.geometry.setAttribute('aStart', attr(this.start, 3));
     this.geometry.setAttribute('aVelocity', attr(this.velocity, 3));
     this.geometry.setAttribute('aColor', attr(this.color, 3));
     this.geometry.setAttribute('aColorEnd', attr(this.colorEnd, 3));
@@ -180,65 +187,70 @@ export class ParticleSystem {
   }
 
   burst(b: ParticleBurst, now: number): void {
-    const c0 = new THREE.Color(b.color);
-    const c1 = new THREE.Color(b.colorEnd ?? b.color);
+    const c0 = scratchColor.set(b.color);
+    const c1 = scratchColorEnd.set(b.colorEnd ?? b.color);
     const spread = b.spread ?? 1;
     const dir = b.direction
-      ? new THREE.Vector3(b.direction.x, b.direction.y, b.direction.z).normalize()
+      ? scratchDir.set(b.direction.x, b.direction.y, b.direction.z).normalize()
       : null;
+    const gravity = b.gravity ?? 0;
+    const drag = b.drag ?? 0;
+    const stretch = b.stretch ?? 0;
+    const shape = SHAPE_INDEX[b.shape ?? 'spark'];
+    const v = scratchVelocity;
     for (let n = 0; n < b.count; n += 1) {
       const i = this.cursor;
       this.cursor = (this.cursor + 1) % this.capacity;
+      if (this.dirtyCount === 0) this.dirtyStart = i;
+      this.dirtyCount = Math.min(this.capacity, this.dirtyCount + 1);
       // Random direction in a cone (or sphere when no direction).
-      const v = new THREE.Vector3(
-        Math.random() - 0.5,
-        Math.random() - 0.5,
-        Math.random() - 0.5,
-      ).normalize();
+      v.set(renderRandom() - 0.5, renderRandom() - 0.5, renderRandom() - 0.5).normalize();
       if (dir) v.multiplyScalar(spread).add(dir).normalize();
-      const speed = b.speed * (0.4 + Math.random() * 0.9);
-      this.start.set([b.at.x, b.at.y, b.at.z], i * 3);
-      this.velocity.set([v.x * speed, v.y * speed, v.z * speed], i * 3);
-      this.color.set([c0.r, c0.g, c0.b], i * 3);
-      this.colorEnd.set([c1.r, c1.g, c1.b], i * 3);
-      this.params.set(
-        [
-          now,
-          b.life * (0.6 + Math.random() * 0.8),
-          b.size * (0.6 + Math.random() * 0.8),
-          b.gravity ?? 0,
-        ],
-        i * 4,
-      );
-      this.drag[i] = b.drag ?? 0;
-      this.stretch[i] = b.stretch ?? 0;
-      this.shape[i] = SHAPE_INDEX[b.shape ?? 'spark'];
-      this.dirtyLo = Math.min(this.dirtyLo, i);
-      this.dirtyHi = Math.max(this.dirtyHi, i);
+      const speed = b.speed * (0.4 + renderRandom() * 0.9);
+      const o3 = i * 3;
+      const o4 = i * 4;
+      this.start[o3] = b.at.x;
+      this.start[o3 + 1] = b.at.y;
+      this.start[o3 + 2] = b.at.z;
+      this.velocity[o3] = v.x * speed;
+      this.velocity[o3 + 1] = v.y * speed;
+      this.velocity[o3 + 2] = v.z * speed;
+      this.color[o3] = c0.r;
+      this.color[o3 + 1] = c0.g;
+      this.color[o3 + 2] = c0.b;
+      this.colorEnd[o3] = c1.r;
+      this.colorEnd[o3 + 1] = c1.g;
+      this.colorEnd[o3 + 2] = c1.b;
+      this.params[o4] = now;
+      this.params[o4 + 1] = b.life * (0.6 + renderRandom() * 0.8);
+      this.params[o4 + 2] = b.size * (0.6 + renderRandom() * 0.8);
+      this.params[o4 + 3] = gravity;
+      this.drag[i] = drag;
+      this.stretch[i] = stretch;
+      this.shape[i] = shape;
     }
   }
 
   update(now: number): void {
     const time = this.material.uniforms.uTime;
     if (time) time.value = now;
-    if (this.dirtyLo <= this.dirtyHi) {
-      // Upload whole buffers: simpler than tracking ranges across the ring boundary, and cheap.
-      for (const name of [
-        'position',
-        'aStart',
-        'aVelocity',
-        'aColor',
-        'aColorEnd',
-        'aParams',
-        'aDrag',
-        'aStretch',
-        'aShape',
-      ]) {
-        const attribute = this.geometry.getAttribute(name);
-        if (attribute instanceof THREE.BufferAttribute) attribute.needsUpdate = true;
+    if (this.dirtyCount === 0) return;
+    // Only the slots born since the last upload go to the GPU: one range, or two when the ring
+    // wrapped, or the whole buffer when a frame wrote more than the pool holds.
+    const whole = this.dirtyCount >= this.capacity;
+    const first = this.dirtyStart;
+    const firstCount = Math.min(this.dirtyCount, this.capacity - first);
+    const wrapped = this.dirtyCount - firstCount;
+    for (const attribute of Object.values(this.geometry.attributes)) {
+      if (!(attribute instanceof THREE.BufferAttribute)) continue;
+      attribute.clearUpdateRanges();
+      if (!whole) {
+        const size = attribute.itemSize;
+        attribute.addUpdateRange(first * size, firstCount * size);
+        if (wrapped > 0) attribute.addUpdateRange(0, wrapped * size);
       }
-      this.dirtyLo = Number.POSITIVE_INFINITY;
-      this.dirtyHi = 0;
+      attribute.needsUpdate = true;
     }
+    this.dirtyCount = 0;
   }
 }

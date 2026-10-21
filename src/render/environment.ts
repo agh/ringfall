@@ -3,6 +3,7 @@ import { Sky } from 'three/addons/objects/Sky.js';
 import type { Vec3 } from '../core/vec3';
 import type { Atmosphere, TimeOfDay, Weather } from '../core/waves';
 import type { ParticleSystem } from './particles';
+import { renderRandom } from './random';
 
 /** Light-rig numbers the scene applies every frame; the environment owns their blend. */
 export interface Lighting {
@@ -351,20 +352,20 @@ const makeRingSurfaceTexture = (): THREE.CanvasTexture => {
     ctx.fillStyle = base;
     ctx.fillRect(0, 0, w, h);
     for (let i = 0; i < 260; i += 1) {
-      const x = Math.random() * w;
-      const y = h * 0.18 + Math.random() * h * 0.64;
-      const len = 8 + Math.random() * 60;
-      ctx.fillStyle = Math.random() < 0.5 ? 'rgba(96, 140, 84, 0.9)' : 'rgba(176, 164, 120, 0.7)';
-      ctx.fillRect(x, y, len, 3 + Math.random() * 6);
+      const x = renderRandom() * w;
+      const y = h * 0.18 + renderRandom() * h * 0.64;
+      const len = 8 + renderRandom() * 60;
+      ctx.fillStyle = renderRandom() < 0.5 ? 'rgba(96, 140, 84, 0.9)' : 'rgba(176, 164, 120, 0.7)';
+      ctx.fillRect(x, y, len, 3 + renderRandom() * 6);
     }
     for (let i = 0; i < 140; i += 1) {
       ctx.fillStyle = 'rgba(255,255,255,0.55)';
       ctx.beginPath();
       ctx.ellipse(
-        Math.random() * w,
-        h * 0.2 + Math.random() * h * 0.6,
-        6 + Math.random() * 18,
-        2 + Math.random() * 4,
+        renderRandom() * w,
+        h * 0.2 + renderRandom() * h * 0.6,
+        6 + renderRandom() * 18,
+        2 + renderRandom() * 4,
         0,
         0,
         Math.PI * 2,
@@ -489,8 +490,8 @@ export const createEnvironment = (arenaHalf: number): Environment => {
   const count = 1600;
   const stars = new Float32Array(count * 3);
   for (let i = 0; i < count; i += 1) {
-    const theta = Math.random() * Math.PI * 2;
-    const phi = Math.acos(Math.random() * 0.95 + 0.05);
+    const theta = renderRandom() * Math.PI * 2;
+    const phi = Math.acos(renderRandom() * 0.95 + 0.05);
     const r = 20000;
     stars[i * 3] = r * Math.sin(phi) * Math.cos(theta);
     stars[i * 3 + 1] = r * Math.cos(phi);
@@ -608,9 +609,9 @@ export const createEnvironment = (arenaHalf: number): Environment => {
       particles.burst(
         {
           at: {
-            x: eye.x + (Math.random() - 0.5) * RAIN_BOX,
-            y: eye.y + 1 + Math.random() * (RAIN_BOX / 2),
-            z: eye.z + (Math.random() - 0.5) * RAIN_BOX,
+            x: eye.x + (renderRandom() - 0.5) * RAIN_BOX,
+            y: eye.y + 1 + renderRandom() * (RAIN_BOX / 2),
+            z: eye.z + (renderRandom() - 0.5) * RAIN_BOX,
           },
           count: 1,
           color: RAIN_COLOR,
@@ -630,9 +631,9 @@ export const createEnvironment = (arenaHalf: number): Environment => {
       particles.burst(
         {
           at: {
-            x: eye.x + (Math.random() - 0.5) * 12,
+            x: eye.x + (renderRandom() - 0.5) * 12,
             y: 0.06,
-            z: eye.z + (Math.random() - 0.5) * 12,
+            z: eye.z + (renderRandom() - 0.5) * 12,
           },
           count: 4,
           color: SPLASH_COLOR,

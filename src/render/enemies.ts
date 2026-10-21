@@ -1,11 +1,18 @@
 import * as THREE from 'three';
 import { ENEMY_STATS, type Enemy } from '../core/enemy';
+import type { LightPool } from './lights';
 import { makeWatcherRig } from './watcher-rig';
 
-/** Composite enemy rigs. Emissive parts are tuned to catch bloom so enemies read at range. */
+/**
+ * Composite enemy rigs. Emissive parts are tuned to catch bloom so enemies read at range.
+ * Each rig borrows its light from the scene's pool and owns nothing else per instance except
+ * what `dispose` frees; geometry and the shell materials are shared by every rig of a kind.
+ */
 export interface EnemyRig {
   readonly group: THREE.Group;
   readonly animate: (enemy: Enemy, simTime: number) => void;
+  /** Returns the borrowed light and frees per-rig materials; call when the rig leaves the scene. */
+  readonly dispose: () => void;
 }
 
 const SKIMMER_BODY = new THREE.OctahedronGeometry(0.55, 1);
@@ -16,6 +23,7 @@ const STRIDER_HEAD = new THREE.ConeGeometry(0.35, 0.6, 6);
 const STRIDER_LEG = new THREE.CylinderGeometry(0.07, 0.11, 1.5, 6);
 const STRIDER_CANNON = new THREE.CylinderGeometry(0.1, 0.14, 0.9, 8);
 const STRIDER_EYE = new THREE.PlaneGeometry(0.5, 0.08);
+const STRIDER_MUZZLE = new THREE.SphereGeometry(0.1, 8, 8);
 
 const skimmerShell = new THREE.MeshStandardMaterial({
   color: 0x9a4b1c,
@@ -39,14 +47,16 @@ const striderShell = new THREE.MeshStandardMaterial({
   metalness: 0.65,
   flatShading: true,
 });
-const striderEye = new THREE.MeshBasicMaterial({ color: 0xff4d5a, side: THREE.DoubleSide });
+/** Rest colour of a strider's eye; the eye whitens as its cannon charges. */
+const STRIDER_EYE_COLOR = 0xff4d5a;
+const striderMuzzle = new THREE.MeshBasicMaterial({ color: 0xc084fc });
 const striderJoint = new THREE.MeshStandardMaterial({
   color: 0x2b2b33,
   roughness: 0.6,
   metalness: 0.8,
 });
 
-const makeSkimmer = (): EnemyRig => {
+const makeSkimmer = (lights: LightPool): EnemyRig => {
   const group = new THREE.Group();
   const stats = ENEMY_STATS.skimmer;
   const body = new THREE.Mesh(SKIMMER_BODY, skimmerShell);
@@ -56,11 +66,11 @@ const makeSkimmer = (): EnemyRig => {
   ring.rotation.x = Math.PI / 2;
   const core = new THREE.Mesh(SKIMMER_CORE, skimmerGlow);
   core.position.z = -0.42;
-  const light = new THREE.PointLight(0xffa040, 2.5, 7, 1.5);
-  light.position.set(0, 0, -0.5);
   const lift = new THREE.Group();
   lift.position.y = stats.height / 2;
-  lift.add(body, ring, core, light);
+  lift.add(body, ring, core);
+  const light = lights.acquire(lift, 0xffa040, 2.5, 7, 1.5);
+  light?.position.set(0, 0, -0.5);
   group.add(lift);
   return {
     group,
@@ -71,10 +81,11 @@ const makeSkimmer = (): EnemyRig => {
       lift.rotation.z = Math.sin(t * 5 + enemy.id) * 0.08;
       core.scale.setScalar(enemy.state === 'attack' ? 1.6 + Math.sin(t * 30) * 0.3 : 1);
     },
+    dispose: () => lights.release(light),
   };
 };
 
-const makeStrider = (): EnemyRig => {
+const makeStrider = (lights: LightPool): EnemyRig => {
   const group = new THREE.Group();
   const stats = ENEMY_STATS.strider;
   const hip = new THREE.Group();
@@ -86,19 +97,21 @@ const makeStrider = (): EnemyRig => {
   const head = new THREE.Mesh(STRIDER_HEAD, striderShell);
   head.position.set(0, 0.55, -0.35);
   head.rotation.x = -Math.PI / 2;
+  // The eye material is per rig: a charging strider whitens its own eye, not every strider's.
+  const striderEye = new THREE.MeshBasicMaterial({
+    color: STRIDER_EYE_COLOR,
+    side: THREE.DoubleSide,
+  });
   const eye = new THREE.Mesh(STRIDER_EYE, striderEye);
   eye.position.set(0, 0.48, -0.66);
   const cannon = new THREE.Mesh(STRIDER_CANNON, striderJoint);
   cannon.position.set(0.55, 0.45, -0.2);
   cannon.rotation.x = Math.PI / 2;
-  const muzzle = new THREE.Mesh(
-    new THREE.SphereGeometry(0.1, 8, 8),
-    new THREE.MeshBasicMaterial({ color: 0xc084fc }),
-  );
+  const muzzle = new THREE.Mesh(STRIDER_MUZZLE, striderMuzzle);
   muzzle.position.set(0.55, 0.45, -0.68);
-  const light = new THREE.PointLight(0xff4d5a, 2, 8, 1.5);
-  light.position.copy(eye.position);
-  hip.add(torso, head, eye, cannon, muzzle, light);
+  hip.add(torso, head, eye, cannon, muzzle);
+  const light = lights.acquire(hip, STRIDER_EYE_COLOR, 2, 8, 1.5);
+  light?.position.copy(eye.position);
   const legs: THREE.Mesh[] = [];
   for (const [angle, side] of [
     [-0.5, 1],
@@ -126,12 +139,16 @@ const makeStrider = (): EnemyRig => {
       hip.rotation.z = Math.sin(t * 3.5) * 0.04 * walking;
       const charging = enemy.state === 'attack' && enemy.nextAttackAt - t < 0.35;
       muzzle.scale.setScalar(charging ? 1.8 + Math.sin(t * 40) * 0.4 : 1);
-      striderEye.color.setHex(charging ? 0xffffff : 0xff4d5a);
+      striderEye.color.setHex(charging ? 0xffffff : STRIDER_EYE_COLOR);
+    },
+    dispose: () => {
+      lights.release(light);
+      striderEye.dispose();
     },
   };
 };
 
-export const makeEnemyRig = (enemy: Enemy): EnemyRig => {
-  if (enemy.kind === 'watcher') return makeWatcherRig();
-  return enemy.kind === 'skimmer' ? makeSkimmer() : makeStrider();
+export const makeEnemyRig = (enemy: Enemy, lights: LightPool): EnemyRig => {
+  if (enemy.kind === 'watcher') return makeWatcherRig(lights);
+  return enemy.kind === 'skimmer' ? makeSkimmer(lights) : makeStrider(lights);
 };

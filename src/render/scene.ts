@@ -8,9 +8,11 @@ import { ARENA_HALF_SIZE, type Arena } from '../core/world';
 import { disposeTree } from './dispose';
 import { type EnemyRig, makeEnemyRig } from './enemies';
 import { createEnvironment, type Environment } from './environment';
+import { LightPool } from './lights';
 import { ParticleSystem } from './particles';
 import { PickupMeshes } from './pickups';
 import { PostStack } from './post';
+import { renderRandom } from './random';
 import { WatcherBeamLayer } from './watcher-rig';
 import { WeaponViewmodels } from './weapons';
 
@@ -99,12 +101,12 @@ const scorchTexture = (): THREE.CanvasTexture => {
     // Rays of soot so the rim is not a perfect circle.
     ctx.globalCompositeOperation = 'destination-out';
     for (let i = 0; i < 18; i += 1) {
-      const angle = (i / 18) * Math.PI * 2 + Math.random() * 0.2;
-      const reach = size * (0.36 + Math.random() * 0.14);
+      const angle = (i / 18) * Math.PI * 2 + renderRandom() * 0.2;
+      const reach = size * (0.36 + renderRandom() * 0.14);
       ctx.beginPath();
       ctx.moveTo(size / 2, size / 2);
       ctx.lineTo(size / 2 + Math.cos(angle) * reach, size / 2 + Math.sin(angle) * reach);
-      ctx.lineWidth = 2 + Math.random() * 3;
+      ctx.lineWidth = 2 + renderRandom() * 3;
       ctx.strokeStyle = 'rgba(0,0,0,0.6)';
       ctx.stroke();
     }
@@ -114,6 +116,15 @@ const scorchTexture = (): THREE.CanvasTexture => {
 };
 
 const toVector = (v: Vec3): THREE.Vector3 => new THREE.Vector3(v.x, v.y, v.z);
+/** Scratch objects for the per-frame path, so a frame allocates nothing it throws away. */
+const scratchEye = new THREE.Vector3();
+const scratchSun = new THREE.Vector3();
+const scratchDust = new THREE.Color();
+const scratchDustEnd = new THREE.Color();
+const DUST_COLOR = 0xe8e4d8;
+const DUST_COLOR_END = 0xb8d8ea;
+/** Grenade spin in radians per simulation second (the old 0.2 per frame at 60 Hz). */
+const GRENADE_SPIN = 12;
 
 /** Procedural floor plating with a height map turned into a normal map, so light rakes across seams. */
 const makeFloorMaps = (): { map: THREE.Texture; normalMap: THREE.Texture } => {
@@ -130,7 +141,7 @@ const makeFloorMaps = (): { map: THREE.Texture; normalMap: THREE.Texture } => {
     const cell = size / cells;
     for (let cy = 0; cy < cells; cy += 1) {
       for (let cx = 0; cx < cells; cx += 1) {
-        const shade = 0x2a + Math.floor(Math.random() * 10);
+        const shade = 0x2a + Math.floor(renderRandom() * 10);
         ctx.fillStyle = `rgb(${shade}, ${shade + 16}, ${shade + 34})`;
         ctx.fillRect(cx * cell + 4, cy * cell + 4, cell - 8, cell - 8);
         ctx.fillStyle = 'rgba(125, 211, 252, 0.22)';
@@ -194,8 +205,15 @@ export class SceneRenderer {
   private readonly watcherBeams = new WatcherBeamLayer();
   private readonly environment: Environment;
   private readonly enemies = new Map<number, EnemyRig>();
-  private readonly bolts = new Map<number, THREE.Group>();
+  private readonly bolts = new Map<
+    number,
+    { group: THREE.Group; light: THREE.PointLight | null }
+  >();
   private readonly grenades = new Map<number, THREE.Mesh>();
+  /** Every borrowed point light comes from here, so the scene's light count never changes. */
+  private readonly lights = new LightPool();
+  /** Ids seen this frame by the sync passes; one set, cleared between them. */
+  private readonly seen = new Set<number>();
   private effects: Effect[] = [];
   private recoil = 0;
   private shake = 0;
@@ -208,6 +226,8 @@ export class SceneRenderer {
   private swayX = 0;
   private swayY = 0;
   private lastPlayerPos = new THREE.Vector3();
+  /** Set by `setArena`: the next frame takes the player's pose as the motion baseline. */
+  private motionReset = true;
   private arenaBuilt: Arena | null = null;
   private endCamera = 0;
   private flareGhosts: Array<[THREE.Sprite, number]> = [];
@@ -244,6 +264,7 @@ export class SceneRenderer {
 
     this.environment = createEnvironment(ARENA_HALF_SIZE);
     this.scene.add(this.environment.group, this.world, this.dynamic, this.particles.points);
+    this.scene.add(this.lights.group);
     this.scene.add(this.environment.moonLight, this.environment.moonLight.target);
     this.scene.fog = new THREE.FogExp2(this.environment.fogColor, FOG_DENSITY);
     this.scene.background = null;
@@ -260,15 +281,20 @@ export class SceneRenderer {
     this.buildLights();
     this.buildFlare();
     this.scene.add(this.camera);
-    this.weaponViewmodels = new WeaponViewmodels(this.camera, this.particles);
+    this.weaponViewmodels = new WeaponViewmodels(this.camera, this.particles, this.lights);
     this.dynamic.add(this.weaponViewmodels.effects);
     this.pickupMeshes = new PickupMeshes(this.dynamic, this.particles);
     this.dynamic.add(this.watcherBeams.group);
     this.post = new PostStack(this.renderer, this.scene, this.camera);
-    window.ringfallDebug = {
-      uniforms: () => this.post.debugUniforms(),
-      info: () => this.renderer.info.render,
-    };
+    // Diagnostics for the dev server and the capture scripts only; the published build keeps
+    // its renderer internals to itself.
+    if (import.meta.env.DEV || new URLSearchParams(window.location.search).has('record')) {
+      window.ringfallDebug = {
+        uniforms: () => this.post.debugUniforms(),
+        info: () => this.renderer.info.render,
+        lights: () => ({ inUse: this.lights.inUse }),
+      };
+    }
     this.resize();
     window.addEventListener('resize', () => this.resize());
   }
@@ -292,6 +318,9 @@ export class SceneRenderer {
   setArena(arena: Arena): void {
     if (this.arenaBuilt === arena) return;
     this.arenaBuilt = arena;
+    // A new arena is a new spawn: the first frame must not read the jump from the old position
+    // as a sprint and kick the head bob.
+    this.motionReset = true;
     // Every arena allocates fresh ground maps, materials and box geometries; free the last set.
     disposeTree(this.world);
     this.world.clear();
@@ -472,22 +501,22 @@ export class SceneRenderer {
     this.particles.update(now);
 
     // Airborne dust around the player: a few slow motes per frame, lit by bloom at the edges.
-    if (Math.random() < 0.6) {
+    if (renderRandom() < 0.6) {
       const e = playerEye(state.player);
       const dust = this.environment.lighting().dust;
       // Never closer than 2.5 m: a size-3 mote a metre away would be a 900 px disc.
-      const angle = Math.random() * Math.PI * 2;
-      const radius = 2.5 + Math.random() * 5;
+      const angle = renderRandom() * Math.PI * 2;
+      const radius = 2.5 + renderRandom() * 5;
       this.particles.burst(
         {
           at: {
             x: e.x + Math.cos(angle) * radius,
-            y: e.y + (Math.random() - 0.3) * 5,
+            y: e.y + (renderRandom() - 0.3) * 5,
             z: e.z + Math.sin(angle) * radius,
           },
           count: 1,
-          color: new THREE.Color(0xe8e4d8).multiplyScalar(dust),
-          colorEnd: new THREE.Color(0xb8d8ea).multiplyScalar(dust),
+          color: scratchDust.setHex(DUST_COLOR).multiplyScalar(dust),
+          colorEnd: scratchDustEnd.setHex(DUST_COLOR_END).multiplyScalar(dust),
           speed: 0.25,
           life: 5,
           size: 3,
@@ -499,7 +528,14 @@ export class SceneRenderer {
     this.adaptResolution(frameDt);
 
     const eye = playerEye(state.player);
-    const pos = toVector(eye);
+    const pos = scratchEye.set(eye.x, eye.y, eye.z);
+    if (this.motionReset) {
+      this.motionReset = false;
+      this.lastPlayerPos.copy(pos);
+      this.lastYaw = state.player.yaw;
+      this.lastPitch = state.player.pitch;
+      this.bobPhase = 0;
+    }
     const moved = pos.distanceTo(this.lastPlayerPos);
     const speed = frameDt > 0 ? moved / frameDt : 0;
     this.lastPlayerPos.copy(pos);
@@ -532,8 +568,8 @@ export class SceneRenderer {
     this.updateFlare();
     if (this.shake > 0) {
       const amount = Math.min(this.shakeCap, 0.03 * this.shake);
-      this.camera.rotation.z += (Math.random() - 0.5) * amount;
-      this.camera.rotation.x += (Math.random() - 0.5) * amount * 0.5;
+      this.camera.rotation.z += (renderRandom() - 0.5) * amount;
+      this.camera.rotation.x += (renderRandom() - 0.5) * amount * 0.5;
       this.shake = Math.max(0, this.shake - frameDt * 2.5);
     }
 
@@ -637,7 +673,10 @@ export class SceneRenderer {
    */
   private updateFlare(): void {
     const sunDisc = this.environment.lighting().sunDisc;
-    const sunNdc = this.environment.sunDirection.clone().multiplyScalar(9000).project(this.camera);
+    const sunNdc = scratchSun
+      .copy(this.environment.sunDirection)
+      .multiplyScalar(9000)
+      .project(this.camera);
     const visible =
       sunDisc > 0 && sunNdc.z < 1 && Math.abs(sunNdc.x) < 1.6 && Math.abs(sunNdc.y) < 1.6;
     const depth = 2;
@@ -713,12 +752,13 @@ export class SceneRenderer {
   }
 
   private syncEnemies(enemies: readonly Enemy[], eye: Vec3, simTime: number): void {
-    const seen = new Set<number>();
+    const seen = this.seen;
+    seen.clear();
     for (const enemy of enemies) {
       seen.add(enemy.id);
       let rig = this.enemies.get(enemy.id);
       if (!rig) {
-        rig = makeEnemyRig(enemy);
+        rig = makeEnemyRig(enemy, this.lights);
         this.enemies.set(enemy.id, rig);
         this.dynamic.add(rig.group);
       }
@@ -740,6 +780,7 @@ export class SceneRenderer {
     }
     for (const [id, rig] of this.enemies) {
       if (seen.has(id)) continue;
+      rig.dispose();
       this.dynamic.remove(rig.group);
       this.enemies.delete(id);
     }
@@ -747,19 +788,21 @@ export class SceneRenderer {
   }
 
   private syncBolts(state: GameState, now: number): void {
-    const seen = new Set<number>();
+    const seen = this.seen;
+    seen.clear();
     for (const bolt of state.bolts) {
       seen.add(bolt.id);
-      let group = this.bolts.get(bolt.id);
-      if (!group) {
-        group = new THREE.Group();
+      let entry = this.bolts.get(bolt.id);
+      if (!entry) {
+        const group = new THREE.Group();
         const core = new THREE.Mesh(this.boltGeometry, this.boltMaterial);
         core.rotation.x = Math.PI / 2;
-        const light = new THREE.PointLight(0xc084fc, 6, 7, 1.6);
-        group.add(core, light);
-        this.bolts.set(bolt.id, group);
+        group.add(core);
+        entry = { group, light: this.lights.acquire(group, 0xc084fc, 6, 7, 1.6) };
+        this.bolts.set(bolt.id, entry);
         this.dynamic.add(group);
       }
+      const { group } = entry;
       group.position.set(bolt.position.x, bolt.position.y, bolt.position.z);
       group.lookAt(
         bolt.position.x + bolt.direction.x,
@@ -779,8 +822,9 @@ export class SceneRenderer {
         now,
       );
     }
-    for (const [id, group] of this.bolts) {
+    for (const [id, { group, light }] of this.bolts) {
       if (seen.has(id)) continue;
+      this.lights.release(light);
       this.particles.burst(
         {
           at: { x: group.position.x, y: group.position.y, z: group.position.z },
@@ -800,7 +844,8 @@ export class SceneRenderer {
   }
 
   private syncGrenades(state: GameState, now: number): void {
-    const seen = new Set<number>();
+    const seen = this.seen;
+    seen.clear();
     for (const g of state.grenades) {
       seen.add(g.id);
       let mesh = this.grenades.get(g.id);
@@ -811,7 +856,8 @@ export class SceneRenderer {
         this.dynamic.add(mesh);
       }
       mesh.position.set(g.position.x, g.position.y + 0.15, g.position.z);
-      mesh.rotation.x += 0.2;
+      // Spin on simulation time: the same at any frame rate and in a capture.
+      mesh.rotation.x = state.time * GRENADE_SPIN + g.id;
       this.particles.burst(
         {
           at: g.position,
@@ -862,11 +908,25 @@ export class SceneRenderer {
       () => flashMaterial.dispose(),
     );
 
-    const light = new THREE.PointLight(PALETTE.dawn, 140 * near, GRENADE_BLAST_RADIUS * 3, 1.4);
-    light.position.copy(centre);
-    this.addEffect(light, now, 0.25, (t) => {
-      light.intensity = 140 * near * (1 - t);
-    });
+    const light = this.lights.acquire(
+      this.dynamic,
+      PALETTE.dawn,
+      140 * near,
+      GRENADE_BLAST_RADIUS * 3,
+      1.4,
+    );
+    if (light) {
+      light.position.copy(centre);
+      this.addEffect(
+        light,
+        now,
+        0.25,
+        (t) => {
+          light.intensity = 140 * near * (1 - t);
+        },
+        () => this.lights.release(light),
+      );
+    }
 
     const crestMaterial = new THREE.MeshBasicMaterial({
       color: PALETTE.dawn,
@@ -903,7 +963,7 @@ export class SceneRenderer {
     });
     const scorch = new THREE.Mesh(SCORCH_GEOMETRY, scorchMaterial);
     scorch.position.set(at.x, 0.03, at.z);
-    scorch.rotation.set(-Math.PI / 2, 0, Math.random() * Math.PI * 2);
+    scorch.rotation.set(-Math.PI / 2, 0, renderRandom() * Math.PI * 2);
     scorch.scale.setScalar(GRENADE_BLAST_RADIUS * 0.55);
     this.addEffect(
       scorch,
@@ -1104,16 +1164,21 @@ export class SceneRenderer {
   }
 
   private updateEffects(now: number): void {
-    this.effects = this.effects.filter((effect) => {
+    // Compacted in place: no new array per frame.
+    const effects = this.effects;
+    let kept = 0;
+    for (const effect of effects) {
       const t = (now - effect.bornAt) / effect.life;
       if (t >= 1) {
         this.dynamic.remove(effect.object);
         effect.dispose?.();
-        return false;
+        continue;
       }
       effect.update(t);
-      return true;
-    });
+      effects[kept] = effect;
+      kept += 1;
+    }
+    effects.length = kept;
   }
 
   /**
