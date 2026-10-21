@@ -318,7 +318,10 @@ jobs:
   # code, may write Pages and mint an OIDC token.
   pages-build:
     name: Pages build
-    needs: [lint, test, frames, build, balance, docs, security]
+    # The luminance gate (`frames`) and the browser smoke tests still fail the run, but the
+    # deploy does not wait on them: both take ten to forty minutes on software GL, and a push
+    # to main every few minutes would otherwise never reach this job.
+    needs: [lint, test, build, balance, docs, security]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
