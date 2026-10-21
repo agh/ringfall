@@ -5,6 +5,7 @@ import { GRENADE_BLAST_RADIUS } from '../core/grenade';
 import type { Vec3 } from '../core/vec3';
 import { WAVE_COUNTDOWN, waveAtmosphere } from '../core/waves';
 import { ARENA_HALF_SIZE, type Arena } from '../core/world';
+import { disposeTree } from './dispose';
 import { type EnemyRig, makeEnemyRig } from './enemies';
 import { createEnvironment, type Environment } from './environment';
 import { ParticleSystem } from './particles';
@@ -22,7 +23,14 @@ interface Effect {
   readonly bornAt: number;
   readonly life: number;
   readonly update: (t: number) => void;
+  /** Frees the effect's own materials when it expires; shared geometry is never disposed. */
+  readonly dispose: () => void;
 }
+
+/** Unit shapes shared by every explosion and death effect; each effect scales its own mesh. */
+const FLASH_GEOMETRY = new THREE.SphereGeometry(1, 16, 12);
+const SHOCKWAVE_GEOMETRY = new THREE.RingGeometry(0.8, 1, 48);
+const DEATH_RING_GEOMETRY = new THREE.TorusGeometry(0.6, 0.06, 6, 32);
 
 const toVector = (v: Vec3): THREE.Vector3 => new THREE.Vector3(v.x, v.y, v.z);
 
@@ -183,6 +191,8 @@ export class SceneRenderer {
   setArena(arena: Arena): void {
     if (this.arenaBuilt === arena) return;
     this.arenaBuilt = arena;
+    // Every arena allocates fresh ground maps, materials and box geometries; free the last set.
+    disposeTree(this.world);
     this.world.clear();
     const size = arena.halfSize * 2;
     const { map, normalMap } = makeFloorMaps();
@@ -717,15 +727,21 @@ export class SceneRenderer {
       transparent: true,
       opacity: 0.55 * near,
     });
-    const flash = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), flashMaterial);
+    const flash = new THREE.Mesh(FLASH_GEOMETRY, flashMaterial);
     flash.position.copy(toVector(at));
     const light = new THREE.PointLight(0xffb347, 140 * near, GRENADE_BLAST_RADIUS * 3, 1.4);
     flash.add(light);
-    this.addEffect(flash, now, 0.35, (t) => {
-      flash.scale.setScalar(0.4 + t * 2);
-      flashMaterial.opacity = 0.55 * near * (1 - t) ** 2;
-      light.intensity = 140 * near * Math.max(0, 1 - t / (0.25 / 0.35));
-    });
+    this.addEffect(
+      flash,
+      now,
+      0.35,
+      (t) => {
+        flash.scale.setScalar(0.4 + t * 2);
+        flashMaterial.opacity = 0.55 * near * (1 - t) ** 2;
+        light.intensity = 140 * near * Math.max(0, 1 - t / (0.25 / 0.35));
+      },
+      () => flashMaterial.dispose(),
+    );
     const waveMaterial = new THREE.MeshBasicMaterial({
       color: 0xffd27a,
       transparent: true,
@@ -734,13 +750,19 @@ export class SceneRenderer {
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
-    const wave = new THREE.Mesh(new THREE.RingGeometry(0.8, 1, 48), waveMaterial);
+    const wave = new THREE.Mesh(SHOCKWAVE_GEOMETRY, waveMaterial);
     wave.position.set(at.x, 0.15, at.z);
     wave.rotation.x = -Math.PI / 2;
-    this.addEffect(wave, now, 0.5, (t) => {
-      wave.scale.setScalar(1 + t * GRENADE_BLAST_RADIUS * 1.6);
-      waveMaterial.opacity = 0.5 * (1 - t);
-    });
+    this.addEffect(
+      wave,
+      now,
+      0.5,
+      (t) => {
+        wave.scale.setScalar(1 + t * GRENADE_BLAST_RADIUS * 1.6);
+        waveMaterial.opacity = 0.5 * (1 - t);
+      },
+      () => waveMaterial.dispose(),
+    );
     this.particles.burst(
       {
         at,
@@ -793,13 +815,19 @@ export class SceneRenderer {
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.6, 0.06, 6, 32), material);
+    const ring = new THREE.Mesh(DEATH_RING_GEOMETRY, material);
     ring.position.copy(toVector(at));
     ring.rotation.x = Math.PI / 2;
-    this.addEffect(ring, now, 0.4, (t) => {
-      ring.scale.setScalar(1 + t * 3.5);
-      material.opacity = 0.5 * (1 - t);
-    });
+    this.addEffect(
+      ring,
+      now,
+      0.4,
+      (t) => {
+        ring.scale.setScalar(1 + t * 3.5);
+        material.opacity = 0.5 * (1 - t);
+      },
+      () => material.dispose(),
+    );
     this.particles.burst(
       {
         at,
@@ -825,9 +853,10 @@ export class SceneRenderer {
     bornAt: number,
     life: number,
     update: (t: number) => void,
+    dispose: () => void,
   ): void {
     this.dynamic.add(object);
-    this.effects.push({ object, bornAt, life, update });
+    this.effects.push({ object, bornAt, life, update, dispose });
   }
 
   private updateEffects(now: number): void {
@@ -835,6 +864,7 @@ export class SceneRenderer {
       const t = (now - effect.bornAt) / effect.life;
       if (t >= 1) {
         this.dynamic.remove(effect.object);
+        effect.dispose();
         return false;
       }
       effect.update(t);
@@ -869,8 +899,10 @@ export class SceneRenderer {
   }
 
   private resize(): void {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    // A hidden iframe or a collapsed window reports zero; a zero aspect would put NaN in the
+    // projection matrix and every projected HUD point until the next resize.
+    const width = Math.max(1, window.innerWidth);
+    const height = Math.max(1, window.innerHeight);
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height, false);

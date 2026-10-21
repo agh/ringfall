@@ -28,7 +28,11 @@ const height = Number(args.height ?? 720);
 const out = resolve(args.out ?? 'demo.mp4');
 const port = 4175;
 const framesDir = resolve('.record-frames');
-const stepsPerFrame = Math.round(60 / fps);
+if (!Number.isInteger(fps) || fps <= 0 || 60 % fps !== 0) {
+  console.error(`fps must divide 60 so every frame holds a whole number of ticks; ${fps} does not`);
+  process.exit(1);
+}
+const stepsPerFrame = 60 / fps;
 const totalFrames = seconds * fps;
 
 rmSync(framesDir, { recursive: true, force: true });

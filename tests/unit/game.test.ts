@@ -477,4 +477,32 @@ describe('game', () => {
     expect(state.status).toBe('won');
     expect(events.some((e) => e.type === 'victory')).toBe(true);
   });
+
+  it('keeps a death that lands in the same step as the last kill', () => {
+    // A grenade at the player's feet kills the last wave-8 skimmer and the one-health player
+    // in one step. The wave stage runs last; without a guard it overwrote dead with won.
+    const base = armedWith('rifle', [awake(1, 'skimmer', vec3(0, 0, -3))]);
+    const doomed: GameState = {
+      ...base,
+      wave: { number: 8, phase: 'active', phaseEndsAt: 0 },
+      player: { ...base.player, vitality: { ...base.player.vitality, shield: 0, health: 1 } },
+      grenades: [{ id: 99, position: vec3(0, 0, -2), velocity: vec3(0, 0, 0), explodeAt: 0 }],
+    };
+    const { state, events } = run(doomed, IDLE_INPUT, DT);
+    expect(events.map((e) => e.type)).toContain('playerDied');
+    expect(events.map((e) => e.type)).not.toContain('victory');
+    expect(state.status).toBe('dead');
+  });
+
+  it('blasts spare a spawning enemy, as shots do', () => {
+    const base = armedWith('rifle', [createEnemy(1, 'skimmer', vec3(0, 0, -3), 0)]);
+    expect(base.enemies[0]?.state).toBe('spawning');
+    const primed: GameState = {
+      ...base,
+      grenades: [{ id: 99, position: vec3(0, 0, -3), velocity: vec3(0, 0, 0), explodeAt: 0 }],
+    };
+    const { state } = run(primed, IDLE_INPUT, DT);
+    expect(state.enemies[0]?.health).toBe(base.enemies[0]?.health);
+    expect(state.enemies[0]?.state).toBe('spawning');
+  });
 });
