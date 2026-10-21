@@ -192,7 +192,8 @@ and ring surface are procedural canvases).
 ## Player landing
 
 - Layout: full-bleed live scene behind a DOM overlay. Wordmark, one line of
-  copy, one button. Controls hint bottom-right. Nothing else.
+  copy, one button, the controls list, and a collapsed Settings strip
+  (sensitivity, field of view, shake, flash). Nothing else.
 - Motion, first second: the card fades up over 700 ms; the wordmark slides
   from 0.4em tracking to 0.14em over 900 ms; the Deploy button breathes
   (2.2 s cycle). Trim lines igniting across the arena and the button
@@ -219,8 +220,9 @@ is tiny, short and additive.
   worth 300 points or more), 120 ms on the player's shield break.
   Implemented as a time-scale in `src/main.ts`, not a frame skip.
 - Screen shake: magnitude is max(current, new), never additive; hard cap
-  0.035 rad. An accessibility toggle that sets the cap to zero is not yet
-  in the code.
+  0.035 rad. The Settings panel's screen-shake switch sets the cap to zero
+  and the hit-flash switch hides the lattice and damage flash
+  (`src/core/settings.ts`, kept in local storage).
 - HUD value tweens at most 500 ms (arcs 120 ms, flashes 400 ms); numbers
   never snap. Looping indicators (recharge 700 ms, low shield 900 ms) and
   the damage-direction fade (900 ms) are the only longer animations.
