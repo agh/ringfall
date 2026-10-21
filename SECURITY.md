@@ -2,10 +2,24 @@
 
 > [Ringfall](README.md) > Security Policy
 
-Ringfall is a static page with no backend, no network calls after load,
-no third-party scripts, and no storage beyond personal bests in the
-browser's local storage. The security surface is the published build, the
-pinned dependencies, and the GitHub Actions workflows.
+Ringfall is a static page with no backend, no third-party scripts, and no
+storage beyond personal bests in the browser's local storage. The only
+cross-origin requests are the two Google Fonts hosts named in the Content
+Security Policy in `index.html`. The security surface is the published
+build, the pinned dependencies, and the GitHub Actions workflows.
+
+## Threat model
+
+1. **Assets**: the published build at the custom domain, the `main` branch, and the player's local storage; there are no accounts, secrets, or server-side data.
+2. **Untrusted input**: the query string (`?seed`, `?atmo`, `?weather`, `?bot`, `?record`, `?nopost`) and the `ringfall.records.v1` local storage value; both are parsed by allow-list in `src/core` and never reach markup.
+3. **Browser surface**: a strict Content Security Policy meta tag (same-origin scripts, no inline script, no `eval`, no workers, no objects) and `no-referrer`; GitHub Pages cannot set headers, so `frame-ancestors` and `Permissions-Policy` are unavailable.
+4. **Supply chain**: every dependency is an exact pin with a lockfile integrity hash, lifecycle scripts are disabled, releases younger than a day are not resolved, and `pnpm audit --prod` must be clean.
+5. **Build output**: content-hashed assets with hidden source maps; the bundle contains no environment variables and makes no network calls.
+6. **Workflows**: every action is pinned to a commit, tokens are read-only except for the Pages deploy job, checkouts do not persist credentials, and no workflow runs on `pull_request_target`.
+7. **Deploy**: only a completed push to `main` publishes; the custom domain is pinned by `public/CNAME`.
+8. **Out of scope**: a player altering their own local storage or query string affects only their own session and personal bests; there is no leaderboard to defraud.
+9. **Residual risk**: a compromised Google Fonts response can inject CSS but not script; self-hosting the fonts removes it.
+10. **Admin-only controls** (branch rulesets, secret scanning, Pages HTTPS enforcement) are tracked on the review issue and are not enforceable from this repository's files.
 
 ## Supported versions
 
