@@ -21,6 +21,15 @@ export interface Lighting {
   readonly sunDisc: number;
   /** Brightness of the airborne dust motes, which would bloom like lamps on a dark night. */
   readonly dust: number;
+  /** Dust motes spawned per second around the player; zero in rain. */
+  readonly dustRate: number;
+  /** Seconds a dust mote drifts before it fades. */
+  readonly dustLife: number;
+  /**
+   * 0 by day, 1 at night: how much the enemy rigs lift their own emissives (skimmer rings,
+   * strider lenses) so they read after dark without the exposure lift doing all the work.
+   */
+  readonly night: number;
 }
 
 /** What the environment needs from the scene to rain on the player. */
@@ -75,6 +84,9 @@ interface Rig {
   ringGlow: number;
   environmentIntensity: number;
   dust: number;
+  dustRate: number;
+  dustLife: number;
+  night: number;
 }
 
 const color = (hex: number): THREE.Color => new THREE.Color(hex);
@@ -106,7 +118,10 @@ const TIME_PRESETS: Record<TimeOfDay, () => Rig> = {
     moonColor: color(0xa9bdd6),
     ringGlow: 0,
     environmentIntensity: 0.35,
-    dust: 1,
+    dust: 0.9,
+    dustRate: 30,
+    dustLife: 6,
+    night: 0,
   }),
   dawn: () => ({
     sunElevation: 5,
@@ -130,7 +145,10 @@ const TIME_PRESETS: Record<TimeOfDay, () => Rig> = {
     moonColor: color(0xa9bdd6),
     ringGlow: 0.06,
     environmentIntensity: 0.3,
-    dust: 0.6,
+    dust: 0.7,
+    dustRate: 24,
+    dustLife: 6,
+    night: 0.35,
   }),
   dusk: () => ({
     sunElevation: 6,
@@ -154,7 +172,10 @@ const TIME_PRESETS: Record<TimeOfDay, () => Rig> = {
     moonColor: color(0xa9bdd6),
     ringGlow: 0.1,
     environmentIntensity: 0.25,
-    dust: 0.3,
+    dust: 0.45,
+    dustRate: 20,
+    dustLife: 5,
+    night: 0.55,
   }),
   night: () => ({
     // The sun sits just under the horizon: the Sky shader keeps a thin twilight band there.
@@ -179,7 +200,12 @@ const TIME_PRESETS: Record<TimeOfDay, () => Rig> = {
     moonColor: color(0xb4c6dc),
     ringGlow: 0.22,
     environmentIntensity: 0.18,
-    dust: 0.08,
+    // Motes are a tenth of the area they were (size 0.09, not 3), so they can be brighter than
+    // the old 0.08 and still be a hint rather than a lamp.
+    dust: 0.2,
+    dustRate: 10,
+    dustLife: 4,
+    night: 1,
   }),
 };
 
@@ -204,6 +230,9 @@ const applyWeather = (rig: Rig, weather: Weather): Rig => {
         exposure: rig.exposure * 0.9,
         starOpacity: rig.starOpacity * 0.35,
         environmentIntensity: rig.environmentIntensity * 0.7,
+        // Rain replaces dust; the grey light wants a little more emissive from the enemies.
+        dustRate: 0,
+        night: Math.min(1, rig.night + 0.15),
       };
     }
     case 'fog': {
@@ -223,6 +252,12 @@ const applyWeather = (rig: Rig, weather: Weather): Rig => {
         exposure: night ? 0.5 : 0.46,
         starOpacity: rig.starOpacity * 0.4,
         environmentIntensity: rig.environmentIntensity * 0.6,
+        // Suspended water: more motes, each dimmer and slower to fade; emissives push harder
+        // so a ring 30 m into the bank still reads.
+        dust: rig.dust * 0.6,
+        dustRate: rig.dustRate * 2.5,
+        dustLife: rig.dustLife * 1.2,
+        night: Math.min(1, rig.night + 0.3),
       };
     }
   }
@@ -271,6 +306,9 @@ const blendRig = (out: Rig, from: Rig, to: Rig, t: number): void => {
   out.ringGlow = L(from.ringGlow, to.ringGlow, t);
   out.environmentIntensity = L(from.environmentIntensity, to.environmentIntensity, t);
   out.dust = L(from.dust, to.dust, t);
+  out.dustRate = L(from.dustRate, to.dustRate, t);
+  out.dustLife = L(from.dustLife, to.dustLife, t);
+  out.night = L(from.night, to.night, t);
 };
 
 const TIMES: readonly TimeOfDay[] = ['dawn', 'day', 'dusk', 'night'];
@@ -319,15 +357,25 @@ const makeDiscTexture = (inner: string, outer: string): THREE.Texture => {
   return texture;
 };
 
-/** Rain tuning: drops per second around the player, and how often one lands visibly. */
+/**
+ * Rain tuning: drops per second around the player, and how often one lands visibly. A frame
+ * never spawns more than `RAIN_MAX_PER_FRAME` drops however long it took.
+ */
 const RAIN_RATE = 1500;
-const RAIN_SPLASH_RATE = 24;
+const RAIN_MAX_PER_FRAME = 160;
+const RAIN_SPLASH_RATE = 36;
 const RAIN_BOX = 16;
 const RAIN_FALL_SPEED = 9;
 const RAIN_LIFE = 1.2;
-/** Additive particles have no alpha: a dim Ring colour is a Ring streak at low alpha. */
-const RAIN_COLOR = new THREE.Color(0xb8d8ea).multiplyScalar(0.18);
-const SPLASH_COLOR = new THREE.Color(0xe8e4d8).multiplyScalar(0.3);
+/** Streak size (pixels at 300 m) and how many times taller than wide it renders. */
+const RAIN_SIZE = 0.4;
+const RAIN_STRETCH = 10;
+/**
+ * Additive particles have no alpha: a dim Ring colour is a Ring streak at low alpha. 0.4 is the
+ * most a streak can carry and stay under the bloom threshold at its bright centre (2.2x).
+ */
+const RAIN_COLOR = new THREE.Color(0xb8d8ea).multiplyScalar(0.4);
+const SPLASH_COLOR = new THREE.Color(0xe8e4d8).multiplyScalar(0.45);
 
 const RING_RADIUS = 6000;
 const RING_TUBE = 360;
@@ -550,6 +598,9 @@ export const createEnvironment = (arenaHalf: number): Environment => {
     environmentIntensity: number;
     sunDisc: number;
     dust: number;
+    dustRate: number;
+    dustLife: number;
+    night: number;
   } = {
     sunIntensity: current.sunIntensity,
     sunColor,
@@ -563,6 +614,9 @@ export const createEnvironment = (arenaHalf: number): Environment => {
     environmentIntensity: current.environmentIntensity,
     sunDisc: current.sunDisc,
     dust: current.dust,
+    dustRate: current.dustRate,
+    dustLife: current.dustLife,
+    night: current.night,
   };
 
   /** Pushes the blended rig into the sky, lights, fog, stars, ring and the shared getters. */
@@ -598,12 +652,15 @@ export const createEnvironment = (arenaHalf: number): Environment => {
     lighting.environmentIntensity = current.environmentIntensity;
     lighting.sunDisc = current.sunDisc;
     lighting.dust = current.dust;
+    lighting.dustRate = current.dustRate;
+    lighting.dustLife = current.dustLife;
+    lighting.night = current.night;
   };
   apply(0);
 
   const rain = (dt: number, scene: SceneContext, now: number): void => {
     const { particles, eye } = scene;
-    const drops = Math.min(160, Math.round(RAIN_RATE * dt));
+    const drops = Math.min(RAIN_MAX_PER_FRAME, Math.round(RAIN_RATE * dt));
     for (let i = 0; i < drops; i += 1) {
       particles.burst(
         {
@@ -618,8 +675,8 @@ export const createEnvironment = (arenaHalf: number): Environment => {
           direction: { x: 0.04, y: -1, z: 0.02 },
           spread: 0.03,
           life: RAIN_LIFE,
-          size: 0.3,
-          stretch: 8,
+          size: RAIN_SIZE,
+          stretch: RAIN_STRETCH,
         },
         now,
       );
@@ -634,14 +691,14 @@ export const createEnvironment = (arenaHalf: number): Environment => {
             y: 0.06,
             z: eye.z + (Math.random() - 0.5) * 12,
           },
-          count: 4,
+          count: 6,
           color: SPLASH_COLOR,
           colorEnd: 0x1e3a5f,
-          speed: 1.1,
+          speed: 1.3,
           direction: { x: 0, y: 1, z: 0 },
           spread: 0.8,
-          life: 0.3,
-          size: 0.25,
+          life: 0.35,
+          size: 0.35,
           gravity: 7,
         },
         now,
