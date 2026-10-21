@@ -9,8 +9,8 @@ created: 2026-10-21
 
 # The journey
 
-A time-indexed log of how Ringfall was built in one hackathon session,
-with the frames that were captured along the way. Times are UTC on
+A time-indexed log of how Ringfall was built in four hours, 14:08 to
+18:30 UTC on 2026-10-21, with the frames that were captured along the way. Times are UTC on
 2026-10-21; the user's clock ran seven hours behind (10:12 for 17:12 UTC)
 and the hard stop was 18:30 UTC. Each entry says what was tried, what was
 seen, and what was decided, so a reader can follow the reasoning and not
@@ -659,6 +659,37 @@ The remaining pairs (day 10 s and 18 s, night 8.5 s and 18 s, the moon)
 are filed beside them as `1715-bloom-before-*.jpg` and
 `1740-bloom-after-*.jpg`.
 
+## 17:40 The hero is a frame, not a drawing
+
+Seven moments of seed 7 were rendered headless at 3840x1600 with the post
+stack on and the HUD hidden (new `?nohud` dev flag): night at 10 s and 18 s,
+dawn at 2 s and 95 s, day at 10 s, dusk at 45 s, rain at 18 s. About 30 s a
+frame on software GL. The night kill at 10 s won the banner: dark sky for
+the wordmark, a warm skimmer burst between the slabs, the ring overhead.
+Dawn 95 s (sun flare), night 18 s (beam) and dusk 45 s (laser) make the
+README strip. The contact sheet is `images/1740-hero-contact.jpg`; the
+recipe is the "Hero and social" section of `docs/brand.md`.
+
+![Contact sheet of the seven candidate hero frames](images/1740-hero-contact.jpg)
+
+## 17:50 The watcher, held at the gate
+
+Issue #17's third archetype went in as new files (`src/core/watcher.ts`,
+`src/render/watcher-rig.ts`) with one dispatch line in the enemy module, so
+it could land beside the agents splitting `updateEnemy`, rewriting the wave
+table and adding night emissives. The state machine, the cover-blocked
+beam, the rig's aspect ratio and the kill-time step are unit-tested. The
+balance gate is where it stopped: with one watcher from wave 5 the steady
+bot cleared 4.25 waves and won 5 % against floors of 4.85 and 10 %. Three
+bot rules (do not chase a unit that backs off, finish an engaged watcher,
+draw a precise gun and wait for the reticle) and a 3.5 s cooldown brought
+it to 4.55 to 4.80 waves and 0 to 5 % wins, still under the floor, so the
+roster entry shipped behind `WATCHERS_IN_ROSTER = false` with the tables
+in the pull request. The wave 5 frame was not captured: the record-mode bot
+on seed 7 was still in wave 3 at 394 s on this machine's software GL, and
+the hard stop came first. Next update: set by whoever takes the balance
+pass.
+
 ## 18:08 Flare budget, second cut
 
 Issue #71: after #61 the user watched the reel twice and said there was
@@ -692,36 +723,73 @@ trims and stars are still visible at night on the frames.
 The other pairs are filed beside them as `1803-flare2-before-*.jpg` and
 `1808-flare2-after-*.jpg`.
 
-## 17:40 The hero is a frame, not a drawing
+## 18:10 Freeze: what four hours built
 
-Seven moments of seed 7 were rendered headless at 3840x1600 with the post
-stack on and the HUD hidden (new `?nohud` dev flag): night at 10 s and 18 s,
-dawn at 2 s and 95 s, day at 10 s, dusk at 45 s, rain at 18 s. About 30 s a
-frame on software GL. The night kill at 10 s won the banner: dark sky for
-the wordmark, a warm skimmer burst between the slabs, the ring overhead.
-Dawn 95 s (sun flare), night 18 s (beam) and dusk 45 s (laser) make the
-README strip. The contact sheet is `images/1740-hero-contact.jpg`; the
-recipe is the "Hero and social" section of `docs/brand.md`.
+The hard stop was 18:30 UTC. At 18:10 the counts, taken from the
+repository and GitHub rather than from memory, were these. Earlier
+entries and the deck quoted smaller numbers because they were written
+while the numbers were still moving; this entry supersedes them.
 
-![Contact sheet of the seven candidate hero frames](images/1740-hero-contact.jpg)
+| Measure | Count at 18:10 |
+| ------- | -------------- |
+| Elapsed since kick-off | 4 h 2 min |
+| Commits on main | 162 |
+| Pull requests merged | 29 |
+| Issues filed | 51 (26 open, 25 closed) |
+| Cloud sessions dispatched | 30 |
+| Local subagents (research, product docs, audit, streams, journal, deck, reel) | about 15 |
+| Unit tests on main | 278, all passing |
+| CI jobs on every pull request | lint and types, unit, browser smoke, build, balance gate, frames gate, docs hygiene, security and workflow hygiene |
 
-## 17:50 The watcher, held at the gate
+What the second coaching round changed, in order of what a player sees:
+the bloom prefilter and a second flare cut; explosions rebuilt as flash,
+crest, debris, smoke and scorch; weapon flashes sized to the frame;
+pickups without point lights; a settings panel with shake and flash
+switches; skimmers that rout when their strider dies, with a squeal; four
+skimmer temperaments, a crouch and a hidden switch; the watcher archetype
+built and tested but shipped behind a roster flag because six variants
+failed the balance gate; the hero banner and social card rendered from
+the game; every self-reference pointed at the new repository name; the
+franchise name removed from everything but citations. Underneath: a
+purity lint rule, a design-doc numbers test, a balance gate, a luminance
+gate, Vale, typos, link checks and a frontmatter schema, actionlint,
+zizmor, gitleaks, npm audit and Stylelint, a strict Content Security
+Policy, and two adversarial reviews (software: 40 findings, 19 fixed;
+documentation: 70 findings, 56 fixed, verdict unchanged at two and a half
+of five).
 
-Issue #17's third archetype went in as new files (`src/core/watcher.ts`,
-`src/render/watcher-rig.ts`) with one dispatch line in the enemy module, so
-it could land beside the agents splitting `updateEnemy`, rewriting the wave
-table and adding night emissives. The state machine, the cover-blocked
-beam, the rig's aspect ratio and the kill-time step are unit-tested. The
-balance gate is where it stopped: with one watcher from wave 5 the steady
-bot cleared 4.25 waves and won 5 % against floors of 4.85 and 10 %. Three
-bot rules (do not chase a unit that backs off, finish an engaged watcher,
-draw a precise gun and wait for the reticle) and a 3.5 s cooldown brought
-it to 4.55 to 4.80 waves and 0 to 5 % wins, still under the floor, so the
-roster entry shipped behind `WATCHERS_IN_ROSTER = false` with the tables
-in the pull request. The wave 5 frame was not captured: the record-mode bot
-on seed 7 was still in wave 3 at 394 s on this machine's software GL, and
-the hard stop came first. Next update: set by whoever takes the balance
-pass.
+## 17:54 Five reviewers, no GPU, one checklist
+
+Issue #53 asked for an adversarial design and user-experience review in
+five dimensions: the first thirty seconds, HUD readability, the feel loop,
+accessibility, and the end of a run. Five reviewer agents ran in parallel
+against the headless capture hook, seed 7, at 1280x720; the 4K captures
+did not finish inside the review window because five Chromiums on
+software GL pushed the load average past thirty, so 4K numbers were
+computed from the stylesheet and are marked as such. The ranked checklist
+of 44 findings is on the issue; 29 are fixed on `fix/issue-53-ux-review`,
+13 deferred to their owners (#8, #9, #37, the renderer), 2 kept.
+
+What the frames showed: seven HUD texts at 9 to 12 px against the brand's
+14 px floor; the top corners on sky at 2.6:1 instead of the 6.5:1 the brand
+table claims against Abyss; a compass that drew no cardinal letters once
+the heading was fractional, because the modulo test ran on the heading
+itself; Tab and Space swallowed on the title card so the Deploy button
+could not be reached by keyboard; no reduced-motion rule; an Esc that
+showed the title screen (or the previous death card) mid-run; and an end
+card that never said Victory or Defeat. The fixes are in the HUD, the
+overlay copy and ARIA, the stylesheet rules the findings name, and the
+lifecycle in `main.ts`, plus one line in the input controller.
+
+![Title card before: controls at 11.5 px, footnote at 10 px](images/1754-ux-title-before.jpg)
+
+![Title card after: 14 px floors, the eight-wave goal, Pause listed](images/1754-ux-title-after.jpg)
+
+![HUD at 10 s before: labels at 9 to 10 px, compass without letters](images/1754-ux-hud-10s-before.jpg)
+
+![HUD at 10 s after: Hull panels on the corners and compass, SW and W drawn, 14 px labels](images/1754-ux-hud-10s-after.jpg)
+
+![HUD at 1 s after: Contact in 2, NW and N on the compass](images/1754-ux-hud-1s-after.jpg)
 
 ## Playtest reviews
 
@@ -729,6 +797,7 @@ Each row is a human or agent watching the game play, not a screenshot.
 
 | When | Seed | What was watched | Verdict |
 | ---- | ---- | ---------------- | ------- |
+| 17:54 | 7 | Frames at 1, 6 and 10 s at 720p, title card at 720p, computed styles and sampled contrast behind each HUD text, for #53 | Seven HUD texts under 14 px, top corners at 2.6:1 on sky, compass drawing no letters, keyboard locked out of Deploy, no reduced-motion rule; all fixed in the #53 PR; 4K and end-card frames did not finish under load. |
 | 17:30 | 7 | The first kill at night (t = 10 s), the launcher kill at 3 m (t = 47 s) and a blast in the open (t = 45.5 s), by day and by night, at 50 ms steps, after the explosion rework | The crest reads as a pressure wave from 3 m and from 19 m (an arc on the floor past the cover); chips and sparks fall where the eye expects them; the smoke column shows by day and against lit walls at night, and is invisible against the night sky, which is right for soot. The scorch is the one thing that is still there a second later. The frame at the first kill is still dominated by the dying skimmer's own core and light, not by the kill effect. |
 | 17:00 | 7 | A 75 s bot run by day, frames every 3 s, and the night kill at 10 s, after the weapon integration | Weapon swaps read (beam at 18 s, scatter at 45 s, launcher at 48 s), pickup columns are visible from across the arena, the night frame keeps its stars and trims. The launcher round the bot fired at its own feet at 48 s still washes the frame pink with the shield-down effect; that is the jolt it should be, but the bot should not do it (issue for the bot: no launcher inside the blast radius). |
 | 15:56 | 7 | The whole 49 s film with its offline score: title, deploy, waves 1 to 4 | Reviewed frame-by-frame at 8 s, 22 s and 46 s and watched end to end at speed: the sun flare and bloom carry the opening, the bot's first kill lands at 4.8 s, wave 2 brings the first strider and bolts, the HUD reads at 720p. Weak points: around 8 s the bot turns into the sun and the frame whites out for about two seconds (this capture predates the exposure and haze reduction and HUD v2), and the bot stands in the open while reloading. Shipped as the first reel; a second capture with the current build was started at 16:00. |

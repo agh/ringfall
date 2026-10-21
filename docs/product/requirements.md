@@ -130,10 +130,14 @@ until spec item 11 measures them.
 removes the hex shield lattice and the damage flash; both live in the
 settings panel on the title overlay, with mouse sensitivity and field of
 view, and persist in local storage (built: `src/core/settings.ts`, unit
-tests prove defaults and tolerant parsing). Every HUD
-color pairing meets the contrast ratios in brand.md, and no text sits
-below 14 px. The game is playable with keyboard and mouse only, and no
-action depends on a sound cue alone.
+tests prove defaults and tolerant parsing). Every HUD color pairing meets
+the contrast ratios in brand.md, and no text sits below 14 px, on the HUD or
+on the title and end cards, at any viewport from 1280x720 to 3840x2160. No
+state is signalled by color alone: low ammo, a kill, a shield break and the
+outcome of a run each have a word or a shape as well. Looping animation
+stops under `prefers-reduced-motion: reduce`. The game is playable with
+keyboard and mouse only: the card is a dialog, and its one button takes
+focus every time the card returns. No action depends on a sound cue alone.
 
 **Compatibility.** Desktop browsers with WebGL 2 and pointer lock. Mobile
 and WebGPU are Later.

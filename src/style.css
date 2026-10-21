@@ -24,7 +24,8 @@
   --text-hero: clamp(36px, 8vmin, 96px);
   --font-display: "Chakra Petch", "Rajdhani", "Bahnschrift", "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", "Menlo", "Consolas", monospace;
-  --u: clamp(2px, 0.45vmin, 6px); /* one HUD unit */
+  --u: clamp(2px, 0.45vmin, 10px); /* one HUD unit; the 10px cap keeps 4K scaling */
+  --text-min: 14px; /* brand.md checklist item 4: no text below 14 px */
   --safe-x: max(env(safe-area-inset-left), env(safe-area-inset-right), 1.5vmin);
   --safe-y: max(env(safe-area-inset-top), env(safe-area-inset-bottom), 1.5vmin);
 }
@@ -101,9 +102,13 @@ body {
   margin-top: calc(var(--u) * 0.5);
 }
 
+/* The corners sit on sky, not Abyss: they get the Hull panel and Slate border the brand prescribes. */
 .hud__corner {
   position: absolute;
   top: calc(var(--safe-y) + var(--u) * 4);
+  padding: calc(var(--u) * 1.5) calc(var(--u) * 2.5);
+  background: var(--hull);
+  box-shadow: 0 0 0 1px var(--slate);
 }
 
 .hud__corner--tl {
@@ -136,8 +141,9 @@ body {
   top: calc(var(--safe-y) + var(--u) * 2);
   left: 50%;
   transform: translateX(-50%);
-  width: clamp(240px, 36vw, 560px);
+  width: clamp(240px, 36vw, 900px);
   height: calc(var(--u) * 9);
+  background: var(--hull);
   -webkit-mask-image: linear-gradient(
     90deg,
     transparent,
@@ -160,7 +166,7 @@ body {
   position: absolute;
   left: calc(var(--safe-x) + var(--u) * 5);
   bottom: calc(var(--safe-y) + var(--u) * 5);
-  width: clamp(120px, 17vmin, 240px);
+  width: clamp(120px, 17vmin, 400px);
   aspect-ratio: 1;
   border-radius: 50%;
   background: var(--hull);
@@ -172,10 +178,11 @@ body {
 .hud__radar-label {
   position: absolute;
   left: 50%;
-  bottom: calc(var(--u) * -5);
+  bottom: calc(var(--u) * -6);
   transform: translateX(-50%);
   white-space: nowrap;
   font-family: var(--font-display);
+  font-weight: 600;
   font-size: max(14px, calc(var(--u) * 2.8));
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -281,6 +288,11 @@ body {
 .hud__hitmarker.is-active {
   opacity: 1;
   transition: none;
+}
+
+/* A kill reads by size as well as colour: the marker grows, not just turns Flare. */
+.hud__hitmarker.is-kill {
+  transform: translate(-50%, -50%) rotate(45deg) scale(1.6);
 }
 
 .hud__hitmarker.is-kill::before,
@@ -433,6 +445,7 @@ body {
   display: block;
   margin-top: calc(var(--u) * 0.8);
   font-family: var(--font-display);
+  font-weight: 600;
   font-size: max(14px, calc(var(--u) * 2.8));
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -452,6 +465,23 @@ body {
   align-items: flex-end;
   justify-content: flex-end;
   gap: calc(var(--u) * 2);
+}
+
+/* The draw: the ammo block dips and returns over the 250 ms the viewmodel takes to come up. */
+.hud__ammo.is-drawing {
+  animation: draw 250ms ease-out;
+}
+
+@keyframes draw {
+  0% {
+    opacity: 0.2;
+    transform: translateY(calc(var(--u) * 2));
+  }
+
+  100% {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .hud__ammo-mag {
@@ -477,6 +507,7 @@ body {
 
 .hud__ammo-name {
   font-family: var(--font-display);
+  font-weight: 600;
   font-size: max(14px, calc(var(--u) * 2.8));
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -546,6 +577,7 @@ body {
 .hud__offhand {
   margin-top: calc(var(--u) * 1.2);
   font-family: var(--font-display);
+  font-weight: 600;
   font-size: max(14px, calc(var(--u) * 2.8));
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -554,7 +586,7 @@ body {
 }
 
 .hud__offhand.is-empty {
-  opacity: 0.45;
+  opacity: 0.7;
 }
 
 .hud__grenades {
@@ -632,8 +664,8 @@ body {
 }
 
 .overlay__card {
-  width: min(560px, 100%);
-  padding: clamp(20px, 4vmin, 44px) clamp(20px, 4.5vmin, 48px);
+  width: min(max(560px, 48vmin), 100%);
+  padding: clamp(20px, 4vmin, 96px) clamp(20px, 4.5vmin, 108px);
   border: 1px solid var(--slate);
   background: var(--hull);
   box-shadow: 0 0 60px color-mix(in srgb, var(--beacon) 12%, transparent);
@@ -666,9 +698,34 @@ body {
   font-size: var(--text-body);
 }
 
-.overlay__stats {
-  margin: 0 0 clamp(14px, 2.4vmin, 20px);
+/* Outcome line under the wordmark: Victory, Defeat or Paused, in words and a semantic colour. */
+.overlay__result {
+  margin: clamp(6px, 1vmin, 20px) 0 0;
   font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-stat);
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
+  text-transform: uppercase;
+  color: var(--ring);
+}
+
+.overlay__result[data-outcome="won"] {
+  color: var(--beacon);
+}
+
+.overlay__result[data-outcome="lost"] {
+  color: var(--rose);
+}
+
+.overlay__result[hidden] {
+  display: none;
+}
+
+.overlay__stats {
+  margin: 0 0 clamp(14px, 2.4vmin, 44px);
+  font-family: var(--font-display);
+  white-space: pre-line;
   font-size: var(--text-stat);
   letter-spacing: 0.06em;
   line-height: 1.5;
@@ -682,7 +739,7 @@ body {
   color: var(--abyss);
   background: var(--beacon);
   border: 0;
-  padding: clamp(10px, 1.8vmin, 14px) clamp(28px, 5vmin, 44px);
+  padding: clamp(10px, 1.8vmin, 34px) clamp(28px, 5vmin, 96px);
   cursor: pointer;
   box-shadow: 0 0 24px color-mix(in srgb, var(--beacon) 60%, transparent);
   animation: breathe 2.2s ease-in-out infinite;
@@ -704,7 +761,7 @@ body {
 .overlay__controls {
   display: grid;
   grid-template-columns: auto auto;
-  gap: 5px 18px;
+  gap: calc(var(--u) * 1.4) calc(var(--u) * 5);
   justify-content: center;
   margin: clamp(18px, 3vmin, 28px) 0 0;
   font-size: var(--text-label);
@@ -727,6 +784,12 @@ body {
   margin: clamp(14px, 2.4vmin, 24px) 0 0;
   font-size: var(--text-label);
   color: var(--slate);
+}
+
+/* After a run the controls are known and the footnote names a button that is not there. */
+.overlay.is-finished .overlay__controls,
+.overlay.is-finished .overlay__footnote {
+  display: none;
 }
 
 /* Brand: title motion and the Deploy moment (docs/brand.md, "Player landing"). ---------------- */
@@ -915,4 +978,25 @@ body {
 /* Flash off: the HUD damage flash stays in the DOM for its timers but never paints. */
 body.settings-no-flash .hud__damage {
   display: none;
+}
+
+/* Reduced motion, HUD side: no looping pulses or glows; one-shot feedback stays but does not animate. */
+@media (prefers-reduced-motion: reduce) {
+  .hud__vitals.is-recharging .hud__arc-shield,
+  .hud__damage-seg,
+  .hud__ammo.is-drawing {
+    animation: none;
+  }
+
+  .hud__lowshield.is-active {
+    animation: none;
+    opacity: 0.55;
+  }
+
+  .hud__reticle,
+  .hud__message,
+  .hud__damage,
+  .hud__hitmarker {
+    transition: none;
+  }
 }

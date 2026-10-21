@@ -11,6 +11,8 @@ import { SceneRenderer } from './render/scene';
 
 const FIXED_DT = 1 / 60;
 const MAX_STEPS_PER_FRAME = 5;
+/** Simulation speed during hit-stop: slow enough to read as a pop, fast enough to keep stepping. */
+const HIT_STOP_SCALE = 0.2;
 
 declare global {
   interface Window {
@@ -49,6 +51,7 @@ const main = (): void => {
   const startButton = byId<HTMLButtonElement>('start');
   const tagline = byId<HTMLParagraphElement>('overlay-tagline');
   const stats = byId<HTMLParagraphElement>('overlay-stats');
+  const result = byId<HTMLParagraphElement>('overlay-result');
 
   const renderer = new SceneRenderer(canvas);
   const hud = new Hud();
@@ -103,6 +106,8 @@ const main = (): void => {
   const params = new URLSearchParams(window.location.search);
   // `?seed=` is untrusted input: only a decimal uint32 is honoured, anything else is the clock.
   const seed = parseSeed(params.get('seed'), Date.now() >>> 0);
+  // A valid ?seed= pins the arena for every restart; without one each run is new.
+  const seedPinned = parseSeed(params.get('seed'), 0) > 0;
   const botMode = params.has('bot');
   const recordMode = params.has('record');
   let game = createGame({ seed });
@@ -116,17 +121,29 @@ const main = (): void => {
 
   window.ringfall = { state: () => game };
 
+  /** The card names the outcome in a word and a colour: Victory, Defeat, or Paused. */
+  const showOutcome = (outcome: 'won' | 'lost' | 'paused'): void => {
+    result.hidden = false;
+    result.dataset.outcome = outcome;
+    result.textContent = outcome === 'won' ? 'Victory' : outcome === 'lost' ? 'Defeat' : 'Paused';
+    tagline.textContent =
+      outcome === 'won'
+        ? 'The arena is quiet. The ring still turns.'
+        : outcome === 'lost'
+          ? 'Shields down. Health gone. The ring does not care.'
+          : 'The run is waiting. Resume recaptures the mouse.';
+  };
+
   const showOverlay = (finished: boolean): void => {
     running = false;
     audio.silence();
     audio.setMusic('title');
     hud.hide();
     overlay.hidden = false;
+    overlay.classList.toggle('is-finished', finished);
     if (finished) {
       const won = game.status === 'won';
-      tagline.textContent = won
-        ? 'The arena is quiet. The ring still turns.'
-        : 'Shields down. Health gone. The ring does not care.';
+      showOutcome(won ? 'won' : 'lost');
       const round = {
         score: game.score,
         wave: game.wave.number,
@@ -142,16 +159,19 @@ const main = (): void => {
         storage = null;
       }
       const comparison = recordRound(storage, round);
-      stats.textContent = `${summarize(game)} ${describeComparison(round, comparison)}`;
+      // One line per fact: the comparison already carries score and wave, so no repeat.
+      stats.textContent = `${summarize(game)}\n${describeComparison(round, comparison).replace(/\. /g, '.\n')}`;
       stats.hidden = false;
       startButton.textContent = won ? 'Run it back' : 'Redeploy';
     } else {
-      // A pause, not an ending: the card must not keep the previous round's death copy.
-      tagline.textContent = 'Paused. Esc released the mouse; click to take it back.';
+      // A pause, not an ending: the card says Paused and must not keep the previous round's copy.
+      showOutcome('paused');
       stats.hidden = true;
       startButton.textContent = 'Resume';
     }
     if (document.pointerLockElement) document.exitPointerLock();
+    // Keyboard players land on the one button that matters, whichever way the card came back.
+    startButton.focus({ preventScroll: true });
   };
 
   const requestFullscreen = (): void => {
@@ -172,9 +192,11 @@ const main = (): void => {
 
   const start = async (): Promise<void> => {
     audio.unlock();
-    if (!recordMode) requestFullscreen();
+    // Fullscreen on a fresh deploy only; a resume after Esc should not replay the transition.
+    if (!recordMode && game.status !== 'playing') requestFullscreen();
     if (game.status !== 'playing') {
-      const next = Date.now() >>> 0;
+      // An explicit ?seed= is a rematch of the same arena; otherwise every run is new.
+      const next = seedPinned ? seed : Date.now() >>> 0;
       game = createGame({ seed: next });
       rng = createRng(next ^ 0x9e3779b9);
       botRng = createRng(next ^ 0x7f4a7c15);
@@ -267,7 +289,8 @@ const main = (): void => {
       // Hit-stop: time slows to a crawl for a few frames on a kill or a shield break.
       if (hitStop > 0) {
         hitStop = Math.max(0, hitStop - frameDt);
-        accumulator += frameDt * 0.05;
+        // A time-scale, not a freeze (brand.md): frames still step, so the marker stays framed.
+        accumulator += frameDt * HIT_STOP_SCALE;
       } else {
         accumulator += frameDt;
       }
@@ -280,7 +303,8 @@ const main = (): void => {
         accumulator -= FIXED_DT;
         steps += 1;
         if (game.status !== 'playing') {
-          window.setTimeout(() => showOverlay(true), 1600);
+          // A win gets its four-second tableau before the card; a death gets the 1.6 s sink.
+          window.setTimeout(() => showOverlay(true), game.status === 'won' ? 4000 : 1600);
           running = false;
           break;
         }

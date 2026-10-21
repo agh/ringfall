@@ -108,6 +108,12 @@ and this project adheres to
 
 ### Fixed
 
+- Design and UX review (#53): HUD labels and card copy never below 14 px and
+  scale to 4K; the card is a dialog that names Victory, Defeat or Paused and
+  takes focus when it returns; low ammo, an empty magazine and a kill are
+  signalled in words or size, not colour alone; a
+  `prefers-reduced-motion` rule stops the looping pulses.
+
 - Still too much flare after the bloom prefilter: bloom strength and radius
   halved again (0.15, 0.25), the flare ghosts at 0.3 opacity and the core
   sprite at two thirds of its size, and the day and dawn skies given a
@@ -124,7 +130,7 @@ and this project adheres to
   the recorder refuses frame rates that do not divide 60, as the audit
   claimed it already did; the purity test and the Biome denied-globals
   list cover `crypto`, `globalThis`, `structuredClone`, `Intl`, timers,
-  storage and `console`; the Pages deploy waits for a green CI run; the
+  storage and `console`; the Pages deploy is a job in the CI workflow that runs only after every other job is green; the
   browser smoke tests fail on page errors in every test and check for a
   WebGL 2 context; `tests/scratch/` is ignored by git, Biome and tsc.
 
