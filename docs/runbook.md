@@ -62,15 +62,17 @@ pnpm check          # lint, typecheck, unit tests with coverage, build
 
 ## Deploy to GitHub Pages
 
-The workflow in `.github/workflows/deploy-pages.yml` runs on every push to
-`main` and on manual dispatch. Its `build` job installs with the frozen
-lockfile, runs `pnpm build`, calls `actions/configure-pages`, and uploads
-`dist/` with `actions/upload-pages-artifact`. Its `deploy` job publishes
-that artifact with `actions/deploy-pages` into the `github-pages`
-environment. The workflow holds the only write permission in the repository
-(`pages: write` and `id-token: write`); CI has `contents: read` and
-checkouts do not persist credentials. Every action is pinned to a commit
-SHA.
+The `Pages build` and `Pages deploy` jobs at the end of
+`.github/workflows/ci.yml` run on every push to `main`, after every other
+CI job on that push has passed (`needs`), so a red run never ships. The
+build job installs with the frozen lockfile, runs `pnpm build`, calls
+`actions/configure-pages`, and uploads `dist/` with
+`actions/upload-pages-artifact`. The deploy job publishes that artifact
+with `actions/deploy-pages` into the `github-pages` environment, one
+deploy at a time. That job holds the only write permissions in the
+repository (`pages: write` and `id-token: write`); every other job has
+`contents: read` and checkouts do not persist credentials. Every action is
+pinned to a commit SHA.
 
 One repository setting must be made once by hand, because a workflow
 cannot make it: under Settings, Pages, Build and deployment, the Source
