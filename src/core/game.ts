@@ -1,9 +1,14 @@
 import {
+  type BarkLine,
   createEnemy,
   damageEnemy,
   ENEMY_STATS,
   type Enemy,
+  type EnemyKind,
   enemyCenter,
+  FLEE_RADIUS,
+  pickBark,
+  startFlee,
   type Tracking,
   temperamentFor,
   updateEnemy,
@@ -86,7 +91,9 @@ export const TAUNT_TOGGLES = 3;
 export const TAUNT_WINDOW = 1.5;
 /** Horizontal distance from where a strider fell that counts as standing over it. */
 export const TAUNT_RADIUS = 2.5;
+/** What a skimmer says to a crouch taunt; it rides `enemyBark` beside the rout lines. */
 export const TAUNT_BARK = 'DISRESPECTFUL';
+export type TauntLine = typeof TAUNT_BARK;
 /** Points for shooting the arena's hidden switch. */
 export const SECRET_SCORE = 1000;
 const MAX_PITCH = Math.PI / 2 - 0.01;
@@ -176,6 +183,19 @@ export type GameEvent =
   | { readonly type: 'pickupExpired'; readonly id: number }
   | { readonly type: 'explosion'; readonly at: Vec3 }
   | { readonly type: 'enemyKilled'; readonly id: number; readonly at: Vec3; readonly score: number }
+  /**
+   * An enemy broke and ran: it is now in state `flee`. Fired for every skimmer within
+   * `FLEE_RADIUS` of a strider when it dies, after that strider's `enemyKilled` in the same step,
+   * and again for a skimmer whose rout is refreshed by a second death. The enemy's `fleeUntil`
+   * says when it ends; posture and sound layers key on `id` and `kind`.
+   */
+  | { readonly type: 'enemyFled'; readonly id: number; readonly kind: EnemyKind }
+  /**
+   * A fleeing enemy shouts `line`, one of `BARK_LINES`. Exactly one follows each `enemyFled`,
+   * so a strider death with any skimmer in range barks at least once; the first bark of a rout
+   * is always the first line. The label and the sound belong to the layers that consume this.
+   */
+  | { readonly type: 'enemyBark'; readonly id: number; readonly line: BarkLine | TauntLine }
   | { readonly type: 'playerDamaged'; readonly amount: number; readonly from: Vec3 | null }
   | { readonly type: 'shieldBroken' }
   | { readonly type: 'boltFired'; readonly id: number }
@@ -183,8 +203,6 @@ export type GameEvent =
   | { readonly type: 'waveCleared'; readonly number: number }
   | { readonly type: 'playerDied' }
   | { readonly type: 'victory' }
-  /** A surviving skimmer `from` says `line`; the HUD prints it. */
-  | { readonly type: 'bark'; readonly from: number; readonly line: string }
   | { readonly type: 'secretFound'; readonly at: Vec3; readonly score: number };
 
 export type GameStatus = 'playing' | 'dead' | 'won';
@@ -305,6 +323,20 @@ const hurtPlayer = (d: Draft, amount: number, from: Vec3 | null): void => {
   }
 };
 
+/** Every skimmer within `FLEE_RADIUS` of a fallen strider runs, and each one barks. */
+const routSkimmers = (d: Draft, fallen: Enemy): void => {
+  let first = true;
+  d.enemies.forEach((e, i) => {
+    if (e.kind !== 'skimmer' || distanceXZ(e.position, fallen.position) > FLEE_RADIUS) return;
+    const fled = startFlee(e, d.time);
+    if (fled === e) return;
+    d.enemies[i] = fled;
+    d.events.push({ type: 'enemyFled', id: e.id, kind: e.kind });
+    d.events.push({ type: 'enemyBark', id: e.id, line: pickBark(d.rng, first) });
+    first = false;
+  });
+};
+
 const hurtEnemy = (d: Draft, index: number, amount: number): void => {
   const enemy = d.enemies[index];
   if (!enemy) return;
@@ -316,6 +348,7 @@ const hurtEnemy = (d: Draft, index: number, amount: number): void => {
     d.kills += 1;
     if (enemy.kind === 'strider') d.graves.push(enemy.position);
     d.events.push({ type: 'enemyKilled', id: enemy.id, at: enemyCenter(enemy), score });
+    if (enemy.kind === 'strider') routSkimmers(d, enemy);
     const drop = rollDrop(enemy.kind, heldKinds(d.player.weapons), d.rng);
     if (drop !== null) spawnPickup(d, drop, enemy.position);
   }
@@ -390,7 +423,7 @@ const stepTaunt = (d: Draft): void => {
       witness = e;
   }
   d.player = { ...p, crouchStarts: [] };
-  if (witness !== null) d.events.push({ type: 'bark', from: witness.id, line: TAUNT_BARK });
+  if (witness !== null) d.events.push({ type: 'enemyBark', id: witness.id, line: TAUNT_BARK });
 };
 
 /** A ray that reaches the glyph before anything else trips the arena's hidden switch, once. */

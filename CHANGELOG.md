@@ -18,6 +18,11 @@ and this project adheres to
   within 1.5 s over a fallen strider earn a one-word bark from a surviving
   skimmer. One cover block per arena hides a switch on its outward face;
   shooting it once scores 1000 and the end card counts secrets found.
+- Enemy theatre: when a strider dies, every skimmer within 25 m breaks and
+  runs for 4 s at 1.3x speed without attacking, then returns to the chase.
+  New enemy state `flee` and two events for the presentation layers,
+  `enemyFled { id, kind }` and `enemyBark { id, line }`, with three original
+  bark lines (`src/core/enemy.ts`).
 - Renderer v2: scattering dawn sky, a ringworld you stand on, rolling
   terrain with mountains, image-based lighting, a GPU particle pool, an HDR
   composer with bloom and a custom feel pass (vignette, chromatic

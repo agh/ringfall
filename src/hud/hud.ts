@@ -1,5 +1,5 @@
 import { ENEMY_STATS } from '../core/enemy';
-import type { GameEvent, GameState } from '../core/game';
+import { type GameEvent, type GameState, TAUNT_BARK } from '../core/game';
 import type { Vec3 } from '../core/vec3';
 import { FINAL_WAVE } from '../core/waves';
 import { isReloading, WEAPON_SPECS, type Weapon, weaponSpec } from '../core/weapon';
@@ -118,8 +118,9 @@ export class Hud {
         case 'victory':
           this.announce('Chapter 1 complete', 4000);
           break;
-        case 'bark':
-          this.announce(e.line, 1400);
+        case 'enemyBark':
+          // Rout barks are the renderer's to label over each skimmer; the taunt answers the player.
+          if (e.line === TAUNT_BARK) this.announce(e.line, 1400);
           break;
         case 'secretFound':
           this.announce(`Secret found +${e.score}`, 1800);

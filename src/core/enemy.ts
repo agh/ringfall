@@ -1,9 +1,19 @@
 import type { Rng } from './rng';
 import { add, distanceXZ, normalize, scale, sub, type Vec3, vec3, ZERO } from './vec3';
-import { type Arena, moveWithCollision } from './world';
+import { type Arena, moveWithCollision, pointInsideAabbXZ } from './world';
 
 export type EnemyKind = 'skimmer' | 'strider';
-export type EnemyState = 'spawning' | 'chase' | 'attack' | 'dead';
+export type EnemyState = 'spawning' | 'chase' | 'attack' | 'flee' | 'dead';
+
+/** Skimmers this close (XZ metres) to a strider when it dies break and run. */
+export const FLEE_RADIUS = 25;
+/** How long a rout lasts before the skimmer returns to `chase`. */
+export const FLEE_DURATION = 4;
+/** Fleeing speed as a multiple of the skimmer's chase speed. */
+export const FLEE_SPEED_FACTOR = 1.3;
+/** What a routed skimmer shouts. Original lines; the first rout of a pack always calls the first. */
+export const BARK_LINES = ['LEADER DOWN', 'FALL BACK', 'REGROUP'] as const;
+export type BarkLine = (typeof BARK_LINES)[number];
 
 /**
  * How a skimmer closes on the player. A wave hands these out round-robin, so a pack of four
@@ -130,6 +140,8 @@ export interface Enemy {
   readonly nextAttackAt: number;
   /** Simulation time of death, used by the renderer for a short fade. */
   readonly diedAt: number | null;
+  /** Simulation time a `flee` ends; null in every other state. */
+  readonly fleeUntil: number | null;
   /** Movement policy; only skimmers read it, striders carry the default. */
   readonly temperament: Temperament;
 }
@@ -152,8 +164,22 @@ export const createEnemy = (
   activeAt: now + SPAWN_DELAY,
   nextAttackAt: now + SPAWN_DELAY + 0.5,
   diedAt: null,
+  fleeUntil: null,
   temperament,
 });
+
+/**
+ * Routs a skimmer: it enters `flee` until `now + FLEE_DURATION`. A skimmer already fleeing has
+ * its timer refreshed. Striders never flee, and a spawning or dead enemy is returned unchanged.
+ */
+export const startFlee = (e: Enemy, now: number): Enemy => {
+  if (e.kind !== 'skimmer' || e.state === 'spawning' || e.state === 'dead') return e;
+  return { ...e, state: 'flee', fleeUntil: now + FLEE_DURATION };
+};
+
+/** A random bark line; `first` is what the first skimmer of a rout calls before the rest answer. */
+export const pickBark = (rng: Rng, first = false): BarkLine =>
+  first ? BARK_LINES[0] : (BARK_LINES[rng.int(BARK_LINES.length)] ?? BARK_LINES[0]);
 
 export type EnemyAction =
   | { readonly type: 'melee'; readonly damage: number }
@@ -172,14 +198,26 @@ export interface EnemyUpdate {
 export const enemyCenter = (e: Enemy): Vec3 =>
   add(e.position, vec3(0, ENEMY_STATS[e.kind].height / 2, 0));
 
+/** One step of a rout: straight away from the player at flee speed, facing the way it runs. */
+const fleeStep = (e: Enemy, arena: Arena, playerFeet: Vec3, dt: number): Enemy => {
+  const stats = ENEMY_STATS[e.kind];
+  const away = sub(e.position, playerFeet);
+  const flat = vec3(away.x, 0, away.z);
+  // A skimmer standing exactly on the player runs along +Z rather than nowhere.
+  const dir = Math.hypot(flat.x, flat.z) > 1e-6 ? normalize(flat) : vec3(0, 0, 1);
+  const step = scale(dir, stats.speed * FLEE_SPEED_FACTOR * dt);
+  const position = moveWithCollision(arena, e.position, stats.radius, stats.height, step);
+  return { ...e, position, yaw: Math.atan2(-dir.x, -dir.z) };
+};
+
 /** Where this enemy wants to go this step, and whether it is closing (+1) or backing off (-1). */
 const moveIntent = (
   e: Enemy,
-  stats: EnemyStats,
   playerFeet: Vec3,
   dist: number,
   tracking: Tracking,
 ): { readonly goal: Vec3; readonly sign: number } | null => {
+  const stats = ENEMY_STATS[e.kind];
   const inRange = dist <= stats.attackRange;
   if (stats.ranged) {
     // Close in, or back off when a ranged unit gets crowded.
@@ -189,6 +227,55 @@ const moveIntent = (
   if (inRange) return null;
   const goal = chaseGoal(e.temperament, e.position, playerFeet, tracking);
   return goal === null ? null : { goal, sign: 1 };
+};
+
+/**
+ * Steps toward the temperament's goal (or away from a crowding player, for a ranged unit). A
+ * little lateral jitter keeps groups from stacking into a single line. Returns the position
+ * unchanged when holding range or holding position.
+ */
+const pursueStep = (
+  e: Enemy,
+  arena: Arena,
+  playerFeet: Vec3,
+  dist: number,
+  dt: number,
+  rng: Rng,
+  tracking: Tracking,
+): Vec3 => {
+  const intent = moveIntent(e, playerFeet, dist, tracking);
+  if (intent === null) return e.position;
+  const stats = ENEMY_STATS[e.kind];
+  // A goal inside cover would pin the enemy against the block; the player's feet never are.
+  const blocked = arena.obstacles.some((box) => pointInsideAabbXZ(intent.goal, box, stats.radius));
+  const toGoal = sub(blocked ? playerFeet : intent.goal, e.position);
+  const dir = normalize(vec3(toGoal.x, 0, toGoal.z));
+  const strafe = vec3(-dir.z, 0, dir.x);
+  const wobble = (rng.next() - 0.5) * 0.6;
+  const step = add(
+    scale(dir, intent.sign * stats.speed * dt),
+    scale(strafe, wobble * stats.speed * dt),
+  );
+  return moveWithCollision(arena, e.position, stats.radius, stats.height, step);
+};
+
+/** The attack an in-range enemy performs now: a bolt at the eye with spread, or a zap. */
+const attackAction = (
+  e: Enemy,
+  position: Vec3,
+  playerEye: Vec3,
+  dist: number,
+  rng: Rng,
+): EnemyAction => {
+  const stats = ENEMY_STATS[e.kind];
+  if (!stats.ranged) return { type: 'melee', damage: stats.damage };
+  const origin = add(position, vec3(0, stats.height * 0.75, 0));
+  const spread = 0.04;
+  const aim = add(
+    sub(playerEye, origin),
+    vec3(rng.range(-spread, spread) * dist, rng.range(-spread, spread) * dist, 0),
+  );
+  return { type: 'bolt', origin, direction: normalize(aim), damage: stats.damage };
 };
 
 /**
@@ -209,45 +296,20 @@ export const updateEnemy = (
   if (e.state === 'spawning') {
     return { enemy: now >= e.activeAt ? { ...e, state: 'chase' } : e, action: null };
   }
-  const stats = ENEMY_STATS[e.kind];
+  if (e.state === 'flee' && e.fleeUntil !== null && now < e.fleeUntil) {
+    return { enemy: fleeStep(e, arena, playerFeet, dt), action: null };
+  }
+  // A rout that has run its course falls through to the chase-or-attack decision below.
   const toPlayer = sub(playerFeet, e.position);
   const dist = distanceXZ(playerFeet, e.position);
   const yaw = Math.atan2(-toPlayer.x, -toPlayer.z);
-  const inRange = dist <= stats.attackRange;
-
-  let position = e.position;
-  const intent = moveIntent(e, stats, playerFeet, dist, tracking);
-  if (intent !== null) {
-    // A little lateral jitter keeps groups from stacking into a single line.
-    const toGoal = sub(intent.goal, e.position);
-    const dir = normalize(vec3(toGoal.x, 0, toGoal.z));
-    const strafe = vec3(-dir.z, 0, dir.x);
-    const wobble = (rng.next() - 0.5) * 0.6;
-    const step = add(
-      scale(dir, intent.sign * stats.speed * dt),
-      scale(strafe, wobble * stats.speed * dt),
-    );
-    position = moveWithCollision(arena, e.position, stats.radius, stats.height, step);
-  }
-
+  const inRange = dist <= ENEMY_STATS[e.kind].attackRange;
+  const position = pursueStep(e, arena, playerFeet, dist, dt, rng, tracking);
   const state: EnemyState = inRange ? 'attack' : 'chase';
-  let action: EnemyAction | null = null;
-  let nextAttackAt = e.nextAttackAt;
-  if (inRange && now >= e.nextAttackAt) {
-    nextAttackAt = now + stats.attackInterval;
-    if (stats.ranged) {
-      const origin = add(position, vec3(0, stats.height * 0.75, 0));
-      const spread = 0.04;
-      const aim = add(
-        sub(playerEye, origin),
-        vec3(rng.range(-spread, spread) * dist, rng.range(-spread, spread) * dist, 0),
-      );
-      action = { type: 'bolt', origin, direction: normalize(aim), damage: stats.damage };
-    } else {
-      action = { type: 'melee', damage: stats.damage };
-    }
-  }
-  return { enemy: { ...e, position, yaw, state, nextAttackAt }, action };
+  const attacking = inRange && now >= e.nextAttackAt;
+  const nextAttackAt = attacking ? now + ENEMY_STATS[e.kind].attackInterval : e.nextAttackAt;
+  const action = attacking ? attackAction(e, position, playerEye, dist, rng) : null;
+  return { enemy: { ...e, position, yaw, state, nextAttackAt, fleeUntil: null }, action };
 };
 
 export interface EnemyDamageOutcome {

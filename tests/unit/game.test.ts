@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createEnemy } from '../../src/core/enemy';
+import { BARK_LINES, createEnemy, FLEE_DURATION } from '../../src/core/enemy';
 import {
   CROUCH_EYE_DROP,
   createGame,
@@ -372,6 +372,67 @@ describe('game', () => {
     expect(frozen.events).toHaveLength(0);
   });
 
+  it('routs the skimmers near a dying strider, and only those, for four seconds', () => {
+    // A strider with one hit point 8 m ahead; a skimmer 6 m from it and another 38 m away.
+    const strider = { ...awake(1, 'strider', vec3(0, 0, -8)), health: 1 };
+    const near = awake(2, 'skimmer', vec3(6, 0, -8));
+    const far = awake(3, 'skimmer', vec3(-26, 0, 20));
+    const state = armedWith('rifle', [strider, near, far]);
+    const pitch = pitchTo(1.3, 8);
+    const kill = run(state, { ...IDLE_INPUT, fire: true, pitch }, 0.1);
+    const killed = kill.events.filter((e) => e.type === 'enemyKilled');
+    expect(killed).toEqual([expect.objectContaining({ id: 1 })]);
+    const fled = kill.events.filter((e) => e.type === 'enemyFled');
+    expect(fled).toEqual([{ type: 'enemyFled', id: 2, kind: 'skimmer' }]);
+    const barks = kill.events.filter((e) => e.type === 'enemyBark');
+    expect(barks).toEqual([{ type: 'enemyBark', id: 2, line: BARK_LINES[0] }]);
+    // The rout is announced after the kill, in the same step.
+    expect(kill.events.indexOf(fled[0] as GameEvent)).toBeGreaterThan(
+      kill.events.indexOf(killed[0] as GameEvent),
+    );
+    const byId = (s: GameState, id: number) => s.enemies.find((e) => e.id === id);
+    expect(byId(kill.state, 2)?.state).toBe('flee');
+    expect(byId(kill.state, 3)?.state).toBe('chase');
+    expect(byId(kill.state, 3)?.fleeUntil).toBeNull();
+
+    // Hold fire: the near skimmer runs for the whole rout, then comes back.
+    const mid = run(kill.state, IDLE_INPUT, FLEE_DURATION - 0.2);
+    const runner = byId(mid.state, 2);
+    expect(runner?.state).toBe('flee');
+    expect(distanceXZ(runner?.position ?? vec3(), mid.state.player.position)).toBeGreaterThan(
+      distanceXZ(near.position, state.player.position),
+    );
+    expect(mid.events.some((e) => e.type === 'playerDamaged')).toBe(false);
+    const after = run(mid.state, IDLE_INPUT, 0.4);
+    expect(byId(after.state, 2)?.state).not.toBe('flee');
+    expect(byId(after.state, 2)?.fleeUntil).toBeNull();
+  });
+
+  it('does not rout anyone for a skimmer kill, and barks once per routed skimmer', () => {
+    const skimmer = { ...awake(1, 'skimmer', vec3(0, 0, -8)), health: 1 };
+    const pack = [awake(2, 'skimmer', vec3(4, 0, -12)), awake(3, 'skimmer', vec3(-4, 0, -12))];
+    const skimmerKill = run(
+      armedWith('rifle', [skimmer, ...pack]),
+      { ...IDLE_INPUT, fire: true, pitch: pitchTo(0.6, 8) },
+      0.1,
+    );
+    expect(skimmerKill.events.some((e) => e.type === 'enemyKilled' && e.id === 1)).toBe(true);
+    expect(skimmerKill.events.some((e) => e.type === 'enemyFled')).toBe(false);
+    expect(skimmerKill.events.some((e) => e.type === 'enemyBark')).toBe(false);
+
+    const strider = { ...awake(1, 'strider', vec3(0, 0, -8)), health: 1 };
+    const striderKill = run(
+      armedWith('rifle', [strider, ...pack]),
+      { ...IDLE_INPUT, fire: true, pitch: pitchTo(1.3, 8) },
+      0.1,
+    );
+    const fled = striderKill.events.filter((e) => e.type === 'enemyFled').map((e) => e.id);
+    expect(fled.sort()).toEqual([2, 3]);
+    const barks = striderKill.events.filter((e) => e.type === 'enemyBark');
+    expect(barks.map((e) => e.id).sort()).toEqual([2, 3]);
+    for (const b of barks) expect(BARK_LINES).toContain(b.line);
+  });
+
   it('spawns bolts from striders that can hit the player', () => {
     const base = openGame();
     const strider = { ...createEnemy(7, 'strider', vec3(0, 0, -10), 0), state: 'attack' as const };
@@ -489,33 +550,35 @@ describe('game', () => {
 
     it('three crouches within 1.5 s over a fallen strider earn a bark from a survivor', () => {
       const { state, events } = crouchPattern(graveSide(vec3(0, 0, -20)), toggles(3, 1.2));
-      const barks = events.filter((e) => e.type === 'bark');
-      expect(barks).toEqual([{ type: 'bark', from: 7, line: TAUNT_BARK }]);
+      const barks = events.filter((e) => e.type === 'enemyBark');
+      expect(barks).toEqual([{ type: 'enemyBark', id: 7, line: TAUNT_BARK }]);
       expect(TAUNT_BARK).toBe('DISRESPECTFUL');
       // The history resets: holding the crouch afterwards does not bark again.
       expect(state.player.crouchStarts).toEqual([]);
       const more = crouchPattern(state, toggles(2, 0.8));
-      expect(more.events.some((e) => e.type === 'bark')).toBe(false);
+      expect(more.events.some((e) => e.type === 'enemyBark')).toBe(false);
     });
 
     it('stays quiet with too few toggles, too slow, away from a grave, or with no witness', () => {
       expect(crouchPattern(graveSide(vec3(0, 0, -20)), toggles(2, 1.2)).events).not.toContainEqual(
-        expect.objectContaining({ type: 'bark' }),
+        expect.objectContaining({ type: 'enemyBark' }),
       );
       const slow = crouchPattern(graveSide(vec3(0, 0, -20)), toggles(3, TAUNT_WINDOW * 2.2));
-      expect(slow.events.some((e) => e.type === 'bark')).toBe(false);
+      expect(slow.events.some((e) => e.type === 'enemyBark')).toBe(false);
       const far: GameState = {
         ...graveSide(vec3(0, 0, -20)),
         graves: [vec3(TAUNT_RADIUS + 1, 0, 0)],
       };
-      expect(crouchPattern(far, toggles(3, 1.2)).events.some((e) => e.type === 'bark')).toBe(false);
-      const noGrave: GameState = { ...graveSide(vec3(0, 0, -20)), graves: [] };
-      expect(crouchPattern(noGrave, toggles(3, 1.2)).events.some((e) => e.type === 'bark')).toBe(
+      expect(crouchPattern(far, toggles(3, 1.2)).events.some((e) => e.type === 'enemyBark')).toBe(
         false,
       );
+      const noGrave: GameState = { ...graveSide(vec3(0, 0, -20)), graves: [] };
+      expect(
+        crouchPattern(noGrave, toggles(3, 1.2)).events.some((e) => e.type === 'enemyBark'),
+      ).toBe(false);
       const witnessless: GameState = { ...graveSide(vec3(0, 0, -20)), enemies: [] };
       const quiet = crouchPattern(witnessless, toggles(3, 1.2));
-      expect(quiet.events.some((e) => e.type === 'bark')).toBe(false);
+      expect(quiet.events.some((e) => e.type === 'enemyBark')).toBe(false);
       // The taunt is spent even without a witness; it is the act that counts.
       expect(quiet.state.player.crouchStarts).toEqual([]);
     });

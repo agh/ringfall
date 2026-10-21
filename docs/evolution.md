@@ -49,8 +49,8 @@ three.js, touches `window` or `document`, calls `Math.random`, or reads
 the clock; the seeded `Rng` is passed in. That is what makes the same
 `stepGame` serve the human game, the bot, the smoke test, and the
 recorder, and it is what makes a bug reproducible from a seed and an
-input sequence. A grep for those identifiers in `src/core/` is a one-line
-check and should become a lint rule (see "Next" below).
+input sequence. The lint rule and test that enforce it are listed under
+"What stops the next change from breaking it".
 
 The one place intent is not yet proven is the presentation layer. The
 renderer, HUD, and audio are reviewed by eye and ear through captured
@@ -67,7 +67,7 @@ version is a pyramid with one unusual layer in the middle.
 | ----- | -------------- | ----------------- |
 | Static: Biome, strict tsc, markdownlint | Style, types, document hygiene | seconds |
 | Unit: Vitest in Node | Every core rule, the whole step, the records module | about a second |
-| Playtest: the bot in Node | Whole games are winnable, deterministic per seed, and the two bot profiles differ | seconds |
+| Playtest: the bot in Node | Whole games are winnable, deterministic per seed, the two bot profiles differ, and twenty seeded games per profile stay within the balance gate | seconds |
 | Browser: Playwright in Chromium with WebGL | The built page loads, renders, starts, advances the simulation, moves on keys, and logs no errors | about a minute on software GL |
 | Visual and film: captured frames, the recorder | What it looks and plays like | minutes, reviewed by a person |
 
@@ -89,10 +89,22 @@ thresholds chosen from a baseline, not from what passed.
 - Every pull request runs the static, unit, playtest, browser, and build
   layers in CI, with coverage thresholds on `src/core/` (85% lines and
   functions, 75% branches; `pnpm test` prints the actual figures).
+- The playtest gate (`pnpm balance`, the `Balance gate` CI job) plays
+  twenty seeded games per bot profile and fails the build when a number
+  leaves its baseline-derived bound: steady wins at least 10%, waves at
+  least 4.85, accuracy at least 29%, no wave slower than 50 s on average,
+  reckless wins at most 10%. The margins are written next to the
+  thresholds in `tests/balance/gate.ts` and `docs/test-plan.md`, and the
+  report (Markdown and JSON) is uploaded as the `balance-report` artifact.
 - Dependencies and actions are pinned exactly; nothing moves under the
   project between runs.
 - The simulation is deterministic, so a regression report is a seed and a
   step count, and a fix can be shown against the same seed.
+- Core purity is a lint rule, not a grep. A Biome override on `src/core/**`
+  forbids importing `three`, and the globals `window`, `document`,
+  `performance`, and `Date`; `tests/unit/purity.test.ts` reads every core
+  file and fails on `Math.random`, `Date.now`, `performance.now`,
+  `from 'three`, `window.`, or `document.`, naming the file and line.
 - The design document, the brand checklist, and the AGENTS.md pitfalls
   give a reviewer, human or agent, a list to check the diff against rather
   than a feeling.
@@ -138,16 +150,11 @@ has a PR checklist, and why the journey log records what was overruled.
 
 These are the gaps, in the order they should be closed.
 
-1. A lint rule for core purity: forbid `three`, `window`, `document`,
-   `Math.random`, and `Date` under `src/core/` (Biome `noRestrictedImports`
-   plus a grep in CI).
-2. The playtest gate with baseline-derived thresholds and a report
-   artifact (issue #12).
-3. A per-frame performance measurement on real hardware (issue #11), so
+1. A per-frame performance measurement on real hardware (issue #11), so
    the budget in the research becomes a number in this document.
-4. An audit of every number in the design document against the code,
+2. An audit of every number in the design document against the code,
    automated as a test that imports the constants and compares them to a
    table in the document's frontmatter.
-5. A visual regression check that compares a small set of deterministic
+3. A visual regression check that compares a small set of deterministic
    frames against references rendered on the same software GL, with a
    tolerance, so renderer changes get a diff a reviewer can look at.

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   AMBUSH_LEAD,
+  BARK_LINES,
   chaseGoal,
   createEnemy,
   damageEnemy,
@@ -8,11 +9,15 @@ import {
   type Enemy,
   enemyCenter,
   FLANK_MAX_OFFSET,
+  FLEE_DURATION,
+  FLEE_SPEED_FACTOR,
   offHandSide,
+  pickBark,
   SKITTISH_HOLD_RANGE,
   SKITTISH_PACK_RANGE,
   SPAWN_DELAY,
   STILL_TRACKING,
+  startFlee,
   TEMPERAMENTS,
   type Tracking,
   temperamentFor,
@@ -92,6 +97,90 @@ describe('enemy', () => {
     const { enemy, action } = updateEnemy(dead.enemy, arena, feet, eye, 1, 10, createRng(1));
     expect(enemy).toBe(dead.enemy);
     expect(action).toBeNull();
+  });
+
+  it('routs a chasing or attacking skimmer and nobody else', () => {
+    const chasing: Enemy = { ...createEnemy(1, 'skimmer', vec3(0, 0, -10), 0), state: 'chase' };
+    const fled = startFlee(chasing, 5);
+    expect(fled.state).toBe('flee');
+    expect(fled.fleeUntil).toBe(5 + FLEE_DURATION);
+    expect(startFlee({ ...chasing, state: 'attack' }, 5).state).toBe('flee');
+    // A second rout refreshes the timer rather than stacking.
+    expect(startFlee(fled, 7).fleeUntil).toBe(7 + FLEE_DURATION);
+    const spawning = createEnemy(2, 'skimmer', vec3(0, 0, -10), 0);
+    expect(startFlee(spawning, 5)).toBe(spawning);
+    const dead = damageEnemy(chasing, 1000, 1).enemy;
+    expect(startFlee(dead, 5)).toBe(dead);
+    const strider: Enemy = { ...createEnemy(3, 'strider', vec3(0, 0, -10), 0), state: 'attack' };
+    expect(startFlee(strider, 5)).toBe(strider);
+  });
+
+  it('runs straight away from the player at flee speed without attacking', () => {
+    const rng = createRng(1);
+    // Starts in melee range, so a chasing skimmer would zap; a fleeing one must not.
+    const inRange: Enemy = { ...createEnemy(1, 'skimmer', vec3(0, 0, -1.5), 0), state: 'attack' };
+    let e = startFlee(inRange, 10);
+    const before = distanceXZ(e.position, feet);
+    const { enemy, action } = updateEnemy(e, arena, feet, eye, 1 / 60, 10, rng);
+    expect(action).toBeNull();
+    expect(enemy.state).toBe('flee');
+    expect(enemy.position.x).toBeCloseTo(0);
+    expect(enemy.position.z).toBeLessThan(-1.5);
+    const expected = (ENEMY_STATS.skimmer.speed * FLEE_SPEED_FACTOR) / 60;
+    expect(distanceXZ(enemy.position, feet) - before).toBeCloseTo(expected, 5);
+    // Faces the way it runs: -Z is yaw 0 in the renderer's convention.
+    expect(enemy.yaw).toBeCloseTo(0);
+    e = enemy;
+    let actions = 0;
+    for (let i = 1; i < 60; i += 1) {
+      const step = updateEnemy(e, arena, feet, eye, 1 / 60, 10 + i / 60, rng);
+      e = step.enemy;
+      if (step.action) actions += 1;
+    }
+    expect(actions).toBe(0);
+    expect(distanceXZ(e.position, feet)).toBeCloseTo(1.5 + expected * 60, 3);
+  });
+
+  it('returns to chase when the rout ends, then fights again', () => {
+    const rng = createRng(2);
+    let e = startFlee({ ...createEnemy(1, 'skimmer', vec3(0, 0, -4), 0), state: 'chase' }, 0);
+    const stillFleeing = updateEnemy(e, arena, feet, eye, 1 / 60, FLEE_DURATION - 0.01, rng).enemy;
+    expect(stillFleeing.state).toBe('flee');
+    e = updateEnemy(stillFleeing, arena, feet, eye, 1 / 60, FLEE_DURATION, rng).enemy;
+    expect(e.state).toBe('chase');
+    expect(e.fleeUntil).toBeNull();
+    let hits = 0;
+    for (let i = 0; i < 240; i += 1) {
+      const step = updateEnemy(e, arena, feet, eye, 1 / 60, FLEE_DURATION + 1 + i / 60, rng);
+      e = step.enemy;
+      if (step.action?.type === 'melee') hits += 1;
+    }
+    expect(e.state).toBe('attack');
+    expect(hits).toBeGreaterThan(0);
+  });
+
+  it('runs along +Z when it has nowhere to run from, and stops at the arena edge', () => {
+    const rng = createRng(1);
+    const onTop = startFlee({ ...createEnemy(1, 'skimmer', feet, 0), state: 'attack' }, 0);
+    expect(updateEnemy(onTop, arena, feet, eye, 1 / 60, 0, rng).enemy.position.z).toBeGreaterThan(
+      0,
+    );
+    const cornered = startFlee(
+      { ...createEnemy(2, 'skimmer', vec3(0, 0, -29.5), 0), state: 'chase' },
+      0,
+    );
+    const { enemy } = updateEnemy(cornered, arena, feet, eye, 1, 0, rng);
+    expect(enemy.position.z).toBeGreaterThanOrEqual(-arena.halfSize);
+    expect(enemy.state).toBe('flee');
+  });
+
+  it('barks the first line first and any line after', () => {
+    expect(pickBark(createRng(1), true)).toBe(BARK_LINES[0]);
+    const rng = createRng(3);
+    const seen = new Set<string>();
+    for (let i = 0; i < 60; i += 1) seen.add(pickBark(rng));
+    expect(seen.size).toBe(BARK_LINES.length);
+    for (const line of seen) expect(BARK_LINES).toContain(line);
   });
 
   describe('temperaments', () => {

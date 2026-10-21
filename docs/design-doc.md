@@ -102,8 +102,9 @@ in order, and freezes the result:
    skating across the arena. The blast deals 150 damage at the centre
    falling linearly to zero at 6 m, and half that to the thrower.
 4. **Enemies.** Each enemy is a small state machine (`spawning`, `chase`,
-   `attack`, `dead`). Spawning lasts 1 s and the enemy is invulnerable and
-   visibly descending during it, so the player has a beat to react.
+   `attack`, `flee`, `dead`). Spawning lasts 1 s and the enemy is invulnerable and
+   visibly descending during it, so the player has a beat to react. Only
+   skimmers enter `flee`, and only when a strider dies near them.
 5. **Bolts.** Strider projectiles travel at 22 m/s for up to 3 s, stop on
    cover, the floor, and the arena edge, and hit a 0.9 m sphere around the
    player's centre.
@@ -143,7 +144,9 @@ within 2 m whatever its goal. Striders carry the default and ignore it.
 
 The ambusher leads the player's horizontal velocity (`player.velocity`,
 displacement over the last step divided by `dt`), so it meets a strafing
-player rather than following them. The flanker's offset shrinks as it
+player rather than following them. A goal that falls inside a cover block
+is replaced by the player's feet for that step, so a lead or a flank never
+pins a skimmer against a wall. The flanker's offset shrinks as it
 closes so it ends inside attack range rather than orbiting; the off-hand
 side is the player's left because the rifle is carried on the right. The
 skittish skimmer closes without waiting when it is the only skimmer alive,
@@ -151,10 +154,53 @@ so a wave can never end with one enemy hiding at the edge. The policies
 are visible only as movement; a tint on the ring is a renderer follow-up
 that reads `enemy.temperament`.
 
-Balance (`pnpm balance`, twenty seeds per profile, 480 s cap) before and
-after the temperaments: steady win 15 % to 25 %, mean waves 5.35 to 5.20,
-accuracy 39 % to 52 %; reckless win 0 % to 15 %, mean waves 4.20 to 4.95.
-Wave 1 is cleared on 20 of 20 seeds by both profiles in both builds.
+Balance (`pnpm balance`, twenty seeds per profile, 480 s cap) on top of
+the rout below: steady win 20 % to 15 %, mean waves 5.40 to 5.05, accuracy
+45 % to 47 %; reckless win 5 % to 15 %, mean waves 5.20 to 5.15. Wave 1 is
+cleared on 20 of 20 seeds by both profiles. Packs that arrive from four
+directions arrive staggered, and a player who never retreats kills them one
+at a time: the reckless win rate sits above the 10 % ceiling of the
+playtest gate (`tests/balance/gate.ts`) by one game of twenty, with every
+flanker and skittish setting tried between 0.3 and 0.6 of the distance and
+6 to 12 m of hold landing between 15 % and 30 %. Removing any one
+temperament does not bring it under the ceiling; only all-chaser does.
+
+### Rout
+
+The first "the AI is thinking" moment: when a strider dies, every skimmer
+within 25 m of it (`FLEE_RADIUS`, XZ distance from the strider) breaks and
+runs. Values are the `FLEE_*` constants in `src/core/enemy.ts`.
+
+| Number                 | Value                   | Why                                                                                   |
+| ---------------------- | ----------------------- | ------------------------------------------------------------------------------------- |
+| Trigger                | strider `enemyKilled`   | Skimmer deaths rout nobody; a pack losing its leader is the one legible cause        |
+| Radius                 | 25 m                    | Covers a whole pack spawned on the 26 m ring without reaching across the arena       |
+| Duration               | 4 s (`FLEE_DURATION`)   | Long enough to be seen and shot at, short enough that wave 2 stays under 10 % slower |
+| Speed                  | 1.3x (9.1 m/s)          | Faster than a sprinting player (9 m/s), so the gap opens instead of closing           |
+| Heading                | straight away from the player | Reads as fear, not as a flank; cover and the arena edge stop it                |
+| Attacks while fleeing  | none                    | The reward for the kill is a breather                                                 |
+| After                  | `chase`                 | It comes back, which is what makes the next strider kill worth repeating              |
+| Second strider death   | refreshes the 4 s       | Routs do not stack                                                                    |
+| Spawning or dead       | unchanged               | A descending skimmer is not yet in the fight                                          |
+
+Each rout emits `enemyFled { id, kind }` and then `enemyBark { id, line }`
+for the same skimmer, after the strider's `enemyKilled` in the same step.
+The lines are the three originals in `BARK_LINES`: the first skimmer of a
+rout always calls "LEADER DOWN", the rest draw from the set with the
+simulation's seeded `Rng`. A strider death with no skimmer within 25 m
+routs nobody and barks nothing. Fleeing skimmers stay hittable and count
+as alive for the wave. The posture (tilt, faster ring, a floating label
+for 1.2 s) and the squeal belong to the render and audio layers, which
+consume these events.
+
+Balance, twenty seeded games per profile (`pnpm balance`), before and
+after the rout. Wave 2 is the first wave with a strider and the gate from
+the issue: no more than 10 % slower for the steady profile.
+
+| Profile  | Wave 2 clear before | Wave 2 clear after | Win rate before | Win rate after |
+| -------- | ------------------- | ------------------ | --------------- | -------------- |
+| steady   | 15 s                | 16 s               | 15 %            | 30 %           |
+| reckless | 13 s                | 14 s               | 0 %             | 10 %           |
 
 ### Weapons
 
