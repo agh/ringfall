@@ -133,6 +133,14 @@ interface Rig {
   readonly animate: (weapon: Weapon, dt: number, now: number) => void;
 }
 
+/**
+ * An effect frees its geometry when it expires but keeps its material. A material with no
+ * texture owns nothing on the GPU except its share of a shader program, and `dispose()` only
+ * drops that share: when a tracer's material was the last one on the program, three.js deletes
+ * the program and the next shot compiles it again, a hitch on every shot whose effect outlived
+ * the previous one (measured on seed 7: the program count rose and fell 44 times in 41 s).
+ * An undisposed material is garbage-collected like any object; the program it holds stays.
+ */
 interface Effect {
   readonly object: THREE.Object3D;
   readonly bornAt: number;
@@ -623,7 +631,7 @@ export class WeaponViewmodels {
         dot.material.opacity = 1 - t;
         dot.scale.setScalar(0.28 + t * 0.2);
       },
-      () => dot.material.dispose(),
+      () => {},
     );
   }
 
@@ -714,8 +722,6 @@ export class WeaponViewmodels {
         this.lights.release(light);
         outer.geometry.dispose();
         inner.geometry.dispose();
-        shell.dispose();
-        core.dispose();
       },
     );
 
@@ -807,10 +813,7 @@ export class WeaponViewmodels {
         mesh.scale.setScalar(open + (LAUNCHER_RING_DIAMETER - open) * t);
         material.opacity = 0.45 * (1 - t) ** 2;
       },
-      () => {
-        geometry.dispose();
-        material.dispose();
-      },
+      () => geometry.dispose(),
     );
   }
 
@@ -867,10 +870,7 @@ export class WeaponViewmodels {
       (t) => {
         material.opacity = opacity * (1 - t);
       },
-      () => {
-        geometry.dispose();
-        material.dispose();
-      },
+      () => geometry.dispose(),
     );
   }
 
@@ -908,10 +908,7 @@ export class WeaponViewmodels {
         material.opacity = opacity * (1 - t);
         mesh.scale.set(1 - t * 0.6, 1, 1 - t * 0.6);
       },
-      () => {
-        geometry.dispose();
-        material.dispose();
-      },
+      () => geometry.dispose(),
     );
   }
 

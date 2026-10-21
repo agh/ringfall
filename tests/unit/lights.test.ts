@@ -66,6 +66,25 @@ describe('light pool', () => {
     for (const rig of rigs) expect(countLights(rig.group)).toBe(0);
   });
 
+  it('a rig that found the pool empty claims a light on a later frame', () => {
+    const pool = new LightPool(1);
+    const holder = pool.acquire(new THREE.Group(), 0xffffff, 1, 1);
+    for (const kind of ['skimmer', 'strider', 'watcher'] as const) {
+      const enemy = createEnemy(1, kind, { x: 0, y: 0, z: 0 }, 0);
+      const rig = makeEnemyRig(enemy, pool);
+      expect(countLights(rig.group)).toBe(0);
+      rig.animate(enemy, 1);
+      expect(countLights(rig.group)).toBe(0);
+      pool.release(holder);
+      rig.animate(enemy, 2);
+      expect(countLights(rig.group)).toBe(1);
+      expect(pool.inUse).toBe(1);
+      rig.dispose();
+      expect(pool.inUse).toBe(0);
+      pool.acquire(new THREE.Group(), 0xffffff, 1, 1);
+    }
+  });
+
   it('gives every strider its own eye, so one charging strider does not whiten the rest', () => {
     const pool = new LightPool();
     const eyeOf = (rig: ReturnType<typeof makeEnemyRig>): THREE.MeshBasicMaterial => {

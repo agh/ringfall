@@ -242,8 +242,9 @@ export class Dropship {
       if (!dust) continue;
       const t = (now - dust.startedAt) / DUST_SECONDS;
       if (t >= 1) {
+        // The material is kept: disposing the last one on a program deletes the program and
+        // the next landing compiles it again (see the note on `Effect` in `weapons.ts`).
         this.parent.remove(dust.mesh);
-        dust.mesh.material.dispose();
         this.dust.splice(i, 1);
         continue;
       }
