@@ -25,6 +25,12 @@ and this project adheres to
 
 ### Added
 
+- An architecture package under `docs/architecture/`: C4 context and
+  container diagrams, component diagrams and a module map generated from the
+  import graph, an event catalogue generated from the `GameEvent` union and
+  its consumers, the frame and tick data flows, the build and delivery view,
+  a decision index and the invariants, with `pnpm docs:architecture` to
+  regenerate and render and a unit test that fails on drift (#79).
 - A unit test that fails if the pre-rename repository path reappears outside
   `docs/journey/`, and a runbook note on the rename order (#70).
 - Four skimmer temperaments handed out round-robin per wave: chaser,

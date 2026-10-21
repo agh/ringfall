@@ -1,0 +1,36 @@
+%%{init: {"flowchart": {"curve": "basis"}} }%%
+flowchart LR
+  subgraph render["src/render/ (three.js)"]
+    render_enemies["enemies.ts"]
+    render_environment["environment.ts"]
+    render_particles["particles.ts"]
+    render_pickups["pickups.ts"]
+    render_post["post.ts"]
+    render_scene["scene.ts"]
+    render_weapons["weapons.ts"]
+  end
+  render_environment -.-> render_particles
+  render_pickups -.-> render_particles
+  render_pickups --> render_weapons
+  render_scene --> render_enemies
+  render_scene --> render_environment
+  render_scene --> render_particles
+  render_scene --> render_pickups
+  render_scene --> render_post
+  render_scene --> render_weapons
+  render_weapons -.-> render_particles
+  core(["src/core/"])
+  three(["three.js"])
+  render_enemies -->|"three"| three
+  render_enemies -->|"enemy"| core
+  render_environment -->|"Sky, three"| three
+  render_environment -.->|"vec3, waves"| core
+  render_particles -->|"three"| three
+  render_particles -.->|"vec3"| core
+  render_pickups -->|"three"| three
+  render_pickups -.->|"game, pickups, vec3, weapon"| core
+  render_post -->|"EffectComposer, OutputPass, RenderPass, ShaderPass, UnrealBloomPass, three"| three
+  render_scene -->|"three"| three
+  render_scene -->|"enemy, game, grenade, vec3, waves, world"| core
+  render_weapons -->|"three"| three
+  render_weapons -->|"game, vec3, weapon"| core

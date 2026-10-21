@@ -79,7 +79,8 @@ tests in real Chromium.
 | [docs/spec.md](docs/spec.md) | Chapter 1 specification, Minimum Lovable Product versus Later, mastery goals, easter eggs |
 | [docs/product/](docs/product/) | Concept proposal (PR/FAQ), product requirements with traceability, text storyboard and demo-reel cut list, art direction |
 | [docs/evolution.md](docs/evolution.md) | How intent is proven in code, how regressions are prevented, how the product evolves with agents |
-| [docs/design-doc.md](docs/design-doc.md) | Architecture and every gameplay number with its rationale |
+| [docs/architecture/](docs/architecture/README.md) | C4 context, containers and generated components, one frame and one tick, event catalogue, build and delivery, decision index, invariants |
+| [docs/design-doc.md](docs/design-doc.md) | Every gameplay number with its rationale |
 | [docs/brand.md](docs/brand.md) | Palette, typography, geometry language, audio identity, feel values, PR checklist |
 | [docs/test-plan.md](docs/test-plan.md) | Static, unit, playtest, browser, visual, and recording layers |
 | [docs/research/](docs/research/) | Sourced research on the reference console shooter's design and on browser WebGL prior art |

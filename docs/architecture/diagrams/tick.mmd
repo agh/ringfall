@@ -1,0 +1,19 @@
+%%{init: {"flowchart": {"curve": "basis"}} }%%
+flowchart TB
+  in["stepGame(state, input, dt, rng)"]
+  guard{"status is playing?"}
+  same["return state with no events"]
+  draft["Draft: shallow copy with fresh arrays,<br/>events = [], rng attached; time += dt"]
+  s1["1. stepPlayerMovement<br/>wish direction, gravity, jump, axis-separated collision, crouch"]
+  s2["2. stepTaunt<br/>three crouches over a strider's grave: a skimmer barks"]
+  s3["3. stepPickups<br/>expire, reach, take into the two-slot inventory"]
+  s4["4. stepWeapon<br/>swap, reload, trigger, charge, fire: hitscan, beam or launcher round"]
+  s5["5. stepGrenades<br/>throw, bounce, fuse, blast damage to enemies and thrower"]
+  s6["6. stepEnemies<br/>one state machine per enemy: melee hits, bolts fired, corpses expire"]
+  s7["7. stepBolts<br/>fly, stop on cover, hit the player's sphere"]
+  s8["8. stepWaves<br/>countdown, active, cleared, next wave or victory"]
+  s9["tickVitality<br/>shield recharge after the delay"]
+  freeze["Freeze: drop rng, return the draft as the new immutable GameState<br/>carrying this step's events"]
+  in --> guard
+  guard -->|"no"| same
+  guard -->|"yes"| draft --> s1 --> s2 --> s3 --> s4 --> s5 --> s6 --> s7 --> s8 --> s9 --> freeze

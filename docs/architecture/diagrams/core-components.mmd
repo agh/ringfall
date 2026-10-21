@@ -1,0 +1,64 @@
+%%{init: {"flowchart": {"curve": "basis"}} }%%
+flowchart LR
+  subgraph core["src/core/ (pure simulation)"]
+    core_bot["bot.ts"]
+    core_enemy["enemy.ts"]
+    core_game["game.ts"]
+    core_grenade["grenade.ts"]
+    core_pickups["pickups.ts"]
+    core_playtest["playtest.ts"]
+    core_projectile["projectile.ts"]
+    core_raycast["raycast.ts"]
+    core_records["records.ts"]
+    core_rng["rng.ts"]
+    core_settings["settings.ts"]
+    core_vec3["vec3.ts"]
+    core_vitality["vitality.ts"]
+    core_waves["waves.ts"]
+    core_weapon["weapon.ts"]
+    core_world["world.ts"]
+  end
+  core_bot --> core_enemy
+  core_bot --> core_game
+  core_bot --> core_grenade
+  core_bot -.-> core_pickups
+  core_bot --> core_raycast
+  core_bot -.-> core_rng
+  core_bot --> core_vec3
+  core_bot --> core_weapon
+  core_bot -.-> core_world
+  core_enemy -.-> core_rng
+  core_enemy --> core_vec3
+  core_enemy --> core_world
+  core_game --> core_enemy
+  core_game --> core_grenade
+  core_game --> core_pickups
+  core_game --> core_projectile
+  core_game --> core_raycast
+  core_game --> core_rng
+  core_game --> core_vec3
+  core_game --> core_vitality
+  core_game --> core_waves
+  core_game --> core_weapon
+  core_game --> core_world
+  core_grenade --> core_vec3
+  core_grenade --> core_world
+  core_pickups -.-> core_enemy
+  core_pickups -.-> core_rng
+  core_pickups --> core_vec3
+  core_pickups --> core_weapon
+  core_pickups --> core_world
+  core_playtest --> core_bot
+  core_playtest --> core_game
+  core_playtest --> core_rng
+  core_projectile --> core_raycast
+  core_projectile --> core_vec3
+  core_projectile -.-> core_world
+  core_raycast --> core_vec3
+  core_raycast -.-> core_world
+  core_waves -.-> core_enemy
+  core_weapon --> core_raycast
+  core_weapon -.-> core_vec3
+  core_weapon -.-> core_world
+  core_world -.-> core_rng
+  core_world --> core_vec3

@@ -1,0 +1,53 @@
+%%{init: {"flowchart": {"curve": "basis"}} }%%
+flowchart TB
+  player(["Player"])
+  subgraph bundle["Static bundle (Vite build of src/, served by GitHub Pages)"]
+    direction LR
+    input["src/input/<br/>keyboard, mouse, pointer lock to InputFrame"]
+    main["src/main.ts<br/>fixed-step loop, hit-stop, overlay, capture hook"]
+    core["src/core/<br/>pure simulation: stepGame(state, input, dt, rng)"]
+    render["src/render/<br/>three.js scene, post stack, particles"]
+    hud["src/hud/<br/>DOM display and 2D-canvas tracker"]
+    audio["src/audio/<br/>WebAudio sound table and score"]
+  end
+  storage[("Local storage<br/>records, settings")]
+  subgraph headless["Headless harnesses (Node and headless Chromium)"]
+    direction LR
+    bot["src/core/bot.ts and playtest.ts<br/>scripted player, whole games at 60 Hz"]
+    balance["tests/balance/<br/>balance gate: twenty seeds per profile"]
+    frames["scripts/frames.mjs<br/>luminance gate: ten seeded frames"]
+    recorder["scripts/record-demo.mjs and render-score.mjs<br/>film a seed, score it offline"]
+    reel["scripts/reel.mjs<br/>title cards, two waves, stitched reel"]
+  end
+  subgraph ci["CI jobs (.github/workflows)"]
+    direction LR
+    lint["Lint and type check"]
+    unit["Unit tests"]
+    e2e["Browser smoke tests"]
+    gate["Luminance gate"]
+    build["Production build"]
+    bal["Balance gate"]
+    docs["Docs hygiene"]
+    deploy["Deploy to GitHub Pages"]
+  end
+  player --> input
+  input -->|"InputFrame"| main
+  main -->|"stepGame every 1/60 s"| core
+  core -->|"GameState and GameEvent[]"| main
+  main -->|"state and events"| render
+  main -->|"state and events"| hud
+  main -->|"events and music state"| audio
+  render --> player
+  hud --> player
+  audio --> player
+  main <-->|"personal bests, settings"| storage
+  bot -->|"same stepGame, no renderer"| core
+  balance --> bot
+  recorder -->|"?record&bot&seed=N"| main
+  frames -->|"?record&bot&seed=N"| main
+  reel --> recorder
+  bal --> balance
+  gate --> frames
+  e2e -->|"Playwright against vite preview"| bundle
+  build -->|"vite build"| bundle
+  deploy -->|"dist/ from main"| bundle
