@@ -125,7 +125,11 @@ with the scene under 7 ms, bloom under 2 ms and the feel pass under 0.5 ms,
 per the feel research note in [research/](../research/). These are targets
 until spec item 11 measures them.
 
-**Accessibility.** A toggle sets the screen shake cap to zero. Every HUD
+**Accessibility.** A toggle sets the screen shake cap to zero, and a second
+removes the hex shield lattice and the damage flash; both live in the
+settings panel on the title overlay, with mouse sensitivity and field of
+view, and persist in local storage (built: `src/core/settings.ts`, unit
+tests prove defaults and tolerant parsing). Every HUD
 colour pairing meets the contrast ratios in brand.md, and no text sits
 below 14 px. The game is playable with keyboard and mouse only, and no
 action depends on a sound cue alone.
@@ -134,7 +138,8 @@ action depends on a sound cue alone.
 and WebGPU are Later.
 
 **Privacy.** No network calls after page load, no third-party scripts, no
-analytics, no storage beyond personal bests in local storage.
+analytics, no storage beyond personal bests and the settings panel's four
+values in local storage.
 
 ## Traceability
 
@@ -154,5 +159,5 @@ analytics, no storage beyond personal bests in local storage.
 
 Whether five named waves replace the eight uniform ones or sit on top of
 them is undecided; design-doc.md lists a `FINAL_WAVE` constant as the lever.
-The shake toggle has no home in the HUD yet. Whether the strider should
-lead its shots is open in design-doc.md and affects how dodgeable S7 feels.
+Whether the strider should lead its shots is open in design-doc.md and
+affects how dodgeable S7 feels.

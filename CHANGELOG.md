@@ -44,6 +44,12 @@ and this project adheres to
   cards, wave 1 by day and wave 2 by night from the deterministic bot, the
   offline score, one MP4.
 - Pages deploys to ringfall.alexhowells.com.
+- Explosions and deaths that read at any distance, by day and at night:
+  a 120 ms sprite flash, a thin shockwave crest, debris sparks and chips
+  under gravity, a smoke column that rises and thins over 1.5 s, and a
+  4 s scorch on the floor; a kill borrows the enemy's own accent and shell
+  colours. The particle pool gains `spark`, `smoke` and `shard` shapes with
+  premultiplied blending so smoke can darken the frame (#26).
 
 ### Changed
 
