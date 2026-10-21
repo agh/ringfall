@@ -86,10 +86,10 @@ export const pointInsideAabbXZ = (p: Vec3, box: Aabb, margin = 0): boolean =>
   p.z > box.min.z - margin &&
   p.z < box.max.z + margin;
 
-const circleHitsBoxXZ = (p: Vec3, radius: number, box: Aabb): boolean => {
-  const nx = Math.max(box.min.x, Math.min(p.x, box.max.x));
-  const nz = Math.max(box.min.z, Math.min(p.z, box.max.z));
-  return (p.x - nx) ** 2 + (p.z - nz) ** 2 < radius * radius;
+const circleHitsBoxXZ = (px: number, pz: number, radius: number, box: Aabb): boolean => {
+  const nx = Math.max(box.min.x, Math.min(px, box.max.x));
+  const nz = Math.max(box.min.z, Math.min(pz, box.max.z));
+  return (px - nx) ** 2 + (pz - nz) ** 2 < radius * radius;
 };
 
 /**
@@ -105,10 +105,11 @@ export const moveWithCollision = (
 ): Vec3 => {
   const limit = arena.halfSize - radius;
   const blockedAt = (x: number, y: number, z: number): boolean => {
-    const p = vec3(x, y, z);
-    return arena.obstacles.some(
-      (box) => y < box.max.y && y + height > box.min.y && circleHitsBoxXZ(p, radius, box),
-    );
+    for (const box of arena.obstacles) {
+      if (y < box.max.y && y + height > box.min.y && circleHitsBoxXZ(x, z, radius, box))
+        return true;
+    }
+    return false;
   };
   let x = Math.max(-limit, Math.min(limit, pos.x + delta.x));
   if (blockedAt(x, pos.y, pos.z)) x = pos.x;
@@ -128,7 +129,7 @@ export const moveWithCollision = (
 const landingHeight = (arena: Arena, from: Vec3, radius: number, to: number): number | null => {
   let top: number | null = null;
   for (const box of arena.obstacles) {
-    if (box.max.y <= from.y && box.max.y > to && circleHitsBoxXZ(from, radius, box)) {
+    if (box.max.y <= from.y && box.max.y > to && circleHitsBoxXZ(from.x, from.z, radius, box)) {
       top = Math.max(top ?? box.max.y, box.max.y);
     }
   }
@@ -139,7 +140,7 @@ const landingHeight = (arena: Arena, from: Vec3, radius: number, to: number): nu
 export const groundHeightAt = (arena: Arena, pos: Vec3, radius: number): number => {
   let ground = 0;
   for (const box of arena.obstacles) {
-    if (circleHitsBoxXZ(pos, radius, box) && pos.y >= box.max.y - 0.05) {
+    if (circleHitsBoxXZ(pos.x, pos.z, radius, box) && pos.y >= box.max.y - 0.05) {
       ground = Math.max(ground, box.max.y);
     }
   }
