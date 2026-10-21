@@ -1,0 +1,8 @@
+# Supply-chain settings for pnpm 10; the project is a single package, not a workspace.
+packages:
+  - .
+# Only versions published at least a day ago resolve, so a hijacked release is not installed in the
+# window before the registry pulls it.
+minimumReleaseAge: 1440
+# No dependency may run a lifecycle script on install. Add a name here only with a reason.
+onlyBuiltDependencies: []

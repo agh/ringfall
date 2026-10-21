@@ -21,16 +21,10 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from '@playwright/test';
+import { parseArgs, requireSeed } from './lib/args.mjs';
 
-const args = Object.fromEntries(
-  process.argv.slice(2).reduce((pairs, arg, i, all) => {
-    const next = all[i + 1];
-    if (arg.startsWith('--'))
-      pairs.push([arg.slice(2), next?.startsWith('--') ? 'true' : (next ?? 'true')]);
-    return pairs;
-  }, []),
-);
-const seed = Number(args.seed ?? 7);
+const args = parseArgs(process.argv.slice(2));
+const seed = requireSeed(args.seed);
 const port = Number(args.port ?? 4181);
 const fps = Number(args.fps ?? 30);
 const width = 1280;
