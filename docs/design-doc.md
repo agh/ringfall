@@ -261,7 +261,7 @@ clock in production and is fixed in tests.
   14% of the frame height; at the first kill at night from 60 to 19. The
   budget is a mean under 150 by day and 110 at night.
 - **Sun flare.** An additive core sprite at the sun (scale 520 at 9 km,
-  about 4% of the frame height) and three ghosts on the sun-to-centre axis,
+  about 4% of the frame height) and three ghosts on the sun-to-center axis,
   sized as fractions of the frame height (5%, 8%, 3.5%) at opacity 0.6, so
   no ghost can reach the third of the frame the budget allows. Core and
   ghosts follow `sunDisc`, which is 0 at night, and are hidden rather than
