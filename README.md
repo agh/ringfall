@@ -5,7 +5,7 @@
 A browser-native arena shooter. One ring, one dawn, two kinds of thing that
 want you dead. TypeScript + three.js, zero assets.
 
-**[Play now](https://agh.github.io/hack/)** (deploys from `main`).
+**[Play now](https://ringfall.alexhowells.com)** (deploys from `main`; `agh.github.io/hack` until DNS is set).
 
 Ringfall takes its cues from the classic console sci-fi shooter loop: a
 regenerating energy shield over fixed health, a two-second rhythm of fire,

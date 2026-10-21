@@ -167,6 +167,16 @@ is the quickest way to see that the bot is fighting. Films, frames, and
 the WAV are ignored by git. Each review of a film is logged in
 [journey/README.md](journey/README.md) with the seed and the frame range.
 
+### Custom domain
+
+The site is served at <https://ringfall.alexhowells.com>. `public/CNAME` holds
+the hostname so every Pages deploy keeps it. One-time setup: a DNS `CNAME`
+record for `ringfall` pointing at `agh.github.io`, then in the repository's
+Settings, Pages, enter the custom domain and tick "Enforce HTTPS" once the
+certificate is issued (a few minutes after DNS resolves). The Vite build uses
+a relative `base`, so the same `dist/` works at the apex, under `/hack/`, or
+from a local preview.
+
 ### The Playwright ffmpeg cannot assemble the film
 
 The ffmpeg that Playwright bundles (`/opt/pw-browsers/ffmpeg-*/ffmpeg-linux`)
