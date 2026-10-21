@@ -55,6 +55,9 @@ jobs:
   e2e:
     name: Browser smoke tests
     runs-on: ubuntu-latest
+    # Software GL on a two-core runner: the two tests and one retry fit in ten minutes; a job
+    # that runs longer than this would hold the branch's concurrency slot and stall the deploy.
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -76,32 +79,6 @@ jobs:
           path: |
             playwright-report
             test-results
-          retention-days: 7
-
-  frames:
-    name: Luminance gate
-    runs-on: ubuntu-latest
-    # Ten frames on software GL: about 680 renders at roughly a second each (17 minutes measured).
-    timeout-minutes: 40
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '22'
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm build
-      # Ten seeded frames on software GL, measured against the budgets in scripts/frames.mjs.
-      - run: pnpm frames
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: always()
-        with:
-          name: frames
-          path: node_modules/.cache/ringfall-frames
           retention-days: 7
 
   build:
@@ -318,9 +295,9 @@ jobs:
   # code, may write Pages and mint an OIDC token.
   pages-build:
     name: Pages build
-    # The luminance gate (`frames`) and the browser smoke tests still fail the run, but the
-    # deploy does not wait on them: both take ten to forty minutes on software GL, and a push
-    # to main every few minutes would otherwise never reach this job.
+    # The browser smoke tests still fail the run but do not hold the deploy; the luminance gate
+    # is its own optional workflow (frames.yml). Both take minutes on software GL, and a push to
+    # main every few minutes would otherwise never reach this job.
     needs: [lint, test, build, balance, docs, security]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
