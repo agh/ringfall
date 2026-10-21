@@ -1,9 +1,14 @@
 import {
+  type BarkLine,
   createEnemy,
   damageEnemy,
   ENEMY_STATS,
   type Enemy,
+  type EnemyKind,
   enemyCenter,
+  FLEE_RADIUS,
+  pickBark,
+  startFlee,
   updateEnemy,
 } from './enemy';
 import {
@@ -32,7 +37,16 @@ import {
 import { type Bolt, createBolt, stepBolt } from './projectile';
 import { hitscan, type SphereTarget } from './raycast';
 import { createRng, type Rng } from './rng';
-import { add, clamp, directionFromAngles, distance, scale, type Vec3, vec3 } from './vec3';
+import {
+  add,
+  clamp,
+  directionFromAngles,
+  distance,
+  distanceXZ,
+  scale,
+  type Vec3,
+  vec3,
+} from './vec3';
 import { applyDamage, createVitality, tickVitality, type Vitality } from './vitality';
 import { createWaveState, tickWave, WAVE_BONUS, type WaveState, waveComposition } from './waves';
 import {
@@ -144,6 +158,19 @@ export type GameEvent =
   | { readonly type: 'pickupExpired'; readonly id: number }
   | { readonly type: 'explosion'; readonly at: Vec3 }
   | { readonly type: 'enemyKilled'; readonly id: number; readonly at: Vec3; readonly score: number }
+  /**
+   * An enemy broke and ran: it is now in state `flee`. Fired for every skimmer within
+   * `FLEE_RADIUS` of a strider when it dies, after that strider's `enemyKilled` in the same step,
+   * and again for a skimmer whose rout is refreshed by a second death. The enemy's `fleeUntil`
+   * says when it ends; posture and sound layers key on `id` and `kind`.
+   */
+  | { readonly type: 'enemyFled'; readonly id: number; readonly kind: EnemyKind }
+  /**
+   * A fleeing enemy shouts `line`, one of `BARK_LINES`. Exactly one follows each `enemyFled`,
+   * so a strider death with any skimmer in range barks at least once; the first bark of a rout
+   * is always the first line. The label and the sound belong to the layers that consume this.
+   */
+  | { readonly type: 'enemyBark'; readonly id: number; readonly line: BarkLine }
   | { readonly type: 'playerDamaged'; readonly amount: number; readonly from: Vec3 | null }
   | { readonly type: 'shieldBroken' }
   | { readonly type: 'boltFired'; readonly id: number }
@@ -258,6 +285,20 @@ const hurtPlayer = (d: Draft, amount: number, from: Vec3 | null): void => {
   }
 };
 
+/** Every skimmer within `FLEE_RADIUS` of a fallen strider runs, and each one barks. */
+const routSkimmers = (d: Draft, fallen: Enemy): void => {
+  let first = true;
+  d.enemies.forEach((e, i) => {
+    if (e.kind !== 'skimmer' || distanceXZ(e.position, fallen.position) > FLEE_RADIUS) return;
+    const fled = startFlee(e, d.time);
+    if (fled === e) return;
+    d.enemies[i] = fled;
+    d.events.push({ type: 'enemyFled', id: e.id, kind: e.kind });
+    d.events.push({ type: 'enemyBark', id: e.id, line: pickBark(d.rng, first) });
+    first = false;
+  });
+};
+
 const hurtEnemy = (d: Draft, index: number, amount: number): void => {
   const enemy = d.enemies[index];
   if (!enemy) return;
@@ -268,6 +309,7 @@ const hurtEnemy = (d: Draft, index: number, amount: number): void => {
     d.score += score;
     d.kills += 1;
     d.events.push({ type: 'enemyKilled', id: enemy.id, at: enemyCenter(enemy), score });
+    if (enemy.kind === 'strider') routSkimmers(d, enemy);
     const drop = rollDrop(enemy.kind, heldKinds(d.player.weapons), d.rng);
     if (drop !== null) spawnPickup(d, drop, enemy.position);
   }
