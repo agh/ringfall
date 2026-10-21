@@ -36,8 +36,8 @@ weapons-grenades-melee triad the "Golden Triangle"
 ([Halopedia][halopedia-weapons]).
 
 **Shield rhythm is a pacing contract with the AI.** Griesemer: when your
-shields drop and you take cover, "the enemies back off and let you
-recover"; they "generally don't flush you out of cover". Charging in "guns
+shields drop and you take cover, the enemies back off and let you catch
+your breath, and they do not usually flush you out of cover (paraphrased). Charging in "guns
 blazing" gets hard pushback ([Engadget][griesemer]). The shield recharges
 after a brief damage-free window; health beneath it needs a medkit, which
 removes the "1% health" problem while keeping stakes
@@ -148,8 +148,8 @@ that, and then ask why the situation turns" ([iTWire][itwire]).
   slow motion, the survivors flee, the music resolves, the camera tilts to
   the ring. End on the image and the sound, not a menu.
 
-The first 30 seconds decide retention
-([Game Developer, "The 30-second hook"][hook]).
+One developer's account argues the first 30 seconds decide whether a
+player stays ([Game Developer, "The 30-second hook"][hook]).
 
 ## Audio identity in WebAudio
 

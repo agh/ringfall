@@ -18,7 +18,7 @@ numbers are owned by [design-doc.md](../design-doc.md) and brand.md.
 
 ## World premise
 
-You are standing on the inside of a ring. It is six kilometres across, its
+You are standing on the inside of a ring. It is twelve kilometres across, its
 near side buried below the horizon so the arc climbs from both edges of the
 world and crosses overhead, ocean and land and cloud bands on its inner
 face and a bright metal rim catching the light. The sun is low, eleven

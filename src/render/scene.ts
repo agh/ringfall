@@ -3,13 +3,15 @@ import type { Enemy } from '../core/enemy';
 import { CORPSE_LINGER, type GameEvent, type GameState, playerEye } from '../core/game';
 import { GRENADE_BLAST_RADIUS } from '../core/grenade';
 import type { Vec3 } from '../core/vec3';
-import type { Arena } from '../core/world';
+import { ARENA_HALF_SIZE, type Arena } from '../core/world';
 import { type EnemyRig, makeEnemyRig } from './enemies';
 import { createEnvironment, type Environment } from './environment';
 import { ParticleSystem } from './particles';
 import { PostStack } from './post';
 
 const FOG_DENSITY = 0.0032;
+/** Hard cap on camera shake in radians (docs/brand.md). */
+const SHAKE_CAP = 0.035;
 const BASE_FOV = 78;
 
 interface Effect {
@@ -132,8 +134,6 @@ export class SceneRenderer {
       canvas,
       antialias: false,
       powerPreference: 'high-performance',
-      // Lets the recorder read the canvas after a synchronous render.
-      preserveDrawingBuffer: new URLSearchParams(window.location.search).has('record'),
     });
     this.renderer.setPixelRatio(this.pixelRatio);
     this.renderer.shadowMap.enabled = true;
@@ -143,7 +143,7 @@ export class SceneRenderer {
     this.camera = new THREE.PerspectiveCamera(BASE_FOV, 1, 0.08, 40000);
     this.camera.rotation.order = 'YXZ';
 
-    this.environment = createEnvironment(30);
+    this.environment = createEnvironment(ARENA_HALF_SIZE);
     this.scene.add(this.environment.group, this.world, this.dynamic, this.particles.points);
     this.scene.fog = new THREE.FogExp2(this.environment.fogColor, FOG_DENSITY);
     this.scene.background = null;
@@ -172,7 +172,7 @@ export class SceneRenderer {
     this.buildFlare();
     this.buildViewmodel();
     this.post = new PostStack(this.renderer, this.scene, this.camera);
-    (window as unknown as { ringfallDebug?: unknown }).ringfallDebug = {
+    window.ringfallDebug = {
       uniforms: () => this.post.debugUniforms(),
       info: () => this.renderer.info.render,
     };
@@ -438,8 +438,9 @@ export class SceneRenderer {
     this.camera.updateMatrixWorld();
     this.updateFlare();
     if (this.shake > 0) {
-      this.camera.rotation.z += (Math.random() - 0.5) * 0.03 * this.shake;
-      this.camera.rotation.x += (Math.random() - 0.5) * 0.015 * this.shake;
+      const amount = Math.min(SHAKE_CAP, 0.03 * this.shake);
+      this.camera.rotation.z += (Math.random() - 0.5) * amount;
+      this.camera.rotation.x += (Math.random() - 0.5) * amount * 0.5;
       this.shake = Math.max(0, this.shake - frameDt * 2.5);
     }
 

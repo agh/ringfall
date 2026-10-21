@@ -16,7 +16,11 @@ declare global {
     /** Debug and test hook: read-only access to the live simulation. */
     ringfall?: {
       state: () => GameState;
-      running: () => boolean;
+    };
+    /** Diagnostics for the renderer: post-process uniforms and draw statistics. */
+    ringfallDebug?: {
+      uniforms: () => Record<string, unknown>;
+      info: () => unknown;
     };
     /**
      * Recording hook (`?record&bot&seed=N`): the animation loop is suspended and each call steps
@@ -26,7 +30,6 @@ declare global {
     ringfallCapture?: {
       start: () => Promise<void>;
       advance: (steps: number) => void;
-      frame: (quality: number) => string;
       /** Renders the soundtrack for the same seed offline; returns base64 WAV. */
       score: (seconds: number, leadIn: number) => Promise<string>;
     };
@@ -65,7 +68,7 @@ const main = (): void => {
   let last = performance.now();
   renderer.setArena(game.arena);
 
-  window.ringfall = { state: () => game, running: () => running };
+  window.ringfall = { state: () => game };
 
   const showOverlay = (finished: boolean): void => {
     running = false;
@@ -185,7 +188,6 @@ const main = (): void => {
         hud.render(game);
         renderer.render(game, captureClock / 1000, FIXED_DT * steps);
       },
-      frame: (quality) => canvas.toDataURL('image/jpeg', quality),
       score: (seconds, leadIn) => renderScore({ seed, seconds, leadIn }),
     };
   }

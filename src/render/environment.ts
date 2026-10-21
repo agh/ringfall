@@ -158,8 +158,7 @@ export const createEnvironment = (arenaHalf: number): Environment => {
   ring.rotation.y = THREE.MathUtils.degToRad(35);
   group.add(ring);
 
-  if (!new URLSearchParams(window.location.search).has('noterrain'))
-    group.add(makeTerrain(arenaHalf));
+  group.add(makeTerrain(arenaHalf));
 
   const starGeometry = new THREE.BufferGeometry();
   const count = 1600;

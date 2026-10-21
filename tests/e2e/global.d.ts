@@ -4,7 +4,6 @@ declare global {
   interface Window {
     ringfall?: {
       state: () => GameState;
-      running: () => boolean;
     };
   }
 }

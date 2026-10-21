@@ -74,7 +74,7 @@ simulation is deterministic, one seed gives a reproducible run that powers
 balance measurement in Node, smoke tests in Chromium, and the demo film:
 
 ```bash
-pnpm balance                      # headless games, win rate, accuracy, wave clear times
+pnpm balance                      # 20 seeded games per bot profile; prints win rate, accuracy, wave clear times
 pnpm demo                         # film seed 7 to demo.mp4 (needs pnpm build and ffmpeg)
 ```
 

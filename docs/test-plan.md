@@ -1,7 +1,7 @@
 ---
 type: design-doc
 title: "Ringfall test plan"
-status: approved
+status: draft
 authors: ["Ringfall hackathon team"]
 reviewers: []
 created: 2026-10-21
@@ -21,14 +21,13 @@ does not have to for every change.
 | Static | Biome, tsc strict, markdownlint | Style, types, docs hygiene | `pnpm lint`, `pnpm typecheck` | CI lint job |
 | Unit | Vitest, Node | Every core rule: movement, collision, weapons, grenades, enemy AI, bolts, waves, vitality, the whole step | `tests/unit/` | 85% lines on `src/core`, 75% branches |
 | Playtest | Vitest, Node | A scripted player plays whole games; determinism, accuracy, wave clearing, profile differences | `tests/unit/bot.test.ts` | Thresholds in the test |
-| Browser | Playwright, Chromium with WebGL | The built page loads, renders, starts, spawns a wave, moves on keys, no page errors | `tests/e2e/` | CI e2e job |
+| Browser | Playwright, Chromium with WebGL | The built page loads, renders, starts, advances the simulation, moves on keys, no page errors | `tests/e2e/` | CI e2e job |
 | Visual | Playwright, screenshots | What it looks like on a software GPU, reviewed by a person and filed under `docs/journey/` | manual, recorded | Review |
 | Recording | `scripts/record-demo.mjs` | A deterministic bot run becomes an MP4; the frames are the proof the whole stack renders | manual | Review |
 
 ## The playtest layer, in detail
 
-The bot in `src/core/bot.ts` reads the same state a player sees and emits
-the same `InputFrame` a keyboard and mouse would: it turns at a bounded
+The bot in `src/core/bot.ts` reads only what a player could know (enemies in line of sight or within the 28 m tracker, never their health) and emits the same `InputFrame` a keyboard and mouse would: it turns at a bounded
 rate with aim jitter, strafes in bursts, dodges incoming bolts, retreats on
 low shield, reloads when safe, and lobs grenades at clusters or striders.
 Two profiles exist: steady (retreats at 30% shield) and reckless (never
@@ -74,5 +73,5 @@ judged good or bad.
 pnpm check          # lint, typecheck, unit with coverage, build
 pnpm test:e2e       # Playwright against vite preview
 PLAYWRIGHT_CHROMIUM_EXECUTABLE=/path/to/chrome pnpm test:e2e   # sandboxed browsers
-node scripts/record-demo.mjs --seed 7 --seconds 45             # film a run
+node scripts/record-demo.mjs --seed 7 --seconds 40 --fps 30    # film a run
 ```

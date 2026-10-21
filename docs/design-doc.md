@@ -1,7 +1,7 @@
 ---
 type: design-doc
 title: "Ringfall: WebGL arena shooter"
-status: approved
+status: draft
 authors: ["Ringfall hackathon team"]
 reviewers: []
 created: 2026-10-21
@@ -48,7 +48,8 @@ cheap to build and easy to test, so it is the product.
 
 ### Non-Goals
 
-- **NG1:** Multiplayer, networking, or persistence of any kind.
+- **NG1:** Multiplayer or networking of any kind. The only persistence is the
+  player's personal bests in their own browser's local storage.
 - **NG2:** Mobile or touch controls.
 - **NG3:** Vehicles, multiple weapons, or pickups.
 - **NG4:** Imported art, audio, or any franchise material (see
@@ -116,7 +117,7 @@ in order, and freezes the result:
 | Archetype | Health | Speed  | Attack                          | Behaviour                                        | Score |
 | --------- | ------ | ------ | ------------------------------- | ------------------------------------------------ | ----- |
 | Skimmer   | 40     | 7 m/s  | Melee zap, 12 dmg every 0.9 s   | Closes to 2 m with lateral jitter so packs fan out | 100   |
-| Strider   | 120    | 3 m/s  | Bolt, 18 dmg every 1.4 s        | Holds 8 to 16 m, backs off when crowded, leads with 4 % spread | 300 |
+| Strider   | 120    | 3 m/s  | Bolt, 18 dmg every 1.4 s        | Holds 8 to 16 m, backs off when crowded, aims at the current eye position with 4 % spread | 300 |
 
 The rifle kills a skimmer in two shots and a strider in six. Two skimmers in
 contact strip a full shield in about four seconds; one strider's volley is
@@ -173,9 +174,12 @@ clock in production and is fixed in tests.
   while charging, and a walk cycle. Spawning enemies descend from six
   metres over one second. Dead enemies squash and tilt for 1.2 s, then
   despawn with a kill ring and a spark burst.
-- **Effects.** Tracers (70 ms), impact sparks, a muzzle point light, recoil
-  on the viewmodel, grenade explosions (expanding sphere with a 300 cd point
-  light over 450 ms), kill rings, and camera shake on damage and blasts.
+- **Effects.** Tracers (60 ms), impact sparks, a muzzle flash sprite and point
+  light, recoil on the viewmodel, grenade explosions (a flash sphere and a
+  600-intensity point light over 350 ms, a ground shockwave ring, three
+  particle bursts), kill rings, and camera shake on damage and blasts capped
+  at 0.035 rad. Hit-stop of 50 ms (skimmer kill), 90 ms (strider kill) and
+  120 ms (shield break) slows the simulation to 5 % in `src/main.ts`.
 - **HUD.** DOM elements updated every frame: wave and enemies left, score,
   shield and health bars, ammo with a low-ammo colour, grenade pips, centre
   announcements, a hit marker, a damage vignette, and a pulsing border when
@@ -208,7 +212,8 @@ round cover convincingly enough for an arena with convex blocks.
 
 ## Security Considerations
 
-- No network calls after page load; no user data is collected or stored.
+- No network calls after page load. The only stored data is the player's
+  personal bests in local storage on their own device; nothing is sent anywhere.
 - No third-party scripts; the only runtime dependency is three.js, pinned.
 - CI actions are pinned to commit SHAs and checkouts do not persist
   credentials. The Pages deploy job holds the only write permission.
@@ -217,9 +222,11 @@ round cover convincingly enough for an arena with convex blocks.
 
 ## Testing Strategy
 
-- **Unit (Vitest, Node).** Every module in `src/core/` has a test file.
-  Coverage thresholds: 85 % lines, functions, and statements, 75 % branches.
-  Current run: 49 tests, 99.8 % lines, 97.9 % branches via `pnpm test`.
+- **Unit (Vitest, Node).** Every module in `src/core/` is covered
+  (`playtest.ts` through the bot tests). Coverage thresholds: 85 % lines,
+  functions, and statements, 75 % branches; the actual figures are printed by
+  `pnpm test` and quoted in the pull request with the command that produced
+  them.
 - **Playtest (Vitest, Node).** A scripted player (`src/core/bot.ts`) plays
   whole games through `src/core/playtest.ts`; tests assert determinism per
   seed, first-wave clearance, accuracy, and that the steady and reckless
@@ -229,9 +236,11 @@ round cover convincingly enough for an arena with convex blocks.
   the same event timeline; the film is reviewed and logged in
   [journey/](journey/README.md).
 - **End-to-end (Playwright, Chromium).** Loads the built page, asserts the
-  title and overlay, starts a game, waits for the first wave to spawn, checks
-  the simulation clock advances, and confirms no page errors. A second test
-  holds W and asserts the player moved. These run against `vite preview`.
+  title and overlay, starts a game, checks the simulation clock advances, and
+  confirms no page errors. It deliberately does not wait for the first wave,
+  which software GL cannot reach in time; wave spawning is proven headlessly.
+  A second test holds W and asserts the player moved. These run against
+  `vite preview`.
 - **Static.** Biome in CI mode and `tsc --noEmit` with every strict option.
 
 ## Rollout Plan

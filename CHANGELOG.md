@@ -34,9 +34,7 @@ and this project adheres to
 - The terrain under the arena z-fought the floor at range; it is sunk six
   metres.
 
-## [2026.10.0] - 2026-10-21
-
-### Added
+### Added (initial build)
 
 - First-person arena shooter rendered with three.js: pointer-lock mouse look,
   WASD movement, sprint, jump, wall sliding against procedurally placed cover.
@@ -59,5 +57,4 @@ and this project adheres to
 - GitHub Actions CI (lint, type check, unit, e2e, build) and GitHub Pages
   deployment, all actions pinned to commit SHAs.
 
-[Unreleased]: https://github.com/agh/hack/compare/v2026.10.0...HEAD
-[2026.10.0]: https://github.com/agh/hack/releases/tag/v2026.10.0
+[Unreleased]: https://github.com/agh/hack/commits/main

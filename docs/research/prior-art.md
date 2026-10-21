@@ -116,8 +116,8 @@ overlay; never relock in a loop; clamp pitch in the core. Request
 suspended; resume it in the click handler ([Chrome blog][autoplay]). The
 click that acquires pointer lock is the same gesture.
 
-**First-frame shader stutter.** `renderer.compileAsync(scene, camera)`
-plus one warm-up render behind the start overlay
+**First-frame shader stutter.** One warm-up render behind the start
+overlay; a forum thread reports `compileAsync` alone did not help
 ([three.js forum][compile]).
 
 **GC pauses.** Per-frame `new Vector3()` and closures in the loop; hoist
@@ -125,7 +125,7 @@ scratch objects, pool bullets and particles ([MDN][webxr-perf]).
 
 **Tab backgrounding.** `requestAnimationFrame` pauses in background tabs;
 clamp the first delta on return, pause on `visibilitychange`, suspend the
-`AudioContext` too ([MDN rAF][raf]; [bugnet][visibility]).
+`AudioContext` too ([MDN rAF][raf]).
 
 **Resize and DPR.** Update camera aspect, renderer size and composer size;
 cap `devicePixelRatio`.
@@ -171,7 +171,6 @@ cap `devicePixelRatio`.
 [compile]: https://discourse.threejs.org/t/reduce-first-render-lag-renderer-compileasync-is-not-doing-anything/86191
 [webxr-perf]: https://developer.mozilla.org/en-US/docs/Web/API/WebXR_Device_API/Performance
 [raf]: https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame
-[visibility]: https://bugnet.io/blog/fix-web-game-page-visibility-change-pauses-raf-but-not-audio
 
 - <https://github.com/mrdoob/three.js/blob/dev/examples/games_fps.html>
 - <https://blog.tojicode.com/2010/08/rendering-quake-3-maps-with-webgl-tech.html>

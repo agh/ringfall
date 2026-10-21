@@ -1,7 +1,7 @@
 ---
 type: design-doc
 title: "Ringfall brand and design system"
-status: approved
+status: draft
 authors: ["Ringfall research agent (Claude), reviewed by the hackathon team"]
 reviewers: []
 created: 2026-10-21

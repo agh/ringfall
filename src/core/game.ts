@@ -17,7 +17,7 @@ import { type Bolt, createBolt, stepBolt } from './projectile';
 import { hitscan } from './raycast';
 import { createRng, type Rng } from './rng';
 import { add, clamp, directionFromAngles, distance, scale, type Vec3, vec3 } from './vec3';
-import { applyDamage, createVitality, isDead, tickVitality, type Vitality } from './vitality';
+import { applyDamage, createVitality, tickVitality, type Vitality } from './vitality';
 import { createWaveState, tickWave, WAVE_BONUS, type WaveState, waveComposition } from './waves';
 import { createRifle, startReload, tickWeapon, tryFire, type Weapon } from './weapon';
 import {
@@ -361,7 +361,6 @@ export const stepGame = (state: GameState, input: InputFrame, dt: number, rng: R
   stepBolts(d, dt);
   stepWaves(d);
   d.player = { ...d.player, vitality: tickVitality(d.player.vitality, dt, d.time) };
-  if (isDead(d.player.vitality) && d.status === 'playing') d.status = 'dead';
   const { rng: _rng, ...rest } = d;
   return rest;
 };

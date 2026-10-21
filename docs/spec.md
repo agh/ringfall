@@ -1,7 +1,7 @@
 ---
 type: spec
 title: "Ringfall Chapter 1: specification, Minimum Lovable Product, and what is Later"
-status: approved
+status: draft
 authors: ["Ringfall hackathon team"]
 reviewers: []
 created: 2026-10-21
@@ -22,8 +22,7 @@ mirrors this document: the MLP epic is #2, the Later epic is #3.
 Ringfall is a browser-native first-person arena shooter. You stand on the
 inner surface of a ring at dawn, inside a walled arena, with a rifle, four
 grenades, and an energy shield that recharges when you stop getting hit.
-Waves of two kinds of enemy come at you. The demo lasts five to ten minutes
-and ends on a victory tableau. Everything is procedural: no assets, no
+Waves of two kinds of enemy come at you. The demo is meant to last five to ten minutes and end on a victory tableau; today the victory camera lifts the gaze to the ring and the tableau text is not built (#8). Everything is procedural: no assets, no
 franchise material, no backend.
 
 ## The loop we are building
@@ -59,7 +58,7 @@ a friend. Each MLP item names that moment.
 | 10 | Brand compliance (fonts, tokens, banner) | Consistency, not a moment | Not started | #10 |
 | 11 | Frame budget on an integrated GPU | It runs on the laptop in the room | Not measured | #11 |
 | 12 | Playtest bot as a CI gate | We know it is fair | Harness done; gate not | #12 |
-| 13 | Demo recording pipeline | The awards reel | Capture hook done; score not | #13 |
+| 13 | Demo recording pipeline | The awards reel | Done (recorder, offline score, mux); CI artifact not | #13 |
 | 14 | Easter eggs: temperaments, sector number, crouch, switch | "IYKYK." | Not started | #14 |
 | 15 | Personal bests in the browser: this round against your previous best score, deepest wave, runs and clears | "I got further." | Done (`src/core/records.ts`, localStorage, nothing leaves the device) | n/a |
 
@@ -77,7 +76,7 @@ a friend. Each MLP item names that moment.
 
 **Engineering.** The simulation is a pure function with a seeded random
 source. The same `stepGame` powers the human game, a headless bot that
-plays thousands of games a minute for balance numbers, a Playwright smoke
+plays hundreds of games a minute for balance numbers, a Playwright smoke
 test in real Chromium, and a frame-exact demo recorder that steps the sim
 once per captured frame regardless of GPU speed. Determinism is the
 foundation; the rest is free. See [ADR-0002](adr/0002-pure-simulation-core.md).
@@ -102,6 +101,6 @@ Subtle, non-infringing, recognisable to people who know games:
 
 ## Non-goals
 
-Multiplayer, persistence, mobile, imported art or audio, difficulty
-settings, an endless mode, anything that interrupts the first thirty
-seconds.
+Multiplayer, mobile, imported art or audio, difficulty settings, an
+endless mode, anything that interrupts the first thirty seconds. The only
+persistence is personal bests in the player's own browser.

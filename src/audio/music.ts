@@ -75,7 +75,6 @@ export class Music {
     body.type = 'lowpass';
     body.frequency.value = 1800;
     this.choirBus.connect(body);
-    body.gain.value = 1;
     formantMix.connect(this.master);
     body.connect(this.master);
 

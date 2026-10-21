@@ -134,7 +134,7 @@ action depends on a sound cue alone.
 and WebGPU are Later.
 
 **Privacy.** No network calls after page load, no third-party scripts, no
-analytics, no storage of any kind.
+analytics, no storage beyond personal bests in local storage.
 
 ## Traceability
 

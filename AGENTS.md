@@ -95,13 +95,13 @@ ringfall/
 │   │   └── enemies.ts     # Composite enemy rigs
 │   ├── input/        # Keyboard, mouse, pointer lock -> InputFrame
 │   ├── hud/          # DOM heads-up display and 2D-canvas motion tracker
-│   ├── audio/        # WebAudio procedural sound bank
+│   ├── audio/        # WebAudio sound bank, live score (music.ts), offline score (offline.ts)
 │   ├── main.ts       # Fixed-timestep loop wiring the layers together
 │   └── style.css     # HUD and overlay styling
 ├── tests/
 │   ├── unit/         # Vitest; covers src/core only
 │   └── e2e/          # Playwright; real Chromium, real WebGL
-├── scripts/          # record-demo.mjs: deterministic film of a bot run
+├── scripts/          # record-demo.mjs (film a seeded bot run), render-score.mjs (its soundtrack)
 ├── docs/
 │   ├── spec.md       # Chapter 1 spec: MLP vs Later
 │   ├── design-doc.md # Architecture and gameplay numbers
@@ -115,10 +115,10 @@ ringfall/
 
 **Key Files:**
 
-- `src/core/game.ts` — `stepGame(state, input, dt, rng)`: the whole simulation tick
-- `src/render/scene.ts` — `SceneRenderer`: owns three.js objects, consumes `GameEvent`s
-- `src/main.ts` — fixed 60 Hz accumulator loop, overlay and pointer-lock lifecycle
-- `docs/design-doc.md` — gameplay numbers and their rationale
+- `src/core/game.ts`: `stepGame(state, input, dt, rng)`: the whole simulation tick
+- `src/render/scene.ts`: `SceneRenderer`: owns three.js objects, consumes `GameEvent`s
+- `src/main.ts`: fixed 60 Hz accumulator loop, overlay and pointer-lock lifecycle
+- `docs/design-doc.md`: gameplay numbers and their rationale
 
 ## Architecture
 

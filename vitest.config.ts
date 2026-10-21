@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    include: ['tests/unit/**/*.test.ts'],
+    include: ['tests/unit/**/*.test.ts', 'tests/balance/**/*.test.ts'],
     // 'forks' is the default; measure before overriding it
     pool: 'forks',
     coverage: {

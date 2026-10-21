@@ -93,8 +93,6 @@ export class PostStack {
 
   constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera) {
     const size = renderer.getSize(new THREE.Vector2());
-    // 8-bit + MSAA: the half-float target is rejected by software GL (SwiftShader) and the
-    // bloom threshold works on the clamped linear buffer anyway.
     // HDR + MSAA target: bloom thresholds on linear radiance, OutputPass tone-maps at the end.
     const target = new THREE.WebGLRenderTarget(size.x, size.y, {
       type: THREE.HalfFloatType,

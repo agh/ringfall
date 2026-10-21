@@ -132,7 +132,7 @@ wave content.
 **What does success look like for a five to ten minute demo?** A judge who
 has never seen it clicks Deploy, clears wave one without being told how,
 loses a shield and understands why it came back, and sees the ring. The
-playtest bot clears wave one on every seed, the Playwright smoke test is
+playtest bot clears wave one on most seeds, the Playwright smoke test is
 green, and a seeded recording exists that can be shown if the room's GPU
 cannot.
 

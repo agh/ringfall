@@ -1,8 +1,8 @@
 import { ENEMY_STATS, type Enemy, enemyCenter } from './enemy';
-import { type GameState, IDLE_INPUT, type InputFrame, PLAYER_EYE_HEIGHT, playerEye } from './game';
+import { type GameState, IDLE_INPUT, type InputFrame, playerEye } from './game';
 import { hitscan } from './raycast';
 import type { Rng } from './rng';
-import { add, distanceXZ, normalize, sub, type Vec3, vec3 } from './vec3';
+import { distanceXZ, normalize, sub, type Vec3 } from './vec3';
 
 /**
  * A scripted player. It reads the same immutable state a human sees on the HUD (enemy positions,
@@ -10,6 +10,9 @@ import { add, distanceXZ, normalize, sub, type Vec3, vec3 } from './vec3';
  * simulation is deterministic, a bot run with a fixed seed is a reproducible playtest: the same
  * run drives balance measurement in Node, smoke tests in Playwright, and the demo recording.
  */
+/** Matches the HUD tracker range in src/hud/hud.ts. */
+const TRACKER_RANGE = 28;
+
 export interface BotProfile {
   /** Degrees per second the bot can turn; low values feel human. */
   readonly turnRate: number;
@@ -80,12 +83,11 @@ const pickTarget = (state: GameState): Enemy | null => {
       150,
     );
     const visible = hit.targetId === enemy.id;
-    // Prefer visible, close, and already hurt enemies; skimmers in melee range are urgent.
+    // A player knows about enemies they can see or that show on the 28 m tracker; nothing else.
+    if (!visible && dist > TRACKER_RANGE) continue;
+    // Prefer visible and close enemies; skimmers in melee range are urgent.
     const urgency = enemy.kind === 'skimmer' && dist < 6 ? 0.3 : 1;
-    const score =
-      (visible ? dist : dist * 4) *
-      urgency *
-      (0.6 + enemy.health / ENEMY_STATS[enemy.kind].maxHealth);
+    const score = (visible ? dist : dist * 4) * urgency;
     if (score < bestScore) {
       bestScore = score;
       best = enemy;
@@ -184,14 +186,3 @@ export const decideBot = (
     memory: { yaw, pitch, strafeSign, strafeUntil, lastGrenadeAt },
   };
 };
-
-/** Where the bot is looking, for renderers that want to draw its reticle. */
-export const botLookPoint = (state: GameState, memory: BotMemory): Vec3 =>
-  add(
-    playerEye(state.player),
-    vec3(
-      -Math.sin(memory.yaw) * 10,
-      Math.sin(memory.pitch) * 10 + (PLAYER_EYE_HEIGHT - PLAYER_EYE_HEIGHT),
-      -Math.cos(memory.yaw) * 10,
-    ),
-  );
