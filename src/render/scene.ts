@@ -238,6 +238,18 @@ export class SceneRenderer {
   private lastDprChange = 0;
   /** `?nopost` bypasses the composer: a diagnostic for GPUs that reject the HDR render target. */
   private readonly debugNoPost = new URLSearchParams(window.location.search).has('nopost');
+  /** `?record`: the capture hook drives the loop, so a frame's delta is simulation time. */
+  private readonly recordMode = new URLSearchParams(window.location.search).has('record');
+  /**
+   * One of every object the game first draws after the title card: the explosion flash, crest
+   * and scorch, the kill ring, a bolt and a grenade. three.js compiles a material's program on
+   * its first draw and deletes the program when the last material using it is disposed, so
+   * without these the first explosion compiled three shaders mid-fight and, once its scorch
+   * had faded, the next one compiled them again. They draw once on the first frame, under the
+   * terrain at a scale no pixel can see, then hide; their materials are never disposed, so
+   * the programs, geometries and textures stay resident for the life of the page.
+   */
+  private readonly warmup = new THREE.Group();
 
   private readonly boltGeometry = new THREE.CapsuleGeometry(0.12, 0.5, 4, 8);
   private readonly boltMaterial = new THREE.MeshBasicMaterial({ color: 0xd8b4fe });
@@ -288,13 +300,15 @@ export class SceneRenderer {
     this.pickupMeshes = new PickupMeshes(this.dynamic, this.particles);
     this.dynamic.add(this.watcherBeams.group);
     this.post = new PostStack(this.renderer, this.scene, this.camera);
+    this.buildWarmup();
     // Diagnostics for the dev server and the capture scripts only; the published build keeps
     // its renderer internals to itself.
-    if (import.meta.env.DEV || new URLSearchParams(window.location.search).has('record')) {
+    if (import.meta.env.DEV || this.recordMode) {
       window.ringfallDebug = {
         uniforms: () => this.post.debugUniforms(),
         info: () => this.renderer.info.render,
         lights: () => ({ inUse: this.lights.inUse }),
+        programs: () => this.renderer.info.programs?.length ?? 0,
       };
     }
     this.resize();
@@ -491,11 +505,12 @@ export class SceneRenderer {
   }
 
   render(state: GameState, now: number, frameDt: number): void {
+    const eye = playerEye(state.player);
     this.setArena(state.arena);
     this.syncAtmosphere(state.wave.number);
-    this.environment.update(now, { particles: this.particles, eye: playerEye(state.player) });
+    this.environment.update(now, { particles: this.particles, eye });
     this.applyLighting();
-    this.syncEnemies(state.enemies, playerEye(state.player), state.time);
+    this.syncEnemies(state.enemies, eye, state.time);
     this.syncBolts(state, now);
     this.syncGrenades(state, now);
     this.pickupMeshes.sync(state, now);
@@ -511,7 +526,7 @@ export class SceneRenderer {
     for (const rig of this.enemies.values()) rig.setNight?.(atmosphere.night);
     const motes = Math.floor(atmosphere.dustRate * frameDt + renderRandom());
     for (let i = 0; i < motes; i += 1) {
-      const e = playerEye(state.player);
+      const e = eye;
       // Spawned 3.5 to 10 m out at size 0.09: the largest a mote can draw is 0.09 * 1.4 * 300
       // / 3.5 = 11 px, and most are 2 to 5 px.
       const angle = renderRandom() * Math.PI * 2;
@@ -536,7 +551,6 @@ export class SceneRenderer {
     }
     this.adaptResolution(frameDt);
 
-    const eye = playerEye(state.player);
     const pos = scratchEye.set(eye.x, eye.y, eye.z);
     if (this.motionReset) {
       this.motionReset = false;
@@ -616,9 +630,73 @@ export class SceneRenderer {
 
     if (this.debugNoPost) {
       this.renderer.render(this.scene, this.camera);
-      return;
+    } else {
+      this.post.render(
+        now,
+        frameDt,
+        state.player.vitality.shield <= 0 && state.status === 'playing',
+      );
     }
-    this.post.render(now, frameDt, state.player.vitality.shield <= 0 && state.status === 'playing');
+    // The warm-up set has drawn once; its programs are compiled and stay referenced.
+    this.warmup.visible = false;
+  }
+
+  /** Builds the warm-up set (see `warmup`) with the same material parameters as the effects. */
+  private buildWarmup(): void {
+    const flash = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: flashTexture(),
+        color: PALETTE.dawn,
+        transparent: true,
+        opacity: 0.6,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      }),
+    );
+    const crest = new THREE.Mesh(
+      CREST_GEOMETRY,
+      new THREE.MeshBasicMaterial({
+        color: PALETTE.dawn,
+        transparent: true,
+        opacity: 0.4,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      }),
+    );
+    const scorch = new THREE.Mesh(
+      SCORCH_GEOMETRY,
+      new THREE.MeshBasicMaterial({
+        color: 0x000000,
+        alphaMap: scorchTexture(),
+        transparent: true,
+        opacity: 0.75,
+        depthWrite: false,
+        polygonOffset: true,
+        polygonOffsetFactor: -2,
+        polygonOffsetUnits: -2,
+      }),
+    );
+    const ring = new THREE.Mesh(
+      KILL_RING_GEOMETRY,
+      new THREE.MeshBasicMaterial({
+        color: PALETTE.rose,
+        transparent: true,
+        opacity: 0.3,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      }),
+    );
+    const bolt = new THREE.Mesh(this.boltGeometry, this.boltMaterial);
+    const grenade = new THREE.Mesh(this.grenadeGeometry, this.grenadeMaterial);
+    grenade.castShadow = true;
+    for (const object of [flash, crest, scorch, ring, bolt, grenade]) {
+      // Culling would skip the draw that compiles the program.
+      object.frustumCulled = false;
+      this.warmup.add(object);
+    }
+    this.warmup.position.y = -30;
+    this.warmup.scale.setScalar(1e-3);
+    this.scene.add(this.warmup);
   }
 
   /**
@@ -1196,7 +1274,9 @@ export class SceneRenderer {
    * frame rate on an integrated GPU without a settings menu.
    */
   private adaptResolution(frameDt: number): void {
-    if (frameDt <= 0) return;
+    // A capture's frame delta is the ticks it advanced, not GPU time: a 60-tick chunk would
+    // read as a slow GPU and the capture scripts would film at three quarters resolution.
+    if (frameDt <= 0 || this.recordMode) return;
     this.frameTimes.push(frameDt);
     if (this.frameTimes.length > 60) this.frameTimes.shift();
     if (this.frameTimes.length < 30) return;

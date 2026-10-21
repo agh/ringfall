@@ -25,6 +25,7 @@ declare global {
       uniforms: () => Record<string, unknown>;
       info: () => unknown;
       lights: () => { inUse: number };
+      programs: () => number;
     };
     /**
      * Recording hook (`?record&bot&seed=N`): the animation loop is suspended and each call steps
