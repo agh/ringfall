@@ -1,8 +1,9 @@
 ---
 type: research
 title: "Prior art: browser FPS and WebGL games, what they got right, what to reuse"
-status: reference
-authors: ["Ringfall research agent (Claude), reviewed by the hackathon team"]
+status: approved
+authors:
+  - name: "Ringfall research agent (Claude), reviewed by the hackathon team"
 created: 2026-10-21
 ---
 
@@ -24,7 +25,7 @@ and the renderer backlog.
 | Halo CE decomp in browser | [demo][halo-mobile] / [source][halo-mobile-src] (CC0) | Emscripten, WebGL 2 | Blam renderer | OffscreenCanvas in a worker, OPFS saves, COOP/COEP service worker | none |
 | HexGL (Despoulain, 2012) | [site][hexgl] / [source][hexgl-src] (MIT) | three.js | bloom, hex vignette, quality tiers | 2D collision map sampled from a canvas image instead of a physics engine ([slides][hexgl-slides]) | none |
 | Bruno Simon folio-2019 | [site][bruno] / [source][bruno-src] (MIT) | three.js, cannon, howler | baked-texture look | `Application`, `World`, `Resources`, `Camera` split; physics separated from visuals | none |
-| instagib-arena (2025) | [site][instagib] / [source][instagib-src] (AGPL-3.0) | three.js, React HUD, Node ws | not described | 64 Hz sim; `src/game/*` modules do not depend on three.js; snapshots carry only numbers; sounds synthesised with Web Audio | typecheck, lint, netcode load tests |
+| instagib-arena (2025) | [site][instagib] / [source][instagib-src] (AGPL-3.0) | three.js, React HUD, Node ws | not described | 64 Hz sim; `src/game/*` modules do not depend on three.js; snapshots carry only numbers; sounds synthesized with Web Audio | typecheck, lint, netcode load tests |
 | drift-arena (2025) | [source][drift-src] | three.js, TypeScript, Vite | not described | `shared/game.ts` holds movement, colliders, weapon constants; client predicts with the same sim | movement and server checks |
 | After the Flood (PlayCanvas, 2017) | [demo][atf] | PlayCanvas WebGL 2 | transform-feedback particles, 3D-texture clouds, HDR + MSAA, runtime lightmaps ([blog][atf-blog]) | asset streaming | n/a |
 | Krunker, Shell Shockers, Venge, TANX | closed | three.js, Babylon, PlayCanvas | commercial ceiling for browser FPS | n/a | n/a |
@@ -65,7 +66,7 @@ arrays that changed.
 and collide analytically; let the shell build meshes from the same
 description.
 
-**Audio as event reaction.** instagib synthesises its sounds at runtime with
+**Audio as event reaction.** instagib synthesizes its sounds at runtime with
 Web Audio. Zero-asset audio maps one-to-one onto an event stream and
 sidesteps licensing.
 
@@ -87,7 +88,7 @@ sidesteps licensing.
 
 ## How we go faster: drop-in pieces
 
-| Piece | Licence | Minutes |
+| Piece | License | Minutes |
 | ----- | ------- | ------- |
 | `games_fps` loop, capsule controller, pool, pointer-lock code ([source][games-fps-src]) | MIT | 10 |
 | `RoomEnvironment` + `PMREMGenerator` ([docs][roomenv]) | MIT | 2 |
@@ -97,7 +98,7 @@ sidesteps licensing.
 | three.quarks ([repo][quarks]) | MIT | 20 |
 | three-mesh-bvh ([repo][bvh]) | MIT | 20 |
 | Gaffer fixed-timestep loop ([article][gaffer]) | pattern | 5 |
-| Web Audio synthesised SFX pattern ([instagib][instagib-src]) | AGPL: re-implement, do not copy | 15 |
+| Web Audio synthesized SFX pattern ([instagib][instagib-src]) | AGPL: re-implement, do not copy | 15 |
 
 Procedural-first assets keep the Vite bundle near three.js's own size and
 remove the asset pipeline from the critical path.
@@ -190,7 +191,7 @@ cap `devicePixelRatio`.
 - <https://developer.chrome.com/blog/autoplay/>
 - <https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame>
 
-Unverified in the session: Space Pirates licence text, webgl-quake3 and
-drift-arena licences, Master Blaster's WebGPU claim. GitHub API calls were
+Unverified in the session: Space Pirates license text, webgl-quake3 and
+drift-arena licenses, Master Blaster's WebGPU claim. GitHub API calls were
 blocked from the research sandbox, so stars and push dates were not
 collected.

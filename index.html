@@ -9,6 +9,7 @@
       content="Ringfall: a browser-native WebGL arena shooter. Regenerating shields, waves of enemies, and a ring on the horizon."
     />
     <title>Ringfall</title>
+    <!-- Favicon ring in Beacon (#7dd3fc): a data URI cannot read the CSS tokens. -->
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='11' fill='none' stroke='%237dd3fc' stroke-width='4'/%3E%3C/svg%3E" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -29,7 +30,7 @@
       </div>
 
       <div class="hud__corner hud__corner--tl">
-        <div class="hud__label">Sector 117</div>
+        <div class="hud__label" id="hud-sector">Sector 117</div>
         <div class="hud__wave" id="hud-wave">Wave 1</div>
         <div class="hud__sub" id="hud-wave-sub"></div>
       </div>
@@ -60,8 +61,8 @@
         <svg class="hud__arc" viewBox="0 0 400 120" aria-hidden="true">
           <defs>
             <linearGradient id="shield-grad" x1="0" x2="1">
-              <stop offset="0" stop-color="#38bdf8" />
-              <stop offset="1" stop-color="#bae6fd" />
+              <stop offset="0" />
+              <stop offset="1" />
             </linearGradient>
           </defs>
           <path class="hud__arc-track" d="M 30 110 A 170 170 0 0 1 370 110" pathLength="100" />
@@ -116,6 +117,33 @@
           <dt>Pause</dt><dd>Esc</dd>
         </dl>
         <p class="overlay__footnote">WebGL 2 desktop browser. Deploy captures the mouse and fills the screen; Esc pauses and releases both.</p>
+
+        <details class="settings" id="settings">
+          <summary class="settings__summary">Settings</summary>
+          <div class="settings__grid">
+            <label class="settings__row" for="setting-sensitivity">
+              <span class="settings__name">Sensitivity</span>
+              <input class="settings__range" id="setting-sensitivity" type="range" min="0.5" max="2" step="0.05" value="1" />
+              <output class="settings__value" id="setting-sensitivity-value" for="setting-sensitivity">1.00×</output>
+            </label>
+            <label class="settings__row" for="setting-fov">
+              <span class="settings__name">Field of view</span>
+              <input class="settings__range" id="setting-fov" type="range" min="70" max="100" step="1" value="78" />
+              <output class="settings__value" id="setting-fov-value" for="setting-fov">78°</output>
+            </label>
+            <label class="settings__row settings__row--toggle" for="setting-shake">
+              <span class="settings__name">Screen shake</span>
+              <input class="settings__check" id="setting-shake" type="checkbox" checked />
+              <span class="settings__value" id="setting-shake-value">On</span>
+            </label>
+            <label class="settings__row settings__row--toggle" for="setting-flash">
+              <span class="settings__name">Hit flash</span>
+              <input class="settings__check" id="setting-flash" type="checkbox" checked />
+              <span class="settings__value" id="setting-flash-value">On</span>
+            </label>
+          </div>
+          <p class="settings__note">Saved in this browser only. Flash covers the shield lattice and the damage flash.</p>
+        </details>
       </div>
     </div>
 

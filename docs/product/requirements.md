@@ -2,7 +2,8 @@
 type: prd
 title: "Ringfall Chapter 1 product requirements"
 status: draft
-authors: ["Ringfall hackathon team"]
+authors:
+  - name: "Ringfall hackathon team"
 created: 2026-10-21
 related: ["docs/spec.md", "docs/design-doc.md", "docs/test-plan.md", "docs/brand.md"]
 ---
@@ -40,7 +41,7 @@ competes with them.
 
 ## The core loop
 
-The player stands at the centre of a 60 m walled arena among sixteen cover
+The player stands at the center of a 60 m walled arena among sixteen cover
 blocks. After a three second countdown a wave descends on a 26 m ring
 around them, each enemy taking one invulnerable second to land. Skimmers
 close at 7 m/s and zap for 12 damage every 0.9 s; striders hold 8 to 16 m
@@ -125,21 +126,25 @@ with the scene under 7 ms, bloom under 2 ms and the feel pass under 0.5 ms,
 per the feel research note in [research/](../research/). These are targets
 until spec item 11 measures them.
 
-**Accessibility.** A toggle sets the screen shake cap to zero. Every HUD
-colour pairing meets the contrast ratios in brand.md, and no text sits
-below 14 px, on the HUD or on the title and end cards, at any viewport
-from 1280x720 to 3840x2160. No state is signalled by colour alone: low
-ammo, a kill, a shield break and the outcome of a run each have a word or
-a shape as well. Looping animation stops under
-`prefers-reduced-motion: reduce`. The game is playable with keyboard and
-mouse only: the card is a dialog, and its one button takes focus every time
-the card returns. No action depends on a sound cue alone.
+**Accessibility.** A toggle sets the screen shake cap to zero, and a second
+removes the hex shield lattice and the damage flash; both live in the
+settings panel on the title overlay, with mouse sensitivity and field of
+view, and persist in local storage (built: `src/core/settings.ts`, unit
+tests prove defaults and tolerant parsing). Every HUD color pairing meets
+the contrast ratios in brand.md, and no text sits below 14 px, on the HUD or
+on the title and end cards, at any viewport from 1280x720 to 3840x2160. No
+state is signalled by color alone: low ammo, a kill, a shield break and the
+outcome of a run each have a word or a shape as well. Looping animation
+stops under `prefers-reduced-motion: reduce`. The game is playable with
+keyboard and mouse only: the card is a dialog, and its one button takes
+focus every time the card returns. No action depends on a sound cue alone.
 
 **Compatibility.** Desktop browsers with WebGL 2 and pointer lock. Mobile
 and WebGPU are Later.
 
 **Privacy.** No network calls after page load, no third-party scripts, no
-analytics, no storage beyond personal bests in local storage.
+analytics, no storage beyond personal bests and the settings panel's four
+values in local storage.
 
 ## Traceability
 
@@ -159,5 +164,5 @@ analytics, no storage beyond personal bests in local storage.
 
 Whether five named waves replace the eight uniform ones or sit on top of
 them is undecided; design-doc.md lists a `FINAL_WAVE` constant as the lever.
-The shake toggle has no home in the HUD yet. Whether the strider should
-lead its shots is open in design-doc.md and affects how dodgeable S7 feels.
+Whether the strider should lead its shots is open in design-doc.md and
+affects how dodgeable S7 feels.

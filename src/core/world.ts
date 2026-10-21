@@ -7,13 +7,32 @@ export interface Aabb {
   readonly max: Vec3;
 }
 
+/**
+ * The one hidden switch in an arena: a small glyph on the face of a cover block that looks
+ * away from the centre, so nobody sees it from the spawn. Shooting it once is worth a secret.
+ */
+export interface Secret {
+  /** Centre of the glyph, on the block's face. */
+  readonly at: Vec3;
+  /** Outward normal of that face. */
+  readonly normal: Vec3;
+}
+
 export interface Arena {
   /** Half-extent of the square playfield on X and Z. */
   readonly halfSize: number;
   readonly obstacles: readonly Aabb[];
+  /** Null only for an arena with no cover to hide it on. */
+  readonly secret: Secret | null;
 }
 
 export const ARENA_HALF_SIZE = 30;
+/** The arena's designation on the HUD. One well-known number, no explanation. */
+export const ARENA_SECTOR = 117;
+/** Radius of the hit sphere around the glyph; a rifle shot has to be deliberate. */
+export const SECRET_RADIUS = 0.35;
+/** Height of the glyph on its face: level with a crouched eye, below a standing one. */
+export const SECRET_HEIGHT = 1;
 
 export const aabbFromCenter = (cx: number, cz: number, w: number, h: number, d: number): Aabb => ({
   min: vec3(cx - w / 2, 0, cz - d / 2),
@@ -36,7 +55,23 @@ export const generateArena = (rng: Rng, blockCount = 16, halfSize = ARENA_HALF_S
     const overlaps = obstacles.some((o) => aabbOverlapsXZ(o, box, 1.5));
     if (!overlaps) obstacles.push(box);
   }
-  return { halfSize, obstacles };
+  return { halfSize, obstacles, secret: placeSecret(obstacles, rng) };
+};
+
+/** Picks one block and puts the glyph on the face that points away from the arena centre. */
+export const placeSecret = (obstacles: readonly Aabb[], rng: Rng): Secret | null => {
+  if (obstacles.length === 0) return null;
+  const box = obstacles[rng.int(obstacles.length)];
+  if (!box) return null;
+  const cx = (box.min.x + box.max.x) / 2;
+  const cz = (box.min.z + box.max.z) / 2;
+  const y = Math.min(SECRET_HEIGHT, box.max.y / 2);
+  if (Math.abs(cx) >= Math.abs(cz)) {
+    const sign = cx >= 0 ? 1 : -1;
+    return { at: vec3(sign > 0 ? box.max.x : box.min.x, y, cz), normal: vec3(sign, 0, 0) };
+  }
+  const sign = cz >= 0 ? 1 : -1;
+  return { at: vec3(cx, y, sign > 0 ? box.max.z : box.min.z), normal: vec3(0, 0, sign) };
 };
 
 export const aabbOverlapsXZ = (a: Aabb, b: Aabb, margin = 0): boolean =>
