@@ -24,7 +24,7 @@ and this project adheres to
   next push.
 - Workflow and dependency hygiene gates in CI: actionlint, zizmor, gitleaks,
   `pnpm audit` and Stylelint (#44).
-- Threat model in `docs/threat-model.md`, summarised in `SECURITY.md` (#78).
+- Threat model in `docs/threat-model.md`, summarized in `SECURITY.md` (#78).
 
 ### Added
 

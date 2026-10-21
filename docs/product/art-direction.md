@@ -23,7 +23,7 @@ You are standing on the inside of a ring. It is twelve kilometers across, its
 near side buried below the horizon so the arc climbs from both edges of the
 world and crosses overhead, ocean and land and cloud bands on its inner
 face and a bright metal rim catching the light. The sun is low, eleven
-degrees up and 3500 K warm, and it sits behind the ring so the arc is
+degrees up and about 4500 K warm, and it sits behind the ring so the arc is
 backlit by the horizon. Mountains close the view at 500 m. It is dawn, and
 it is the first dawn anyone has watched from here.
 
@@ -69,14 +69,14 @@ This is the enemies: the skimmer's ring and the strider's lens.
 
 ## Silhouette sheet
 
-Both enemies must read at 40 m by aspect ratio alone. Emissive placements
+Both shipped enemies (and the watcher behind `WATCHERS_IN_ROSTER`) must read at 40 m by aspect ratio alone. Emissive placements
 are marked with `*`; nothing else on an enemy glows.
 
 ```text
 Skimmer: horizontal, wide, hovering, bobbing. Flattened octahedron.
 
         ______________
-   * * /              \ * *      <- one continuous Rose ring, spinning
+   * * /              \ * *      <- one continuous amber ring, spinning
   *   <       (o)      >   *     <- warm core, brightens on attack
    * * \______________/ * *
 
@@ -92,8 +92,8 @@ Strider: vertical, tall, four legs, cannon. Capsule walker.
 ```
 
 The skimmer is about one body wide and a third of that tall; the strider is
-2.6 m tall and narrower than it is high. Spawning enemies descend from six
-meters over one second; dead ones squash and tilt for 1.2 s before the
+2.6 m tall and narrower than it is high. Spawning enemies ride a drop pod
+down over 1.5 s; dead ones squash and tilt for 1.2 s before the
 kill ring and spark burst.
 
 ## VFX language
@@ -119,17 +119,17 @@ remains the source for hex values.
 | Kill ring and death burst | Rose fading to Slate | Threat going cold. |
 | Drop-pod streak (MLP 8) | Dawn | Catching the sun on the way down. |
 
-Every effect is tiny, short and additive: a 70 ms tracer, a 450 ms
-explosion light, hit-stops of 50, 90 and 120 ms as a time-scale and never
+Every effect is tiny, short and additive: a 70 ms tracer, a 250 ms
+explosion light and a 450 ms shockwave crest, hit-stops of 50, 90 and 120 ms as a time-scale and never
 a frame skip.
 
 ## Camera and lens
 
 The camera is 1.7 m off the ground with a 78 degree vertical field of
-view; sprint adds 6 degrees over 150 ms. Head bob is 0.03 m vertical and
+view; sprint adds 6 degrees with a 125 ms time constant. Head bob is 0.03 m vertical and
 0.02 m lateral, scaled with speed and zero when airborne. The weapon lags
 the look direction and springs back; recoil kicks it back and up and
-recovers within 200 ms. The mouse turns at 0.0022 rad per pixel with pitch
+recovers within 100 ms. The mouse turns at 0.0022 rad per pixel with pitch
 clamped just short of vertical. Screen shake is max(current, new), never
 additive, hard-capped at 0.035 rad, and the Settings screen-shake switch
 sets the cap to zero (`src/core/settings.ts`). Tone mapping is ACES at exposure 0.38; fog is exponential at

@@ -771,12 +771,12 @@ written while the numbers were still moving; this entry supersedes them.
 | Measure | Count as of 18:22 UTC |
 | ------- | --------------------- |
 | Elapsed since kick-off | 4 h 14 min |
-| Commits on main | 191 |
+| Commits on main | 192 |
 | Pull requests merged | 36 |
 | Issues filed | 52 (25 open, 27 closed) |
 | Cloud sessions dispatched | 33 |
 | Local subagents (research, product docs, audit, streams, journal, deck, reel) | 13 |
-| Unit tests on main | 292, all passing |
+| Unit tests on main | 291, all passing |
 | CI jobs on every pull request | lint and types, unit, browser smoke, build, balance gate, frames gate, docs hygiene, security and workflow hygiene |
 
 What the second coaching round changed, in order of what a player sees:

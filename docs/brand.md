@@ -11,7 +11,7 @@ created: 2026-10-21
 
 One recommendation per decision; alternatives marked "Alt". Values here are
 the reference for `src/style.css`, the light rig in
-`src/render/scene.ts`, and the README banner. Where the code and this
+`src/render/environment.ts`, and the README banner. Where the code and this
 document disagree, fix the code or update this document in the same PR.
 
 Status: the palette, typography, geometry and feel sections were checked
@@ -50,7 +50,7 @@ in `src/hud/hud.ts` writes Rose and Beacon as literals for the same reason.
 
 The world's threat red is `#ff4d5a` (strider lens and its light), an HDR
 emissive that tone-maps close to Rose; the HUD uses Rose itself. Skimmers
-carry a warm amber ring (`#ffb347`, emissive `#ff8c1a`), the other side of
+carry a warm amber ring (`#ffc46b`, emissive `#ff8c1a`) around a `#ffb347` core, the other side of
 "warm means hostile" from the player's Flare. Pickups and the rifle carry
 Beacon; enemies carry none.
 
@@ -110,13 +110,13 @@ Rules: wordmark "RINGFALL" in Chakra Petch 700, uppercase, letter-spacing
 14 px. Hero numerals (shield, magazine) in Chakra Petch 700; the score and
 every small count in JetBrains Mono with `font-variant-numeric:
 tabular-nums`, which `body` sets for everything. Body copy sentence case,
-line-height 1.5, max-width 60ch. Uppercase only for labels of three words
+line-height 1.5; a 60ch max-width is not yet in `src/style.css`. Uppercase only for labels of three words
 or fewer. No italics in the HUD.
 
 ### Type scale
 
 Tokens in `src/style.css`; the HUD unit `--u` is 0.45 vmin clamped to
-2 to 6 px, so HUD text is `max(14px, …)` of a unit multiple.
+2 to 10 px, so HUD text is `max(14px, …)` of a unit multiple.
 
 | Token | Size | Face | Used for |
 | ----- | ---- | ---- | -------- |

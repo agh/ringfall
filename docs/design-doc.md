@@ -36,7 +36,8 @@ cheap to build and easy to test, so it is the product.
   static host, with no backend.
 - **G2:** The shield-and-health loop: shield absorbs first, recharges after a
   delay out of combat, health never regenerates.
-- **G3:** Two enemy archetypes that create different pressure: one that closes
+- **G3:** Two shipped enemy archetypes (a third, the watcher, is built behind
+  `WATCHERS_IN_ROSTER`) that create different pressure: one that closes
   and one that fires dodgeable projectiles from range.
 - **G4:** Five named waves with escalating composition, a clear-wave pause, a
   win state that ends on a tableau, and a lose state that loops back to the
@@ -162,16 +163,18 @@ so a wave can never end with one enemy hiding at the edge. The policies
 are visible only as movement; a tint on the ring is a renderer follow-up
 that reads `enemy.temperament`.
 
-Balance (`pnpm balance`, twenty seeds per profile, 480 s cap) on top of
+Balance when the temperaments landed (#47, eight-wave formula, `pnpm balance`,
+twenty seeds per profile, 480 s cap) on top of
 the rout below: steady win 20 % to 15 %, mean waves 5.40 to 5.05, accuracy
 45 % to 47 %; reckless win 5 % to 15 %, mean waves 5.20 to 5.15. Wave 1 is
 cleared on 20 of 20 seeds by both profiles. Packs that arrive from four
 directions arrive staggered, and a player who never retreats kills them one
-at a time: the reckless win rate sits above the 10 % ceiling of the
-playtest gate (`tests/balance/gate.ts`) by one game of twenty, with every
+at a time: the reckless win rate sat above the gate's 10 % reckless ceiling
+of the time (`tests/balance/gate.ts`; 80 % under the five beats, see
+[test-plan.md](test-plan.md)) by one game of twenty, with every
 flanker and skittish setting tried between 0.3 and 0.6 of the distance and
 6 to 12 m of hold landing between 15 % and 30 %. Removing any one
-temperament does not bring it under the ceiling; only all-chaser does.
+temperament did not bring it under the ceiling; only all-chaser did.
 
 <!-- /design-check: enemies -->
 
@@ -263,8 +266,8 @@ worth 500. The victory pays the same bonus. The roster for the five waves
 is generated from the constants by `node scripts/wave-table.mjs --write`
 (`pnpm docs:waves`); do not edit the table by hand. The Watchers column is
 the design from `watcherCount(wave)`; it joins the roster only when
-`WATCHERS_IN_ROSTER` in `src/core/waves.ts` is on, and it is off until the
-balance pass for #17 lands.
+`WATCHERS_IN_ROSTER` in `src/core/waves.ts` is on, and it is off until a
+watcher balance pass lands (#17 closed with the watcher built behind the flag).
 
 <!-- wave-table:start -->
 
@@ -329,9 +332,6 @@ prints). Skimmer deaths leave no grave. Striders' bolts aim at the eye,
 so a crouched player presents the middle of their hit sphere rather than
 its top edge; that is the only gameplay effect.
 
-center so the spawn point is open. Layout is seeded; the seed comes from the
-clock in production and is fixed in tests.
-
 <!-- /design-check: arena -->
 
 ### Presentation
@@ -377,7 +377,7 @@ clock in production and is fixed in tests.
   in one frame) at 0.4 of Ring colour, the most a streak carries under the
   bloom threshold, with 36 splashes a second at the floor; fog raises the
   density to 0.018 so a 40 m enemy keeps about half its contrast. Day is
-  the 3500 K sun at 11 degrees with fog at 0.0032 (unchanged from the
+  the `#ffe2b8` (about 4500 K) sun at 11 degrees with fog at 0.0032 (unchanged from the
   first renderer); night puts the sun a degree under the horizon, lights
   the arena with a moon at 48 degrees and the ring's own glow, and lifts
   exposure from 0.38 to 0.55. Dust is a hint, not a disc: motes of size
@@ -403,8 +403,8 @@ clock in production and is fixed in tests.
 - **Enemies.** Skimmers are flattened octahedra with a spinning emissive
   ring and a warm core that pulses when attacking; striders are
   four-legged capsule walkers with a cannon, a Rose lens that goes white
-  while charging, and a walk cycle. Spawning enemies descend from six
-  meters over one second. Dead enemies squash and tilt for 1.2 s, then
+  while charging, and a walk cycle. Spawning enemies ride a drop pod down from the dropship over the 1.5 s
+  `DROP_POD_LEAD` (`src/render/dropship.ts`). Dead enemies squash and tilt for 1.2 s, then
   despawn with a kill ring and a spark burst.
 - **Weapons on screen.** `src/render/weapons.ts` builds one viewmodel rig
   per kind under the camera and draws the active one in 0.25 s
@@ -448,18 +448,15 @@ clock in production and is fixed in tests.
   exactly as before and smoke and chips can darken it. Sprites are capped
   at 64 px and fade inside two meters of the eye. Measured on the seed 7
   run as it stood before the bot's launcher clearance rule (#36) moved its
-  launcher shots, at a launcher kill 3 m away (`?record&bot&seed=7&post`,
+  launcher shots, at a launcher kill 3 m away (`?record&bot&seed=7`,
   then t = 47.0 s), mean frame luminance was 106 by day and 101 at night
   (budget 150 and 110); the first kill at night (t = 10.0 s) went from 59
   to 32. Hit-stop of 50 ms (skimmer kill), 90 ms (strider kill) and
-  120 ms (shield break) slows the simulation to 5 % in `src/main.ts`.
+  120 ms (shield break) slows the simulation to 20 % (`HIT_STOP_SCALE`) in `src/main.ts`.
 - **HUD.** DOM elements updated every frame: the sector designation, wave and enemies left, score,
   shield and health bars, ammo with a low-ammo color, grenade pips, center
-
-- **HUD.** DOM elements updated every frame: wave and enemies left, score,
-  shield and health bars, ammo with a low-ammo color, grenade pips, center
   announcements, a hit marker, a damage vignette, and a pulsing border when
-  the shield is down. The motion tracker is a canvas sized `clamp(120px, 17vmin, 240px)` showing enemies
+  the shield is down. The motion tracker is a canvas sized `clamp(120px, 17vmin, 400px)` showing enemies
   and bolts within 28 m, rotated to the player's heading.
 - **Audio.** Every sound is an oscillator sweep or filtered noise burst
   created on demand. The context is unlocked on the first click.
@@ -536,14 +533,14 @@ round cover convincingly enough for an arena with convex blocks.
 ## Rollout Plan
 
 1. Pull request from `feat/ringfall-webgl-arena` into `main` with CI green.
-2. Merge; the Pages workflow builds `dist/` and publishes it.
+2. Merge; the `Pages build` and `Pages deploy` jobs in `ci.yml` build `dist/` and publish it.
 3. Tag `v2026.10.0` once the deployed page has been played through to wave 5.
 
 ## Open Questions
 
 - [ ] Should striders lead their shots using player velocity? Currently they
       aim at the current eye position with a fixed spread.
-- [x] Is 8 waves the right length for a demo? No: issue #8 cut Chapter 1 to
+- [x] Is 8 waves the right length for a demo? No: PR #57 (for issue #8) cut Chapter 1 to
       five named beats; `FINAL_WAVE` and `WAVE_BEATS` in `src/core/waves.ts`
       hold the shape.
 - [ ] Gamepad support via the Gamepad API would fit the input layer; it was
