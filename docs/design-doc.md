@@ -362,12 +362,22 @@ clock in production and is fixed in tests.
   hemisphere colors, fog color and density, star opacity, exposure, moon,
   ring glow, image-based-lighting intensity, dust) and two weather overlays:
   rain greys the sun, thickens the cloud deck and fog, and streams 1,500
-  stretched drops a second through the particle pool with splashes at the
-  floor; fog raises the density to 0.018 so a 40 m enemy keeps about half
-  its contrast. Day is the 3500 K sun at 11 degrees with fog at 0.0032
-  (unchanged from the first renderer); night puts the sun a degree under the
-  horizon, lights the arena with a moon at 48 degrees and the ring's own
-  glow, and lifts exposure from 0.38 to 0.55. `?atmo=night` and
+  stretched drops a second through the particle pool (never more than 160
+  in one frame) at 0.4 of Ring colour, the most a streak carries under the
+  bloom threshold, with 36 splashes a second at the floor; fog raises the
+  density to 0.018 so a 40 m enemy keeps about half its contrast. Day is
+  the 3500 K sun at 11 degrees with fog at 0.0032 (unchanged from the
+  first renderer); night puts the sun a degree under the horizon, lights
+  the arena with a moon at 48 degrees and the ring's own glow, and lifts
+  exposure from 0.38 to 0.55. Dust is a hint, not a disc: motes of size
+  0.09 spawned 3.5 to 10 m out, so the largest draws 11 px at 720p, at
+  30 a second for 6 s by day, 10 a second for 4 s at night, none in rain
+  and two and a half times as many in fog; brightness 0.9, 0.7, 0.45 and
+  0.2 for day, dawn, dusk and night. The rig also carries a night factor
+  (0, 0.35, 0.55, 1 by time of day; rain adds 0.15 and fog 0.3) that the
+  enemy rigs apply to their own emissives, so skimmer rings go from 1.6 to
+  4.0 emissive and strider lenses to 2.8 times their colour after dark
+  rather than leaning on the exposure lift. `?atmo=night` and
   `?weather=rain` pin either part for review.
 - **Environment.** A scattering sky (three.js `Sky`, turbidity 4). The ring
   is a 6 km torus with a 360 m tube, centered 5.2 km overhead so its near
