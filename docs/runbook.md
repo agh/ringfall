@@ -36,19 +36,22 @@ The development server serves the source with hot reload on port 5173.
 pnpm dev            # http://localhost:5173
 ```
 
-Three query parameters change how the page starts. `?seed=N` fixes the
+Five query parameters change how the page starts. `?seed=N` fixes the
 arena layout and enemy jitter so a run is reproducible; without it the seed
 comes from the clock. `?bot` hands the controls to the scripted player in
 `src/core/bot.ts`. `?record&bot&seed=N` enters record mode, which suspends
 the animation loop and exposes `window.ringfallCapture` so a script can
 step the simulation one tick at a time. `window.ringfall.state()` is
-available on every page for inspection.
+available on every page for inspection. `?atmo=night` (or `dawn`, `day`,
+`dusk`) and `?weather=rain` (or `fog`, `clear`) pin the atmosphere from the
+first frame regardless of wave, for checks such as a night kill
+(`?record&bot&seed=7&atmo=night`).
 
 ## Build
 
 The build type checks first and then bundles to `dist/`. The preview server
-serves that directory on port 4173, which is also what Playwright and the
-`pnpm check` sequence use.
+serves that directory on port 4173, which is also the server Playwright starts
+for `pnpm test:e2e`.
 
 ```bash
 pnpm build          # tsc --noEmit && vite build
@@ -168,6 +171,16 @@ is the quickest way to see that the bot is fighting. Films, frames, and
 the WAV are ignored by git. Each review of a film is logged in
 [journey/README.md](journey/README.md) with the seed and the frame range.
 
+### Cut the reel
+
+`node scripts/reel.mjs [--seed 7] [--fps 30] [--out ringfall-reel.mp4]`
+renders the title cards in `scripts/reel-cards/`, captures wave 1 by day
+and wave 2 at night, scores each segment, and stitches them. Steps are
+cached under `node_modules/.cache/ringfall-reel`; `--force` redoes one. It
+needs `pnpm build` and a full ffmpeg via `FFMPEG`. Under SwiftShader each
+captured frame takes about two seconds, so a 40 s film takes about 40
+minutes.
+
 ### Custom domain
 
 The site is served at <https://ringfall.alexhowells.com>. `public/CNAME` holds
@@ -236,5 +249,6 @@ The error names a `chromium_headless_shell-NNNN` directory that does not
 exist. Either install the matching build with
 `pnpm exec playwright install --with-deps chromium`, or point
 `PLAYWRIGHT_CHROMIUM_EXECUTABLE` at an installed Chromium as shown above.
-The browser version must be one the pinned Playwright 1.64.1 drives; a
-much newer or older Chromium fails at launch with a protocol error.
+Playwright 1.64.1 expects Chromium build 1248; a nearby build (1194 on
+2026-10-21) launches and passes the smoke tests, and a much older one may
+fail at launch with a protocol error.

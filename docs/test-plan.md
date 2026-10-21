@@ -135,7 +135,7 @@ judged good or bad.
 ```bash
 pnpm check          # lint, typecheck, unit with coverage, build
 pnpm test:e2e       # Playwright against vite preview
-pnpm balance        # the balance gate; report under test-results/balance/
+pnpm balance        # the balance gate; report under test-results/balance/ (pnpm test:e2e empties test-results/, so copy it first)
 PLAYWRIGHT_CHROMIUM_EXECUTABLE=/path/to/chrome pnpm test:e2e   # sandboxed browsers
 node scripts/record-demo.mjs --seed 7 --seconds 40 --fps 30    # film a run
 ```

@@ -91,7 +91,7 @@ pnpm demo                         # film seed 7 to demo.mp4 (needs pnpm build an
 ```bash
 pnpm lint           # Biome (CI mode) and markdownlint
 pnpm typecheck      # tsc --noEmit, strict
-pnpm test           # Vitest unit tests with V8 coverage thresholds
+pnpm test           # Vitest unit tests and the balance gate, with V8 coverage thresholds
 pnpm test:e2e       # Playwright smoke tests against a production preview
 pnpm build          # Type check and Vite production build to dist/
 pnpm check          # All of the above except e2e, in CI's order
