@@ -16,6 +16,14 @@ const FOG_DENSITY = 0.0032;
 /** Hard cap on camera shake in radians (docs/brand.md). */
 const SHAKE_CAP = 0.035;
 const BASE_FOV = 78;
+/** Sun flare core sprite scale at 9 km: about 4% of the frame height at the base FOV. */
+const FLARE_CORE_SIZE = 520;
+/**
+ * Flare ghosts as fractions of the frame height, largest first along the axis. The largest
+ * stays well under the third of the frame that issue #25 allows.
+ */
+const FLARE_GHOST_HEIGHTS = [0.05, 0.08, 0.035] as const;
+const FLARE_GHOST_OPACITY = 0.6;
 
 interface Effect {
   readonly object: THREE.Object3D;
@@ -502,33 +510,45 @@ export class SceneRenderer {
       sp.renderOrder = 10;
       return sp;
     };
-    const core = sprite(make(256, 'rgba(255,245,220,0.9)', 'rgba(255,200,120,0.18)'), 520);
+    const core = sprite(
+      make(256, 'rgba(255,245,220,0.9)', 'rgba(255,200,120,0.18)'),
+      FLARE_CORE_SIZE,
+    );
     core.position.copy(this.environment.sunDirection).multiplyScalar(9000);
     this.scene.add(core);
     this.flareCore = core;
+    // Ghost scale is set every frame from the frame height; the second value is the position
+    // along the sun-to-centre axis.
     this.flareGhosts = [
-      [sprite(make(128, 'rgba(125,211,252,0.5)', 'rgba(125,211,252,0.05)'), 0.16), 0.35],
-      [sprite(make(128, 'rgba(246,178,107,0.45)', 'rgba(246,178,107,0.04)'), 0.26), 0.6],
-      [sprite(make(128, 'rgba(184,216,234,0.4)', 'rgba(184,216,234,0.03)'), 0.1), 0.85],
+      [sprite(make(128, 'rgba(125,211,252,0.5)', 'rgba(125,211,252,0.05)'), 1), 0.35],
+      [sprite(make(128, 'rgba(246,178,107,0.45)', 'rgba(246,178,107,0.04)'), 1), 0.6],
+      [sprite(make(128, 'rgba(184,216,234,0.4)', 'rgba(184,216,234,0.03)'), 1), 0.85],
     ];
     for (const [ghost] of this.flareGhosts) this.camera.add(ghost);
   }
 
-  /** Places the flare ghosts on the line from the sun through the screen centre. */
+  /**
+   * Places the flare ghosts on the line from the sun through the screen centre, sized as a
+   * fraction of the frame height. They vanish with the sun: `sunDisc` is 0 at night.
+   */
   private updateFlare(): void {
+    const sunDisc = this.environment.lighting().sunDisc;
     const sunNdc = this.environment.sunDirection.clone().multiplyScalar(9000).project(this.camera);
-    const visible = sunNdc.z < 1 && Math.abs(sunNdc.x) < 1.6 && Math.abs(sunNdc.y) < 1.6;
-    for (const [ghost, k] of this.flareGhosts) {
+    const visible =
+      sunDisc > 0 && sunNdc.z < 1 && Math.abs(sunNdc.x) < 1.6 && Math.abs(sunNdc.y) < 1.6;
+    const depth = 2;
+    // Half the frame height at that depth, so a ghost of scale 2h fills the frame top to bottom.
+    const h = Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2)) * depth;
+    const fade = 1 - Math.min(1, Math.hypot(sunNdc.x, sunNdc.y) / 1.5);
+    this.flareGhosts.forEach(([ghost, k], i) => {
       ghost.visible = visible;
-      if (!visible) continue;
+      if (!visible) return;
       // Ghost at NDC = sun * (1 - 2k): passes through the centre and out the other side.
       const f = 1 - 2 * k;
-      const depth = 2;
-      const h = Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2)) * depth;
       ghost.position.set(sunNdc.x * f * h * this.camera.aspect, sunNdc.y * f * h, -depth);
-      const fade = 1 - Math.min(1, Math.hypot(sunNdc.x, sunNdc.y) / 1.5);
-      ghost.material.opacity = 0.9 * fade * this.environment.lighting().sunDisc;
-    }
+      ghost.scale.setScalar(2 * h * (FLARE_GHOST_HEIGHTS[i] ?? 0));
+      ghost.material.opacity = FLARE_GHOST_OPACITY * fade * sunDisc;
+    });
   }
 
   /**
@@ -563,6 +583,7 @@ export class SceneRenderer {
     if (this.flareCore) {
       this.flareCore.position.copy(this.environment.sunDirection).multiplyScalar(9000);
       this.flareCore.material.opacity = l.sunDisc;
+      this.flareCore.visible = l.sunDisc > 0;
     }
   }
 

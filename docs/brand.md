@@ -57,7 +57,9 @@ Bone.
 - Sky: scattering sky (three.js `Sky`) with turbidity 4, Rayleigh 2.2; the
   ring, sun and stars are excluded from fog.
 - Bloom: threshold above 1.0 in HDR so ordinary lit albedo never blooms;
-  only emissive trims and effects cross it. Tone mapping ACES Filmic.
+  only emissive trims and effects cross it, and only their excess over the
+  threshold, capped at 1.5 per pixel, so the sun and a near sprite bloom
+  like emitters rather than floodlights. Tone mapping ACES Filmic.
 
 ## Typography
 
