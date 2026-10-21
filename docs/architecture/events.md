@@ -13,7 +13,7 @@ created: 2026-10-21
 
 > [Ringfall](../../README.md) > [Architecture](README.md) > Event catalogue
 
-Every member of the `GameEvent` union in `src/core/game.ts`, with the function in `stepGame` that pushes it, the presentation code that switches on it, and its entry in the sound table. `scripts/architecture.mjs` reads the union, the `events.push` sites, the `switch (e.type)`, `e.type ===` and `e.type !==` tests in the consumer files, and `SOUNDS` and `SILENT` in `src/audio/sounds.ts`. The union has 26 events; 5 are silent on purpose and the rest have a sound. A consumer cell names the file and what it does: `reacts` runs code, `announces` prints a HUD message, `named, no action` lists the case and breaks.
+Every member of the `GameEvent` union in `src/core/game.ts`, with the function in `stepGame` that pushes it, the presentation code that switches on it, and its entry in the sound table. `scripts/architecture.mjs` reads the union, the `events.push` sites, the `switch (e.type)`, `e.type ===` and `e.type !==` tests in the consumer files, and `SOUNDS` and `SILENT` in `src/audio/sounds.ts`. The union has 27 events; 6 are silent on purpose and the rest have a sound. A consumer cell names the file and what it does: `reacts` runs code, `announces` prints a HUD message, `named, no action` lists the case and breaks.
 
 `src/core/bot.ts` is scanned and consumes no event: the bot reads `GameState` directly, as a player reads the screen.
 
@@ -40,15 +40,18 @@ Every member of the `GameEvent` union in `src/core/game.ts`, with the function i
 | `playerDamaged` | `amount: number`, `from: Vec3 \| null` | `hurtPlayer` | scene: reacts | hud: reacts | playtest: reacts |  |  | `playerDamaged` (1 voice) |
 | `shieldBroken` | none | `hurtPlayer` | scene: reacts | hud: announces | playtest: reacts |  | main: reacts | `shieldBroken` (1 voice) |
 | `boltFired` | `id: number` | `stepEnemies` | scene: named, no action |  |  |  |  | `boltFired` (1 voice) |
+| `waveStarted` | `number: number`, `name: string` | `spawnWave` |  | hud: announces | playtest: reacts |  |  | `waveStarted` (1 voice) |
+| `dropPod` | `id: number`, `kind: EnemyKind`, `at: Vec3`, `activeAt: number`, `leader: boolean` | `stepPendingSpawns` |  |  |  |  |  | `SILENT` |
 | `watcherCharging` | `id: number`, `at: Vec3` | `stepEnemies` |  |  |  |  |  | `SILENT` |
 | `watcherFired` | `id: number`, `from: Vec3`, `to: Vec3`, `hit: boolean` | `stepEnemies` | watcher-rig: reacts |  |  |  |  | `SILENT` |
-| `waveStarted` | `number: number` | `spawnWave` |  | hud: announces | playtest: reacts |  |  | `waveStarted` (1 voice) |
 | `waveCleared` | `number: number` | `stepWaves` |  | hud: announces | playtest: reacts |  |  | `waveCleared` (1 voice) |
 | `playerDied` | none | `hurtPlayer` |  | hud: announces |  |  |  | `playerDied` (1 voice) |
-| `victory` | none | `stepWaves` |  | hud: announces |  |  |  | `victory` (1 voice) |
+| `victory` | `kills: number`, `shieldBreaks: number` | `stepWaves` |  | hud: announces |  |  |  | `victory` (1 voice) |
 | `secretFound` | `at: Vec3`, `score: number` | `shootSecret` |  | hud: announces |  |  |  | `SILENT` |
 
 ## Notes from the source
 
 - `enemyFled`: An enemy broke and ran: it is now in state `flee`. Fired for every skimmer within `FLEE_RADIUS` of a strider when it dies, after that strider's `enemyKilled` in the same step, and again for a skimmer whose rout is refreshed by a second death. The enemy's `fleeUntil` says when it ends; posture and sound layers key on `id` and `kind`.
 - `enemyBark`: A fleeing enemy shouts `line`, one of `BARK_LINES`. Exactly one follows each `enemyFled`, so a strider death with any skimmer in range barks at least once; the first bark of a rout is always the first line. The label and the sound belong to the layers that consume this.
+- `dropPod`: A pod is inbound: the enemy with this `id` lands at `at` and goes active at `activeAt`.
+- `victory`: The final leader has fallen; the tableau begins. The status turns `won` when it ends.
