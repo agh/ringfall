@@ -49,8 +49,8 @@ three.js, touches `window` or `document`, calls `Math.random`, or reads
 the clock; the seeded `Rng` is passed in. That is what makes the same
 `stepGame` serve the human game, the bot, the smoke test, and the
 recorder, and it is what makes a bug reproducible from a seed and an
-input sequence. A grep for those identifiers in `src/core/` is a one-line
-check and should become a lint rule (see "Next" below).
+input sequence. The lint rule and test that enforce it are listed under
+"What stops the next change from breaking it".
 
 The one place intent is not yet proven is the presentation layer. The
 renderer, HUD, and audio are reviewed by eye and ear through captured
@@ -100,6 +100,11 @@ thresholds chosen from a baseline, not from what passed.
   project between runs.
 - The simulation is deterministic, so a regression report is a seed and a
   step count, and a fix can be shown against the same seed.
+- Core purity is a lint rule, not a grep. A Biome override on `src/core/**`
+  forbids importing `three`, and the globals `window`, `document`,
+  `performance`, and `Date`; `tests/unit/purity.test.ts` reads every core
+  file and fails on `Math.random`, `Date.now`, `performance.now`,
+  `from 'three`, `window.`, or `document.`, naming the file and line.
 - The design document, the brand checklist, and the AGENTS.md pitfalls
   give a reviewer, human or agent, a list to check the diff against rather
   than a feeling.
@@ -145,14 +150,11 @@ has a PR checklist, and why the journey log records what was overruled.
 
 These are the gaps, in the order they should be closed.
 
-1. A lint rule for core purity: forbid `three`, `window`, `document`,
-   `Math.random`, and `Date` under `src/core/` (Biome `noRestrictedImports`
-   plus a grep in CI).
-2. A per-frame performance measurement on real hardware (issue #11), so
+1. A per-frame performance measurement on real hardware (issue #11), so
    the budget in the research becomes a number in this document.
-3. An audit of every number in the design document against the code,
+2. An audit of every number in the design document against the code,
    automated as a test that imports the constants and compares them to a
    table in the document's frontmatter.
-4. A visual regression check that compares a small set of deterministic
+3. A visual regression check that compares a small set of deterministic
    frames against references rendered on the same software GL, with a
    tolerance, so renderer changes get a diff a reviewer can look at.
