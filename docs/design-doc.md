@@ -276,7 +276,7 @@ roster for the eight waves:
 
 A 60 m square with transparent boundary walls and 16 procedurally placed
 cover blocks (2 to 6 m footprint, 1.5 to 4 m tall), none within 6 m of the
-centre so the spawn point is open. Layout is seeded; the seed comes from the
+center so the spawn point is open. Layout is seeded; the seed comes from the
 clock in production and is fixed in tests. The HUD calls it Sector 117
 (`ARENA_SECTOR`); there is no explanation and none is planned.
 
@@ -284,7 +284,7 @@ clock in production and is fixed in tests. The HUD calls it Sector 117
 
 One block per arena carries a glyph (`Arena.secret`, placed by
 `placeSecret` with the arena's own seed) on the face that points away from
-the centre, so it is never visible from the spawn. The glyph sits 1 m up
+the center, so it is never visible from the spawn. The glyph sits 1 m up
 (`SECRET_HEIGHT`, or half the block's height if lower): level with a
 crouched eye. A hitscan ray from any weapon that reaches a 0.35 m sphere
 (`SECRET_RADIUS`) around the glyph before any other surface trips it: 1000
@@ -413,7 +413,7 @@ clock in production and is fixed in tests.
   to 32. Hit-stop of 50 ms (skimmer kill), 90 ms (strider kill) and
   120 ms (shield break) slows the simulation to 5 % in `src/main.ts`.
 - **HUD.** DOM elements updated every frame: the sector designation, wave and enemies left, score,
-  shield and health bars, ammo with a low-ammo colour, grenade pips, centre
+  shield and health bars, ammo with a low-ammo color, grenade pips, center
 
 - **HUD.** DOM elements updated every frame: wave and enemies left, score,
   shield and health bars, ammo with a low-ammo color, grenade pips, center
