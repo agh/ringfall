@@ -4,6 +4,7 @@ import { type BotMemory, createBotMemory, decideBot, STEADY_BOT } from './core/b
 import { createGame, type GameState, stepGame } from './core/game';
 import { describeComparison, recordRound } from './core/records';
 import { createRng } from './core/rng';
+import { loadSettings, type Settings, saveSettings } from './core/settings';
 import { Hud, summarize } from './hud/hud';
 import { InputController } from './input/input';
 import { SceneRenderer } from './render/scene';
@@ -53,6 +54,51 @@ const main = (): void => {
   const hud = new Hud();
   const audio = new AudioBank();
   const input = new InputController(canvas);
+
+  // Settings live only in this browser; storage may be blocked, and that is fine.
+  let settingsStore: Storage | null = null;
+  try {
+    settingsStore = window.localStorage;
+  } catch {
+    settingsStore = null;
+  }
+  let settings: Settings = loadSettings(settingsStore);
+  const applySettings = (): void => {
+    input.setSensitivity(settings.sensitivity);
+    renderer.setBaseFov(settings.fov);
+    renderer.setShakeEnabled(settings.shake);
+    renderer.setFlashEnabled(settings.flash);
+    document.body.classList.toggle('settings-no-flash', !settings.flash);
+  };
+  const bindRange = (id: string, key: 'sensitivity' | 'fov', show: (v: number) => string) => {
+    const el = byId<HTMLInputElement>(`setting-${id}`);
+    const out = byId<HTMLOutputElement>(`setting-${id}-value`);
+    el.value = String(settings[key]);
+    out.textContent = show(settings[key]);
+    el.addEventListener('input', () => {
+      settings = { ...settings, [key]: Number(el.value) };
+      out.textContent = show(settings[key]);
+      applySettings();
+      saveSettings(settingsStore, settings);
+    });
+  };
+  const bindToggle = (id: string, key: 'shake' | 'flash') => {
+    const el = byId<HTMLInputElement>(`setting-${id}`);
+    const out = byId<HTMLSpanElement>(`setting-${id}-value`);
+    el.checked = settings[key];
+    out.textContent = settings[key] ? 'On' : 'Off';
+    el.addEventListener('change', () => {
+      settings = { ...settings, [key]: el.checked };
+      out.textContent = settings[key] ? 'On' : 'Off';
+      applySettings();
+      saveSettings(settingsStore, settings);
+    });
+  };
+  bindRange('sensitivity', 'sensitivity', (v) => `${v.toFixed(2)}×`);
+  bindRange('fov', 'fov', (v) => `${Math.round(v)}°`);
+  bindToggle('shake', 'shake');
+  bindToggle('flash', 'flash');
+  applySettings();
 
   const params = new URLSearchParams(window.location.search);
   const seedParam = Number(params.get('seed'));
@@ -128,7 +174,7 @@ const main = (): void => {
     }
     input.reset();
     overlay.hidden = true;
-    hud.show();
+    if (!params.has('nohud')) hud.show(); // `?nohud`: dev flag, keeps the HUD hidden for clean hero captures.
     running = true;
     audio.setMusic('calm');
     accumulator = 0;

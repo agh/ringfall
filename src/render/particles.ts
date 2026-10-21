@@ -23,7 +23,17 @@ export interface ParticleBurst {
    * taller than it is wide (rain). Stretched particles keep their size over their life.
    */
   readonly stretch?: number;
+  /**
+   * How the sprite is drawn. `spark` (default) is an additive glow that shrinks over its life;
+   * `smoke` is an alpha-blended soft puff that grows and can darken what is behind it; `shard`
+   * is a hard-edged alpha-blended chip that tumbles and fades only at the end of its life.
+   */
+  readonly shape?: ParticleShape;
 }
+
+export type ParticleShape = 'spark' | 'smoke' | 'shard';
+
+const SHAPE_INDEX: Readonly<Record<ParticleShape, number>> = { spark: 0, smoke: 1, shard: 2 };
 
 const VERTEX = /* glsl */ `
   attribute vec3 aStart;
@@ -33,10 +43,13 @@ const VERTEX = /* glsl */ `
   attribute vec4 aParams; // birth, life, size, gravity
   attribute float aDrag;
   attribute float aStretch;
+  attribute float aShape;
   uniform float uTime;
   varying vec3 vColor;
   varying float vAlpha;
   varying float vStretch;
+  varying float vShape;
+  varying float vSeed;
   void main() {
     float age = uTime - aParams.x;
     float t = clamp(age / aParams.y, 0.0, 1.0);
@@ -44,28 +57,64 @@ const VERTEX = /* glsl */ `
     vec3 pos = aStart + aVelocity * (aDrag > 0.0 ? (1.0 - drag) / aDrag : age)
       + vec3(0.0, -0.5 * aParams.w * age * age, 0.0);
     vColor = mix(aColor, aColorEnd, t);
-    vAlpha = (1.0 - t) * (1.0 - t) * step(0.0, age) * (1.0 - step(1.0, t));
+    float alive = step(0.0, age) * (1.0 - step(1.0, t));
+    // Sparks fade from birth; smoke blooms in over the first tenth of its life and thins
+    // out; a shard stays solid and only fades over its last third.
+    float fade = aShape < 0.5
+      ? (1.0 - t) * (1.0 - t)
+      : (aShape < 1.5 ? smoothstep(0.0, 0.1, t) * (1.0 - t) * 0.6 : 1.0 - smoothstep(0.66, 1.0, t));
+    vAlpha = fade * alive;
     vStretch = aStretch;
+    vShape = aShape;
+    vSeed = fract(aParams.y * 13.37 + aParams.x * 0.173);
     float shrink = aStretch > 0.0 ? 1.0 : 1.0 - 0.6 * t;
+    float scale = aShape < 0.5 ? shrink : (aShape < 1.5 ? 0.6 + 1.6 * t : 1.0);
     vec4 mv = modelViewMatrix * vec4(pos, 1.0);
     // A mote passing through the eye would otherwise cover the frame: fade anything inside
     // two metres and cap the sprite so a single point can never white out the screen.
     vAlpha *= smoothstep(0.5, 2.0, -mv.z);
-    gl_PointSize = min(aParams.z * shrink * (300.0 / -mv.z), 64.0);
+    gl_PointSize = min(aParams.z * scale * (300.0 / -mv.z), 64.0);
     gl_Position = projectionMatrix * mv;
   }
 `;
 
+/**
+ * Output is premultiplied: the material blends ONE, ONE_MINUS_SRC_ALPHA, so a fragment with
+ * alpha 0 adds to the frame (the spark glow, byte-for-byte the former additive look) and a
+ * fragment with alpha a lays its colour over the frame (smoke and shards can darken it).
+ */
 const FRAGMENT = /* glsl */ `
   varying vec3 vColor;
   varying float vAlpha;
   varying float vStretch;
+  varying float vShape;
+  varying float vSeed;
+  float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+  }
   void main() {
     vec2 uv = gl_PointCoord - 0.5;
-    uv.x *= max(1.0, vStretch);
-    float d = length(uv) * 2.0;
-    float soft = smoothstep(1.0, 0.2, d);
-    gl_FragColor = vec4(vColor * (1.0 + 1.2 * soft), soft * vAlpha);
+    if (vShape < 0.5) {
+      uv.x *= max(1.0, vStretch);
+      float d = length(uv) * 2.0;
+      float soft = smoothstep(1.0, 0.2, d);
+      gl_FragColor = vec4(vColor * (1.0 + 1.2 * soft) * soft * vAlpha, 0.0);
+    } else if (vShape < 1.5) {
+      // A puff: a soft disc broken up by a cheap per-sprite noise so a column of them does
+      // not read as a stack of circles.
+      float d = length(uv) * 2.0;
+      float grain = 0.7 + 0.3 * hash(floor((uv + vSeed) * 6.0));
+      float a = smoothstep(1.0, 0.15, d) * grain * vAlpha;
+      gl_FragColor = vec4(vColor * a, a);
+    } else {
+      // A chip: a rotated diamond with a hard edge, lit on one side.
+      float angle = vSeed * 6.2832;
+      vec2 r = vec2(uv.x * cos(angle) - uv.y * sin(angle), uv.x * sin(angle) + uv.y * cos(angle));
+      float inside = step(abs(r.x) * 1.6 + abs(r.y) * 2.6, 0.5);
+      float a = inside * vAlpha;
+      vec3 lit = vColor * (0.6 + 0.8 * step(0.0, r.x + r.y));
+      gl_FragColor = vec4(lit * a, a);
+    }
   }
 `;
 
@@ -80,6 +129,7 @@ export class ParticleSystem {
   private readonly params: Float32Array;
   private readonly drag: Float32Array;
   private readonly stretch: Float32Array;
+  private readonly shape: Float32Array;
   private readonly geometry = new THREE.BufferGeometry();
   private readonly material: THREE.ShaderMaterial;
   private dirtyLo = Number.POSITIVE_INFINITY;
@@ -94,6 +144,7 @@ export class ParticleSystem {
     this.params = new Float32Array(capacity * 4);
     this.drag = new Float32Array(capacity);
     this.stretch = new Float32Array(capacity);
+    this.shape = new Float32Array(capacity);
     // Birth far in the past so untouched slots are invisible.
     for (let i = 0; i < capacity; i += 1) this.params[i * 4] = -1e9;
     const attr = (array: Float32Array, size: number): THREE.BufferAttribute => {
@@ -109,13 +160,20 @@ export class ParticleSystem {
     this.geometry.setAttribute('aParams', attr(this.params, 4));
     this.geometry.setAttribute('aDrag', attr(this.drag, 1));
     this.geometry.setAttribute('aStretch', attr(this.stretch, 1));
+    this.geometry.setAttribute('aShape', attr(this.shape, 1));
     this.material = new THREE.ShaderMaterial({
       vertexShader: VERTEX,
       fragmentShader: FRAGMENT,
       uniforms: { uTime: { value: 0 } },
       transparent: true,
       depthWrite: false,
-      blending: THREE.AdditiveBlending,
+      // Premultiplied alpha: see FRAGMENT.
+      blending: THREE.CustomBlending,
+      blendEquation: THREE.AddEquation,
+      blendSrc: THREE.OneFactor,
+      blendDst: THREE.OneMinusSrcAlphaFactor,
+      blendSrcAlpha: THREE.OneFactor,
+      blendDstAlpha: THREE.OneMinusSrcAlphaFactor,
     });
     this.points = new THREE.Points(this.geometry, this.material);
     this.points.frustumCulled = false;
@@ -154,6 +212,7 @@ export class ParticleSystem {
       );
       this.drag[i] = b.drag ?? 0;
       this.stretch[i] = b.stretch ?? 0;
+      this.shape[i] = SHAPE_INDEX[b.shape ?? 'spark'];
       this.dirtyLo = Math.min(this.dirtyLo, i);
       this.dirtyHi = Math.max(this.dirtyHi, i);
     }
@@ -173,6 +232,7 @@ export class ParticleSystem {
         'aParams',
         'aDrag',
         'aStretch',
+        'aShape',
       ]) {
         const attribute = this.geometry.getAttribute(name);
         if (attribute instanceof THREE.BufferAttribute) attribute.needsUpdate = true;

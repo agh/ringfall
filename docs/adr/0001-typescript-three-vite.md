@@ -1,10 +1,10 @@
 ---
 type: adr
-adr: "ADR-0001"
 title: "Use TypeScript, three.js, and Vite for the browser game"
-status: accepted
-date: 2026-10-21
-deciders: ["Ringfall hackathon team"]
+status: approved
+created: 2026-10-21
+authors:
+  - name: "Ringfall hackathon team"
 ---
 
 # ADR-0001: Use TypeScript, three.js, and Vite for the browser game
@@ -44,7 +44,7 @@ Pin every dependency to an exact version.
   so the window is spent on gameplay.
 - Vite gives sub-second rebuilds during the hackathon and a static `dist/`
   that GitHub Pages hosts with no server.
-- Playwright drives the built page in real Chromium, so WebGL initialisation
+- Playwright drives the built page in real Chromium, so WebGL initialization
   is verified, not assumed.
 
 ### Negative

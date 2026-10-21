@@ -17,7 +17,7 @@ import {
 import { type Arena, aabbFromCenter } from '../../src/core/world';
 
 const DT = 1 / 60;
-const open: Arena = { halfSize: 60, obstacles: [] };
+const open: Arena = { halfSize: 60, obstacles: [], secret: null };
 const feet = vec3(0, 0, 0);
 const eye = vec3(0, 1.7, 0);
 
@@ -118,7 +118,7 @@ describe('watcher', () => {
 
   it('does not start a charge without line of sight, and a beam fired into cover stops there', () => {
     const wall = aabbFromCenter(0, -6, 4, 4, 1);
-    const covered: Arena = { halfSize: 60, obstacles: [wall] };
+    const covered: Arena = { halfSize: 60, obstacles: [wall], secret: null };
     expect(watcherHasLineOfSight(watcherLens(vec3(0, 0, -28)), eye, covered)).toBe(false);
     expect(watcherHasLineOfSight(watcherLens(vec3(0, 0, -28)), eye, open)).toBe(true);
     const blind = simulate(holding(-28), covered, 3);
