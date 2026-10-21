@@ -1,4 +1,5 @@
 import { AudioBank } from './audio/audio';
+import { type BotMemory, createBotMemory, decideBot, STEADY_BOT } from './core/bot';
 import { createGame, type GameState, stepGame } from './core/game';
 import { createRng } from './core/rng';
 import { Hud, summarize } from './hud/hud';
@@ -14,6 +15,16 @@ declare global {
     ringfall?: {
       state: () => GameState;
       running: () => boolean;
+    };
+    /**
+     * Recording hook (`?record&bot&seed=N`): the animation loop is suspended and each call steps
+     * the deterministic simulation and renders exactly once, so a recorder can pull frames at
+     * any speed and reassemble them at 60 Hz.
+     */
+    ringfallCapture?: {
+      start: () => Promise<void>;
+      advance: (steps: number) => void;
+      frame: (quality: number) => string;
     };
   }
 }
@@ -36,8 +47,15 @@ const main = (): void => {
   const audio = new AudioBank();
   const input = new InputController(canvas);
 
-  let game = createGame({ seed: Date.now() >>> 0 });
-  let rng = createRng(game.nextId + 7);
+  const params = new URLSearchParams(window.location.search);
+  const seedParam = Number(params.get('seed'));
+  const seed = Number.isFinite(seedParam) && seedParam > 0 ? seedParam : Date.now() >>> 0;
+  const botMode = params.has('bot');
+  const recordMode = params.has('record');
+  let game = createGame({ seed });
+  let rng = createRng(seed ^ 0x9e3779b9);
+  let botRng = createRng(seed ^ 0x7f4a7c15);
+  let botMemory: BotMemory = createBotMemory();
   let running = false;
   let accumulator = 0;
   let last = performance.now();
@@ -47,6 +65,7 @@ const main = (): void => {
 
   const showOverlay = (finished: boolean): void => {
     running = false;
+    audio.setMusic('title');
     hud.hide();
     overlay.hidden = false;
     if (finished) {
@@ -64,40 +83,83 @@ const main = (): void => {
   const start = async (): Promise<void> => {
     audio.unlock();
     if (game.status !== 'playing') {
-      game = createGame({ seed: Date.now() >>> 0 });
-      rng = createRng(game.nextId + 7);
+      const next = Date.now() >>> 0;
+      game = createGame({ seed: next });
+      rng = createRng(next ^ 0x9e3779b9);
+      botRng = createRng(next ^ 0x7f4a7c15);
+      botMemory = createBotMemory();
       renderer.setArena(game.arena);
     }
     input.reset();
     overlay.hidden = true;
     hud.show();
     running = true;
+    audio.setMusic('calm');
     accumulator = 0;
     last = performance.now();
     await input.lock();
   };
 
   startButton.addEventListener('click', () => void start());
+  // The score needs a user gesture; the first click anywhere on the title screen wakes it.
+  overlay.addEventListener('pointerdown', () => {
+    audio.unlock();
+    audio.setMusic('title');
+  });
   document.addEventListener('pointerlockchange', () => {
     // Esc releases the pointer; pause to the overlay so the player can recapture it.
     if (!input.locked && running && game.status === 'playing') showOverlay(false);
   });
 
+  /** One simulation step from either the human or the bot, plus event fan-out. */
+  const simulate = (now: number): void => {
+    let input = input_take();
+    if (botMode) {
+      const decision = decideBot(game, botMemory, STEADY_BOT, FIXED_DT, botRng);
+      botMemory = decision.memory;
+      input = decision.input;
+    }
+    game = stepGame(game, input, FIXED_DT, rng);
+    if (game.events.length > 0) {
+      renderer.handle(game.events, now / 1000);
+      hud.handle(game.events);
+      audio.handle(game.events);
+    }
+    audio.setMusic(game.wave.phase === 'active' && game.enemies.length > 0 ? 'combat' : 'calm');
+  };
+  const input_take = (): ReturnType<InputController['take']> => input.take();
+
+  if (recordMode) {
+    let captureClock = 0;
+    window.ringfallCapture = {
+      start: async () => {
+        await start();
+        running = false;
+      },
+      advance: (steps) => {
+        for (let i = 0; i < steps; i += 1) {
+          captureClock += FIXED_DT * 1000;
+          simulate(captureClock);
+          if (game.status !== 'playing') break;
+        }
+        hud.render(game);
+        renderer.render(game, captureClock / 1000, FIXED_DT * steps);
+      },
+      frame: (quality) => canvas.toDataURL('image/jpeg', quality),
+    };
+  }
+
   const frame = (now: number): void => {
-    const frameDt = Math.min(0.1, (now - last) / 1000);
+    // rAF timestamps can trail performance.now() right after start(); never let dt go negative.
+    const frameDt = Math.max(0, Math.min(0.1, (now - last) / 1000));
     last = now;
     if (running) {
       accumulator += frameDt;
       let steps = 0;
       while (accumulator >= FIXED_DT && steps < MAX_STEPS_PER_FRAME) {
-        game = stepGame(game, input.take(), FIXED_DT, rng);
+        simulate(now);
         accumulator -= FIXED_DT;
         steps += 1;
-        if (game.events.length > 0) {
-          renderer.handle(game.events, now / 1000);
-          hud.handle(game.events);
-          audio.handle(game.events);
-        }
         if (game.status !== 'playing') {
           window.setTimeout(() => showOverlay(true), 1600);
           running = false;
@@ -106,7 +168,7 @@ const main = (): void => {
       }
       hud.render(game);
     }
-    renderer.render(game, now / 1000, frameDt);
+    if (!recordMode) renderer.render(game, now / 1000, frameDt);
     requestAnimationFrame(frame);
   };
   requestAnimationFrame(frame);

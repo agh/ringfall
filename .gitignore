@@ -6,3 +6,5 @@ test-results/
 .vite/
 *.log
 .DS_Store
+.record-frames/
+*.mp4

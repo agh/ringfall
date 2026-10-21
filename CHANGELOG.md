@@ -8,6 +8,29 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- Renderer v2: scattering dawn sky, a ringworld you stand on, rolling
+  terrain with mountains, image-based lighting, a GPU particle pool, an HDR
+  composer with bloom and a custom feel pass (vignette, chromatic
+  aberration, hex shield lattice), composite enemy rigs, weapon sway, head
+  bob, recoil, sprint FOV.
+- Procedural score: choir drone with vowel formants and a synthesised
+  cathedral reverb; calm and combat buses that crossfade on wave state.
+- Playtest bot and headless harness (`src/core/bot.ts`,
+  `src/core/playtest.ts`) with balance tests; `pnpm balance`.
+- Deterministic demo recorder (`scripts/record-demo.mjs`, `pnpm demo`) and
+  the `?record&bot&seed=N` capture hook.
+- Specification, brand system, test plan, two research reports, a journey
+  log with captured frames, and a README banner.
+
+### Fixed
+
+- A negative first frame delta after Deploy made every decay term grow
+  without bound; the delta is now clamped at zero.
+- The terrain under the arena z-fought the floor at range; it is sunk six
+  metres.
+
 ## [2026.10.0] - 2026-10-21
 
 ### Added

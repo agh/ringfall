@@ -1,9 +1,11 @@
 import type { GameEvent } from '../core/game';
+import { Music, type MusicState } from './music';
 
 /** Tiny procedural sound bank built on WebAudio oscillators: no assets to load or license. */
 export class AudioBank {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
+  readonly music = new Music();
 
   /** Must be called from a user gesture; browsers refuse to start audio otherwise. */
   unlock(): void {
@@ -17,6 +19,14 @@ export class AudioBank {
     this.master = this.ctx.createGain();
     this.master.gain.value = 0.35;
     this.master.connect(this.ctx.destination);
+    const musicBus = this.ctx.createGain();
+    musicBus.gain.value = 0.5;
+    musicBus.connect(this.ctx.destination);
+    this.music.start(this.ctx, musicBus);
+  }
+
+  setMusic(state: MusicState): void {
+    this.music.setState(state);
   }
 
   handle(events: readonly GameEvent[]): void {

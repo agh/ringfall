@@ -19,7 +19,9 @@
     "test": "vitest run --coverage",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "demo": "node scripts/record-demo.mjs --seed 7 --seconds 45 --fps 30 --out demo.mp4",
+    "balance": "vitest run tests/unit/bot.test.ts --coverage.enabled=false"
   },
   "dependencies": {
     "three": "0.186.1"

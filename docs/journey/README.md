@@ -1,0 +1,114 @@
+# The journey
+
+A time-indexed log of how Ringfall was built in one hackathon morning, with
+the frames that were captured along the way. Times are UTC on 2026-10-21.
+Each entry says what was tried, what was seen, and what was decided, so a
+reader can follow the reasoning and not just the result. Images live in
+`images/` and are named by the time they were captured.
+
+## 14:08 Kick-off
+
+The brief: a WebGL game inspired by a classic console shooter, in a
+browser, three hours, to the crefft engineering standards. First decisions
+within ten minutes: TypeScript, three.js on WebGL, Vite, a pure simulation
+core so the game logic is unit-testable in Node, original names and
+procedural art only.
+
+## 14:08 to 14:27 Core and first renderer
+
+The simulation (`src/core/`) was written first: vector helpers, a seeded
+random source, arena generation with sliding collision, hitscan against
+spheres and boxes, a shield-over-health model with a recharge delay, a
+magazine-fed rifle, bouncing grenades, two enemy archetypes, slow bolts,
+and the wave state machine. Forty-five unit tests, 99% line coverage. The
+first renderer was flat-shaded boxes under a dark navy sky with a torus on
+the horizon.
+
+![Title screen, version one](images/1427-title-v1.png)
+
+The first in-game frame confirmed the loop worked end to end: HUD, radar,
+ring, enemies closing in.
+
+## 14:30 First push, draft PR, research dispatched
+
+Six Conventional Commits, CI with SHA-pinned actions, a GitHub Pages deploy,
+and a draft PR. Three research agents were dispatched in parallel: Halo's
+design philosophy and an MLP cut, prior art in browser WebGL games, and a
+brand system. Their reports are under [`../research/`](../research/) and
+[`../brand.md`](../brand.md).
+
+## 14:34 to 15:05 Renderer v2 and three bugs
+
+The brief said "10x more sophisticated". The second renderer added a
+scattering sky, a ring you actually stand on (six kilometres in radius,
+sunk below the horizon so it rises on both sides and crosses overhead),
+rolling terrain with mountains at the rim, image-based lighting from the
+sky, a GPU particle pool, an HDR composer with bloom, a custom feel pass
+(vignette, chromatic aberration, hex shield lattice), composite enemy rigs,
+and weapon sway, bob, and recoil.
+
+It rendered black. Three separate faults, found by bisecting with URL
+flags and headless screenshots:
+
+1. **The camera was inside the ring.** The torus tube was larger than the
+   amount it was sunk below the floor, so the inner surface wrapped the
+   player. Fix: sink the ring further than the tube radius.
+2. **A negative frame delta.** The first animation frame after Deploy
+   carried a timestamp earlier than the clock set in `start()`, so every
+   decay term (recoil, muzzle light, damage flare) ran backwards and grew
+   without bound. The scene went white and the HDR target looked broken.
+   Fix: clamp the delta at zero. The uniform probe that found it is still
+   in the code.
+3. **Terrain fighting the floor.** The terrain under the arena sat 0.6 m
+   below the floor, but with a 0.08 m near plane and a 40 km far plane the
+   depth buffer could not separate them at ten metres. Fix: sink the inner
+   terrain six metres.
+
+![Renderer v2 before terrain, direct path](images/1450-renderer-v2-first-light.png)
+
+![The negative-delta bug as seen through the post stack](images/1455-negative-dt-bug.png)
+
+![Terrain depth fixed, direct path](images/1458-terrain-depth-fixed.png)
+
+## 15:05 Procedural score
+
+A choir drone in D minor (three detuned oscillators per voice, vowel
+formant filters drifting between "ah", "oh" and "oo", a synthesised
+cathedral impulse response) with calm and combat buses that crossfade on
+wave state. No samples anywhere.
+
+## 15:06 The bot that plays the game
+
+`src/core/bot.ts` turns the immutable state into an `InputFrame` the way a
+person would: bounded turn rate, aim jitter, strafe bursts, bolt dodging,
+retreat on low shield, grenades at clusters. `src/core/playtest.ts` runs it
+headless at 60 Hz and reports win rate, accuracy, shield breaks, and
+per-wave clear times. Because the sim is deterministic, the same seed
+drives balance measurement, browser smoke tests, and the demo film.
+
+## 15:14 Renderer v2 with the post stack, working
+
+![Post stack working: sun, bloom on trims, ring, mountains](images/1514-renderer-v2-post.png)
+
+## 15:17 Backlog landed
+
+Seventeen GitHub issues: an MLP epic with eleven children (shield-break
+event, enemy theatre, grenade dives, firing points, five named waves,
+stingers and title choreography, brand compliance, frame budget, playtest
+gate, demo pipeline, easter eggs) and a Later epic with four explicitly
+deferred items. Each child has context, scope, acceptance criteria, and an
+out-of-scope line.
+
+## 15:20 Recording the demo
+
+`scripts/record-demo.mjs` opens the built page with `?record&bot&seed=7`,
+steps the simulation two ticks per captured frame, and assembles the frames
+with ffmpeg at 30 fps. On a software GPU the capture runs far slower than
+real time; the film still plays at the right speed because the sim is
+stepped, not timed.
+
+## Playtest reviews
+
+| When | Seed | What was watched | Verdict |
+| ---- | ---- | ---------------- | ------- |
+| 15:20 | 7 | 48 s from title through wave 1 and into wave 2 | Pending review of the first cut |

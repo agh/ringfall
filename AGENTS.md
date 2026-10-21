@@ -82,7 +82,13 @@ pnpm check                    # lint, typecheck, unit tests, production build
 ringfall/
 ├── src/
 │   ├── core/         # Renderer-free simulation: pure functions over immutable state
+│   │   ├── bot.ts    # Scripted player: state -> InputFrame
+│   │   └── playtest.ts # Headless games and balance summaries
 │   ├── render/       # three.js scene graph; mirrors GameState every frame
+│   │   ├── environment.ts # Sky, ring, terrain, stars
+│   │   ├── particles.ts   # GPU particle pool
+│   │   ├── post.ts        # HDR composer, bloom, feel pass
+│   │   └── enemies.ts     # Composite enemy rigs
 │   ├── input/        # Keyboard, mouse, pointer lock -> InputFrame
 │   ├── hud/          # DOM heads-up display and 2D-canvas motion tracker
 │   ├── audio/        # WebAudio procedural sound bank
@@ -91,8 +97,14 @@ ringfall/
 ├── tests/
 │   ├── unit/         # Vitest; covers src/core only
 │   └── e2e/          # Playwright; real Chromium, real WebGL
+├── scripts/          # record-demo.mjs: deterministic film of a bot run
 ├── docs/
-│   ├── design-doc.md # Product specification and architecture
+│   ├── spec.md       # Chapter 1 spec: MLP vs Later
+│   ├── design-doc.md # Architecture and gameplay numbers
+│   ├── brand.md      # Palette, type, geometry, audio, feel, PR checklist
+│   ├── test-plan.md  # Test layers and gates
+│   ├── research/     # Sourced research reports
+│   ├── journey/      # Time-indexed build log and frames
 │   └── adr/          # Architecture decision records
 └── .github/workflows # CI (lint, test, e2e, build) and GitHub Pages deploy
 ```
@@ -154,6 +166,23 @@ the right `allow` attribute, and after an Esc within the browser's cool-down.
 **Solution**: `InputController.lock()` swallows the rejection; the game still
 runs, and the `pointerlockchange` handler returns to the overlay when the lock
 is lost mid-game.
+
+### Decay terms must never see a negative frame delta
+
+**Problem**: the first `requestAnimationFrame` timestamp after `start()` can
+be earlier than `performance.now()` captured in `start()`. Every
+`max(0, x - dt * k)` then grows instead of decaying; lights blow out and the
+post stack looks broken.
+**Solution**: `src/main.ts` clamps `frameDt` to `[0, 0.1]`. Keep it that way.
+
+### Software GL (SwiftShader) differs from hardware
+
+**Problem**: headless Chromium in CI and in sandboxes renders with
+SwiftShader. It is slow (hundreds of milliseconds per frame with the post
+stack) and its depth precision is lower.
+**Solution**: never time anything against wall-clock in tests; use the
+`?record` capture hook or the headless playtest. Keep large static geometry
+well separated in depth (the terrain under the arena is sunk 6 m).
 
 ### Enemies look unhittable
 

@@ -45,7 +45,7 @@ export class InputController {
 
   reset(): void {
     this.yaw = 0;
-    this.pitch = 0;
+    this.pitch = Number(new URLSearchParams(window.location.search).get('pitch') ?? '0');
     this.releaseAll();
   }
 

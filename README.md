@@ -1,7 +1,11 @@
+<p align="center"><img src="docs/banner.svg" alt="Ringfall" width="100%"></p>
+
 # Ringfall
 
-A browser-native first-person arena shooter built on WebGL. Hold the arena,
-survive eight waves, and keep an eye on the ring.
+A browser-native arena shooter. One ring, one dawn, two kinds of thing that
+want you dead. TypeScript + three.js, zero assets.
+
+**[Play now](https://agh.github.io/hack/)** (deploys from `main`).
 
 Ringfall takes its cues from the classic console sci-fi shooter loop: a
 regenerating energy shield over fixed health, a two-second rhythm of fire,
@@ -46,8 +50,31 @@ Because `src/core/` never touches the DOM or WebGL, it is unit-tested in Node
 to a coverage threshold. The browser layers are covered by Playwright smoke
 tests in real Chromium.
 
-Design decisions and gameplay numbers are documented in
-[docs/design-doc.md](docs/design-doc.md) and [docs/adr/](docs/adr/).
+## Documentation
+
+| Document | What it holds |
+| -------- | ------------- |
+| [docs/spec.md](docs/spec.md) | Chapter 1 specification, Minimum Lovable Product versus Later, mastery goals, easter eggs |
+| [docs/design-doc.md](docs/design-doc.md) | Architecture and every gameplay number with its rationale |
+| [docs/brand.md](docs/brand.md) | Palette, typography, geometry language, audio identity, feel values, PR checklist |
+| [docs/test-plan.md](docs/test-plan.md) | Static, unit, playtest, browser, visual, and recording layers |
+| [docs/research/](docs/research/) | Sourced research on Halo's design and on browser WebGL prior art |
+| [docs/journey/](docs/journey/) | Time-indexed build log with captured frames |
+| [docs/adr/](docs/adr/) | Architecture decision records |
+
+The backlog lives in GitHub Issues: the MLP epic (#2) and the Later epic (#3).
+
+## The game plays itself
+
+`src/core/bot.ts` is a scripted player that reads the same state a human
+sees and emits the same input a keyboard and mouse would. Because the
+simulation is deterministic, one seed gives a reproducible run that powers
+balance measurement in Node, smoke tests in Chromium, and the demo film:
+
+```bash
+pnpm balance                      # headless games, win rate, accuracy, wave clear times
+pnpm demo                         # film seed 7 to demo.mp4 (needs pnpm build and ffmpeg)
+```
 
 ## Develop
 
@@ -75,6 +102,7 @@ SHA-pinned GitHub Actions.
 | Bundler   | Vite 8.3.5           |
 | Lint      | Biome 2.5.12         |
 | Unit      | Vitest 5.0.0         |
+| Post      | EffectComposer, UnrealBloomPass, custom feel pass |
 | E2E       | Playwright 1.64.1    |
 | Hosting   | GitHub Pages         |
 
