@@ -20,7 +20,8 @@ every verification claim. Any unticked item is a no-go.
 
 ## The list
 
-**Pages is live and playable.** Open <https://agh.github.io/hack/> in a
+**Pages is live and playable.** Open <https://agh.github.io/hack/> (not
+yet live: the repository is private and Pages is off as of 2026-10-21) in a
 clean browser profile, click Deploy, and play into wave 2. This prevents
 tagging a release whose public link shows a blank canvas because the Pages
 source was never set to GitHub Actions or the deploy job failed quietly

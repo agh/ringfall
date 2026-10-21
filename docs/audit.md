@@ -54,8 +54,7 @@ the frame rate the demo script used.
 
 The pure core (verified by grep), the draft-and-freeze step with a
 passed-in random source, tests that exposed real behaviour, the storage
-module's tolerant design, the GPU particle pool, accurately quoted
-decision-bearing citations, and a journey log that names the squash and
+module's tolerant design, the GPU particle pool, and a journey log that names the squash and
 the overruled calls.
 
 ## The tics to watch for, in this project
@@ -67,3 +66,65 @@ documents that are not. Self-approval in frontmatter. Research notes that
 grade their own client. These are the patterns the next audit should grep
 for first, and the pull request template now asks for the evidence that
 prevents most of them.
+
+## Second audit
+
+> Reviewers: five, one per dimension, against `main` at `ba1fa99` at
+> 17:33 UTC on 2026-10-21, after an afternoon of agents writing in parallel.
+> The full checklist with every finding and outcome is on issue #54.
+
+### Verdict
+
+Two and a half, the same as the first audit. The kinds of slop changed;
+the density did not fall. The lexical tics are still absent and most
+numbers in prose matched the constants when checked (a long list of
+gameplay numbers, ports, script defaults, pitfalls, commit hashes and
+issue numbers all verified). The slop was again structural, and it came
+from three places. Documents lagged the code by an afternoon: the spec
+still called the rout and the balance gate unbuilt hours after both
+merged, the changelog listed one of the six merges of the day, and the
+metrics and launch checklist described bot tests that no longer exist.
+The first audit itself claimed a fix that was never made: the recorder
+has no frame-rate guard, only the demo's frame rate changed. The research
+notes contained three quotations whose words are not in their sources,
+five citations used for claims the sources do not make, two documents
+grading the project's own work, and one dead and one soft-dead link. One
+reviewer ran every command in AGENTS.md and the runbook; all run, and the
+findings there were stale descriptions (which script `pnpm balance` runs,
+24 against 30 fps, "three" query parameters) rather than broken
+procedures.
+
+### Findings and outcomes
+
+| Severity | Finding | Outcome |
+| -------- | ------- | ------- |
+| High | Spec rows called the rout (#40) and the balance gate (#39) unbuilt, and listed the second weapon as Later while six weapons and a swap key are shipped; the design doc's non-goals excluded weapons and pickups; the concept proposal and glossary repeated the Later claim | Fixed: rows updated, a sixteenth MLP row added, NG3 is vehicles |
+| High | The first audit recorded a recorder frame-rate guard as fixed; `scripts/record-demo.mjs` still rounds `60 / fps` with no check, and the runbook and journey repeated the claim | Fixed in all three; logged as a wrong call in the journey |
+| High | A shake accessibility toggle was described as built in the brand document, the art direction and the requirements; no toggle exists (#37 is open) | Fixed in all four places |
+| High | Metrics and the launch checklist described four bot tests with assertions that do not exist (3 kills on seed 3, ratio above 0.3, reckless at least half of steady); the suite has twelve tests with different assertions, and `pnpm balance` runs `tests/balance`, not `bot.test.ts` | Fixed: the actual assertions are stated and the checklist points at `tests/balance/gate.ts` |
+| High | Changelog Unreleased omitted #34, #36, #39 and #42 | Fixed |
+| High | README docs index omitted seven top-level documents, four of which no document linked to | Fixed |
+| High | Three quotations not in their sources (Opdahl, instagib-arena, drift-arena) and five citations that do not support their claims (Overwatch silhouettes, art bible as constraint set, art-bible contents, Infinitown size, Dwasm size) | Fixed with the sources' own words |
+| High | The README Play-now domain has no DNS record and the launch checklist says Pages is live; the repository is private with Pages off | Fixed: both marked not yet live, dated |
+| High | AGENTS.md said `pnpm lint` is Biome only; it also runs markdownlint | Fixed |
+| Medium | Future tense for #12 and #5 in risks and evolution; "will be" tested for the sound table that #42 tested; a test-plan baseline that `main` no longer prints (steady 20%, reckless 5% after #40, gate passes) | Fixed; the gate's stored baselines are code and stay with #39's successors |
+| Medium | Runbook: `pnpm check` does not use port 4173; `?atmo` and `?weather` undocumented; no reel procedure though the script points at the runbook; wrong claim about Chromium builds; `pnpm test:e2e` deletes the balance report the launch checklist asks to attach | Fixed in prose; the Playwright `outputDir` change is code and deferred |
+| Medium | Journey: wrong-calls list missing two calls the log narrates; "an hour and a half left" at 16:05; "thirty-three by the end"; PR #1 times off by a minute; three film frames never embedded; decisions index claimed a tag that does not exist | Fixed |
+| Medium | Brand document still said "source of truth"; two research notes graded the project's own work; concept proposal said the demo has an ending | Fixed |
+| Medium | Dead screenshake devlog and quakejs.com links | Fixed: removed, attribution kept |
+| Medium | Riot VFX guide redirects to a homepage, a UW course link needs a login, three bungie.org and Princeton pages reset the connection from the sandbox | Deferred: needs verification or a Wayback capture from an unproxied network |
+| Medium | Every document fails the crefft frontmatter schema; four carry `approved:` with no reviewers on a draft | Deferred to #43, which owns the schema |
+| Low | Command comments, controls table, "two research reports", research MLP numbering, Griesemer row dropping the cover condition, misattributed trailer structure and requirement tagging, the Grunt quotation's speakers, "every claim carries a source" | Fixed |
+| Low | Journey images named `1535-*` for frames committed at 15:29; a brand sentence on ringworld width the citations do not support; the complexity rule still at warn (seven warnings) | Open |
+
+Seventy findings, fifty-six fixed in the pull request for #54, fourteen
+deferred or verified as not needing a change.
+
+### The tics to add to the list
+
+A status column that is not re-read after a merge. A "Fixed" that names
+a change nobody made; grep the fix commit for the file. A quotation that
+reads better than the source. A link that was live when the agent read
+it and is not when a reader does; fetch every URL before a release.
+Twenty agents writing in parallel make the first two certain unless one
+agent's job is to re-read.
