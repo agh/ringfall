@@ -51,6 +51,8 @@ export interface Sound {
 export const SILENT = [
   'pickupExpired',
   'enemyFled',
+  // The hidden switch's seven-note chime is a follow-up; the score tick is the only reaction here.
+  'secretFound',
 ] as const satisfies readonly GameEvent['type'][];
 export type SilentEvent = (typeof SILENT)[number];
 

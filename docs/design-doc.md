@@ -130,6 +130,46 @@ contact strip a full shield in about four seconds; one strider's volley is
 dodgeable by strafing because the bolt takes roughly half a second to cross
 its range.
 
+#### Skimmer temperaments
+
+Skimmers share one body and four ways of closing (`Temperament` in
+`src/core/enemy.ts`). A wave hands them out round-robin in spawn order
+(`temperamentFor`), so wave 1's three skimmers are a chaser, an ambusher
+and a flanker, and the skittish one first appears in wave 2. Each policy is
+a goal point (`chaseGoal`); the enemy steps toward it with the same speed,
+lateral jitter and collision as before, and attacks whenever the player is
+within 2 m whatever its goal. Striders carry the default and ignore it.
+
+| Temperament | Goal                                                                 | Numbers                                              |
+| ----------- | -------------------------------------------------------------------- | ---------------------------------------------------- |
+| Chaser      | The player's feet                                                    | none                                                 |
+| Ambusher    | 4 m ahead of the player along their velocity                         | `AMBUSH_LEAD` 4 m; still below 0.5 m/s               |
+| Flanker     | A point on the player's off-hand (left) side, wider when further out | offset = 0.6 × distance, clamped to 1.5 to 6 m       |
+| Skittish    | The player, but only with company                                    | approaches to 10 m, then holds until a packmate is within 6 m of the player |
+
+The ambusher leads the player's horizontal velocity (`player.velocity`,
+displacement over the last step divided by `dt`), so it meets a strafing
+player rather than following them. A goal that falls inside a cover block
+is replaced by the player's feet for that step, so a lead or a flank never
+pins a skimmer against a wall. The flanker's offset shrinks as it
+closes so it ends inside attack range rather than orbiting; the off-hand
+side is the player's left because the rifle is carried on the right. The
+skittish skimmer closes without waiting when it is the only skimmer alive,
+so a wave can never end with one enemy hiding at the edge. The policies
+are visible only as movement; a tint on the ring is a renderer follow-up
+that reads `enemy.temperament`.
+
+Balance (`pnpm balance`, twenty seeds per profile, 480 s cap) on top of
+the rout below: steady win 20 % to 15 %, mean waves 5.40 to 5.05, accuracy
+45 % to 47 %; reckless win 5 % to 15 %, mean waves 5.20 to 5.15. Wave 1 is
+cleared on 20 of 20 seeds by both profiles. Packs that arrive from four
+directions arrive staggered, and a player who never retreats kills them one
+at a time: the reckless win rate sits above the 10 % ceiling of the
+playtest gate (`tests/balance/gate.ts`) by one game of twenty, with every
+flanker and skittish setting tried between 0.3 and 0.6 of the distance and
+6 to 12 m of hold landing between 15 % and 30 %. Removing any one
+temperament does not bring it under the ceiling; only all-chaser does.
+
 <!-- /design-check: enemies -->
 
 ### Rout
@@ -237,6 +277,36 @@ roster for the eight waves:
 A 60 m square with transparent boundary walls and 16 procedurally placed
 cover blocks (2 to 6 m footprint, 1.5 to 4 m tall), none within 6 m of the
 center so the spawn point is open. Layout is seeded; the seed comes from the
+clock in production and is fixed in tests. The HUD calls it Sector 117
+(`ARENA_SECTOR`); there is no explanation and none is planned.
+
+#### The hidden switch
+
+One block per arena carries a glyph (`Arena.secret`, placed by
+`placeSecret` with the arena's own seed) on the face that points away from
+the center, so it is never visible from the spawn. The glyph sits 1 m up
+(`SECRET_HEIGHT`, or half the block's height if lower): level with a
+crouched eye. A hitscan ray from any weapon that reaches a 0.35 m sphere
+(`SECRET_RADIUS`) around the glyph before any other surface trips it: 1000
+points (`SECRET_SCORE`), a `secretFound` event, and `secretsFound` on the
+state, once per game. The end card reads "n of 1 secrets found". The glyph
+itself and the seven-note chime are renderer and audio follow-ups on the
+event. An arena with no cover has no switch.
+
+### Crouch
+
+Holding C or Ctrl crouches: the eye drops 0.6 m (`CROUCH_EYE_DROP`) to
+1.1 m and shots leave from there. The body, its collision cylinder and its
+speed are unchanged, so crouching costs nothing and buys nothing except a
+look at the glyph. Starting a crouch three times (`TAUNT_TOGGLES`) within
+1.5 s (`TAUNT_WINDOW`) while within 2.5 m (`TAUNT_RADIUS`) of where a
+strider fell (`graves`) spends the three presses and makes the nearest
+surviving skimmer bark one word (`TAUNT_BARK`, a `bark` event the HUD
+prints). Skimmer deaths leave no grave. Striders' bolts aim at the eye,
+so a crouched player presents the middle of their hit sphere rather than
+its top edge; that is the only gameplay effect.
+
+center so the spawn point is open. Layout is seeded; the seed comes from the
 clock in production and is fixed in tests.
 
 <!-- /design-check: arena -->
@@ -261,7 +331,7 @@ clock in production and is fixed in tests.
   14% of the frame height; at the first kill at night from 60 to 19. The
   budget is a mean under 150 by day and 110 at night.
 - **Sun flare.** An additive core sprite at the sun (scale 520 at 9 km,
-  about 4% of the frame height) and three ghosts on the sun-to-centre axis,
+  about 4% of the frame height) and three ghosts on the sun-to-center axis,
   sized as fractions of the frame height (5%, 8%, 3.5%) at opacity 0.6, so
   no ghost can reach the third of the frame the budget allows. Core and
   ghosts follow `sunDisc`, which is 0 at night, and are hidden rather than
@@ -306,10 +376,18 @@ clock in production and is fixed in tests.
 - **Weapons on screen.** `src/render/weapons.ts` builds one viewmodel rig
   per kind under the camera and draws the active one in 0.25 s
   (`DRAW_TIME`); each has its own accent color, muzzle flash sprite and
-  light, and tracer: a 1 px line for the laser, eight pellet traces for the
-  scatter, a glowing cylinder with sparks along it for the beam, a smoking
-  round and a drum that turns a notch per shot for the launcher, a spinning
-  barrel cluster for the minigun. Pickups (`src/render/pickups.ts`) are an
+  light, and tracer. Flash sprites are 0.12 to 0.3 m wide at the muzzle
+  (under 160 px at 1280x720) and fade with their light in 35 to 75 ms
+  (`FLASH`), so a shot reads as a pop under bloom rather than a disc. The
+  laser fires a 1.5 cm cylinder bolt (`LASER_RADIUS`) rather than a 1 px
+  line so it survives 4K; the scatter throws eight pellet traces at half
+  opacity; the beam is a 3.5 cm white core (`BEAM_CORE_RADIUS`) inside a
+  14 cm violet sheath at 0.18 opacity (`BEAM_RADIUS`) with a 24 cd light
+  (`BEAM_LIGHT`) riding 2.5 m in from the muzzle; the launcher opens a
+  muzzle ring to 0.6 m across (`LAUNCHER_RING_DIAMETER`) in 0.1 s, puffs
+  smoke a meter out (past the particle shader's near-eye fade) and turns
+  its drum a notch per shot; the minigun spins its barrel cluster.
+  Pickups (`src/render/pickups.ts`) are an
   emissive emblem over a post with a kind-colored billboard halo and a 2 m
   column whose alpha fades to nothing at the top, no light of their own (so
   the scene's light count, and with it every compiled material, is the same
@@ -342,6 +420,9 @@ clock in production and is fixed in tests.
   (budget 150 and 110); the first kill at night (t = 10.0 s) went from 59
   to 32. Hit-stop of 50 ms (skimmer kill), 90 ms (strider kill) and
   120 ms (shield break) slows the simulation to 5 % in `src/main.ts`.
+- **HUD.** DOM elements updated every frame: the sector designation, wave and enemies left, score,
+  shield and health bars, ammo with a low-ammo color, grenade pips, center
+
 - **HUD.** DOM elements updated every frame: wave and enemies left, score,
   shield and health bars, ammo with a low-ammo color, grenade pips, center
   announcements, a hit marker, a damage vignette, and a pulsing border when
@@ -354,8 +435,10 @@ clock in production and is fixed in tests.
 
 Pointer lock is requested on Deploy. Mouse movement adjusts yaw and pitch at
 0.0022 rad per pixel, pitch clamped just short of vertical. Held keys are
-read live each step; reload and grenade are latched so a key press between
-two steps is never lost. Esc releases the lock and the game returns to the
+read live each step (crouch on C, Ctrl); reload and grenade are latched so
+a key press between two steps is never lost. Ctrl is a browser modifier:
+Ctrl with W closes the tab in most browsers, and pointer lock does not
+intercept it, so C is the safe binding until the keyboard lock API is used. Esc releases the lock and the game returns to the
 overlay, where the run can be resumed with another click.
 
 The title overlay carries a settings panel whose values persist under the

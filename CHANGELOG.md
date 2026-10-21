@@ -8,8 +8,31 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Security
+
+- Content Security Policy and `no-referrer` meta tags in `index.html`; the
+  dev server relaxes only `style-src` and `connect-src` for hot reload.
+- `?seed` is parsed by `parseSeed` (decimal uint32 only) and personal bests
+  are re-validated field by field with a 1 KB cap before `JSON.parse`, so
+  hostile query strings and storage values cannot stall or corrupt the end
+  card (`src/core/rng.ts`, `src/core/records.ts`).
+- Hidden production source maps, a 24 h release cooldown and no lifecycle
+  scripts for pnpm, `engine-strict`, a `pnpm audit --prod` script, grouped
+  Dependabot updates with a seven-day cooldown, `markdownlint-cli2` 0.24.0.
+- Per-job least-privilege tokens in the Pages deploy workflow; CI runs on
+  `main` are no longer cancelled by the next push.
+- Threat model in `SECURITY.md`.
+
 ### Added
 
+- Four skimmer temperaments handed out round-robin per wave: chaser,
+  ambusher (leads the player's velocity by 4 m), flanker (swings to the
+  off-hand side) and skittish (holds at 10 m until a packmate is within
+  6 m of the player). The HUD names the arena Sector 117 from a core
+  constant. A crouch on C or Ctrl lowers the eye by 0.6 m; three crouches
+  within 1.5 s over a fallen strider earn a one-word bark from a surviving
+  skimmer. One cover block per arena hides a switch on its outward face;
+  shooting it once scores 1000 and the end card counts secrets found.
 - Enemy theatre: when a strider dies, every skimmer within 25 m breaks and
   runs for 4 s at 1.3x speed without attacking, then returns to the chase.
   New enemy state `flee` and two events for the presentation layers,

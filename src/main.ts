@@ -3,7 +3,7 @@ import { renderScore } from './audio/offline';
 import { type BotMemory, createBotMemory, decideBot, STEADY_BOT } from './core/bot';
 import { createGame, type GameState, stepGame } from './core/game';
 import { describeComparison, recordRound } from './core/records';
-import { createRng } from './core/rng';
+import { createRng, parseSeed } from './core/rng';
 import { loadSettings, type Settings, saveSettings } from './core/settings';
 import { Hud, summarize } from './hud/hud';
 import { InputController } from './input/input';
@@ -101,8 +101,8 @@ const main = (): void => {
   applySettings();
 
   const params = new URLSearchParams(window.location.search);
-  const seedParam = Number(params.get('seed'));
-  const seed = Number.isFinite(seedParam) && seedParam > 0 ? seedParam : Date.now() >>> 0;
+  // `?seed=` is untrusted input: only a decimal uint32 is honoured, anything else is the clock.
+  const seed = parseSeed(params.get('seed'), Date.now() >>> 0);
   const botMode = params.has('bot');
   const recordMode = params.has('record');
   let game = createGame({ seed });
@@ -187,7 +187,7 @@ const main = (): void => {
     }
     hitStop = 0;
     overlay.hidden = true;
-    hud.show();
+    if (!params.has('nohud')) hud.show(); // `?nohud`: dev flag, keeps the HUD hidden for clean hero captures.
     running = true;
     audio.setMusic('calm');
     accumulator = 0;
