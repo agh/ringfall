@@ -264,6 +264,26 @@ gun with a pickup column beside it, from the deterministic run at seed 7:
 
 ![Wave 3, the scatter gun and a pickup](images/1656-wave3-scatter-pickup.jpg)
 
+## 17:13 Pickup glow without a light
+
+Issue #29. Every pickup carried its own point light and a 3 m additive
+column. Adding a light to a three.js scene changes the light count that
+every lit material is compiled against, so the first pickup of a round
+recompiled every shader (a hitch on real hardware), and the column
+bloomed into a pillar that owned the frame from close up. The capture
+hook at seed 7 shows the wave 3 reward land 5 m ahead at 41.9 s and the
+bot walk into it by 42.5 s. The pickup is now an emissive emblem above
+the bloom threshold, a billboard halo sprite, and a 2 m column whose
+alpha falls off with the square of its height to zero at the top. A
+Node test over the renderer counted zero lights under the pickup group
+after a spawn, and the two take bursts dropped from sprite sizes 9 and
+16 to 0.6 and 0.9, so a mote that has flown clear of the near fade stays
+under the 64 px cap. Same frame, same tick, before and after:
+
+![Pickup at 3 m, before: the column is a pillar](images/1713-pickup-column-before.jpg)
+
+![Pickup at 3 m, after: an emblem with a halo and a short plume](images/1715-pickup-glow-after.jpg)
+
 ## Playtest reviews
 
 Each row is a human or agent watching the game play, not a screenshot.
