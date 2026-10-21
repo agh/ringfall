@@ -37,7 +37,7 @@ The development server serves the source with hot reload on port 5173.
 pnpm dev            # http://localhost:5173
 ```
 
-Five query parameters change how the page starts. `?seed=N` fixes the
+Seven query parameters change how the page starts. `?seed=N` fixes the
 arena layout and enemy jitter so a run is reproducible; without it the seed
 comes from the clock. `?bot` hands the controls to the scripted player in
 `src/core/bot.ts`. `?record&bot&seed=N` enters record mode, which suspends
@@ -46,7 +46,8 @@ step the simulation one tick at a time. `window.ringfall.state()` is
 available on every page for inspection. `?atmo=night` (or `dawn`, `day`,
 `dusk`) and `?weather=rain` (or `fog`, `clear`) pin the atmosphere from the
 first frame regardless of wave, for checks such as a night kill
-(`?record&bot&seed=7&atmo=night`).
+(`?record&bot&seed=7&atmo=night`). `?nohud` keeps the HUD hidden for clean
+captures, and `?nopost` bypasses the post stack.
 
 ## Build
 
@@ -64,7 +65,8 @@ pnpm check          # lint, typecheck, unit tests with coverage, build
 
 The `Pages build` and `Pages deploy` jobs at the end of
 `.github/workflows/ci.yml` run on every push to `main`, after every other
-CI job on that push has passed (`needs`), so a red run never ships. The
+CI job on that push except the luminance gate and the browser smoke tests
+has passed (`needs`, #100), so a red run never ships. The
 build job installs with the frozen lockfile, runs `pnpm build`, calls
 `actions/configure-pages`, and uploads `dist/` with
 `actions/upload-pages-artifact`. The deploy job publishes that artifact
@@ -109,8 +111,8 @@ pnpm test:watch     # vitest in watch mode
 ## Playwright
 
 The smoke tests in `tests/e2e/` run against `vite preview`, so the
-production build must exist first. Each test has a 120 second budget and
-waits up to 60 seconds for the simulation clock to pass 0.5 seconds,
+production build must exist first. Each test has a 600 second budget and
+waits up to 240 seconds for the simulation clock to pass 0.5 seconds,
 because software GL renders the post stack at a few frames per second.
 
 Without `PLAYWRIGHT_CHROMIUM_EXECUTABLE`, Playwright wants its own browser
@@ -148,8 +150,8 @@ pnpm demo           # writes demo-silent.mp4, then demo.mp4 with the score
 
 `scripts/record-demo.mjs` starts `vite preview` on port 4175, opens the
 page with `?record&bot&seed=N` under SwiftShader, captures one second of
-title frames, then advances the simulation by `round(60 / fps)` ticks per
-captured frame and screenshots the page so the DOM HUD is composited in.
+title frames, then advances the simulation by `60 / fps` ticks per
+captured frame (the fps must divide 60, or the script exits) and screenshots the page so the DOM HUD is composited in.
 Frames land in `.record-frames/` and are assembled with `libx264` at CRF
 18. Its flags and defaults are `--seed 7`, `--seconds 45`, `--fps 30`,
 `--width 1280`, `--height 720`, and `--out demo.mp4`.
@@ -216,7 +218,8 @@ not captured in parallel because SwiftShader already uses every core.
 
 ### Custom domain
 
-The site is served at <https://ringfall.alexhowells.com>. `public/CNAME` holds
+The site's custom domain is <https://ringfall.alexhowells.com> (not live as
+of 2026-10-21; the Pages source setting is #85). `public/CNAME` holds
 the hostname so every Pages deploy keeps it. One-time setup: a DNS `CNAME`
 record for `ringfall` pointing at `agh.github.io`, then in the repository's
 Settings, Pages, enter the custom domain and tick "Enforce HTTPS" once the
@@ -233,11 +236,8 @@ The ffmpeg that Playwright bundles (`/opt/pw-browsers/ffmpeg-*/ffmpeg-linux`)
 is built for screencasts only: VP8 and WebM, no JPEG decoder, no H.264, no
 audio encoder. Point `FFMPEG` at a full build instead. The static binary
 from `pip install imageio-ffmpeg` (`imageio_ffmpeg/binaries/ffmpeg-linux-*`)
-or a system `ffmpeg` both work. A 24 fps capture holds three simulation ticks per
-frame (the recorder rounds `60 / fps` and does not refuse such rates); encode it at
-`-framerate 20` so it plays in real time, and render the score for the
-simulated length (48 s for 960 frames) with a lead-in equal to the title
-frames divided by 20.
+or a system `ffmpeg` both work. The recorder refuses an fps that does not
+divide 60, so pick 30, 20, 15, 12 or 10.
 
 ## Known faults and their fixes
 

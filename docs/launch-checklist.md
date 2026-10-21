@@ -21,16 +21,17 @@ every verification claim. Any unticked item is a no-go.
 
 ## The list
 
-**Pages is live and playable.** Open <https://agh.github.io/ringfall/> (not yet
-live as of 2026-10-21) in a
-clean browser profile, click Deploy, and play into wave 2. This prevents
+**Pages is live and playable.** Open <https://ringfall.alexhowells.com> (or
+<https://agh.github.io/ringfall/>, which redirects there; neither serves
+the build as of 2026-10-21) in a clean browser profile, click Deploy, and play into wave 2. This prevents
 tagging a release whose public link shows a blank canvas because the Pages
 source was never set to GitHub Actions or the deploy job failed quietly
-after the CI jobs passed. The deploy workflow is separate from CI, so a
-green CI badge proves nothing about the site.
+after the CI jobs passed. The Pages jobs are the last two jobs of the CI workflow and run only on
+a push to `main`, so a green badge on a pull request proves nothing about
+the site.
 
 **CI is green on the exact commit to be tagged.** The lint, unit, browser
-smoke, balance gate, and build jobs in `.github/workflows/ci.yml` must all pass on the
+smoke, luminance gate, build, balance gate, docs hygiene, and security jobs in `.github/workflows/ci.yml` must all pass on the
 head of `main`, not on an earlier commit. This prevents a tag pointing at a
 commit that was pushed after the last green run, which is how a release
 ships with a type error nobody saw.
@@ -58,8 +59,8 @@ deliberately not tested".
 **The bot balance assertions are green.** Run `pnpm balance` and attach the
 output. `tests/balance/report.test.ts` must pass: twenty seeded games per
 profile inside the thresholds in `tests/balance/gate.ts` (steady wins at
-least 10%, waves at least 4.85, accuracy at least 29%, slowest mean wave
-clear at most 50 s; reckless wins at most 10%, waves at least 3.70). This
+least 70%, waves at least 3.85, accuracy at least 42%, slowest mean wave
+clear at most 40 s; reckless wins at most 80%, waves at least 4.05). This
 prevents a tuning change from making
 wave 1 unwinnable or the shield loop irrelevant without anyone noticing.
 
@@ -84,7 +85,7 @@ name, an account, or a session.
 **CHANGELOG.md and VERSION agree.** `VERSION` reads `2026.10.0` and
 `CHANGELOG.md` must carry a `## [2026.10.0] - 2026-10-21` section that
 describes what the tag contains, with an empty `[Unreleased]` above it.
-Today the unreleased section still holds renderer v2, the score, the
+As of 2026-10-21 the unreleased section still holds renderer v2, the score, the
 playtest bot, the recorder, and the personal bests, so the release owner
 must either move those entries under the version being tagged or tag a
 later version; tagging as things stand would publish release notes that

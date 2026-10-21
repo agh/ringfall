@@ -26,12 +26,23 @@ and this project adheres to
 - Hidden production source maps, a 24 h release cooldown and no lifecycle
   scripts for pnpm, `engine-strict`, a `pnpm audit --prod` script, grouped
   Dependabot updates with a seven-day cooldown, `markdownlint-cli2` 0.24.0.
-- Per-job least-privilege tokens in the Pages deploy workflow; CI runs on
-  `main` are no longer cancelled by the next push.
-- Threat model in `SECURITY.md`.
+- Per-job least-privilege tokens in the CI workflow, including its Pages
+  build and deploy jobs; CI runs on `main` are no longer cancelled by the
+  next push.
+- Workflow and dependency hygiene gates in CI: actionlint, zizmor, gitleaks,
+  `pnpm audit` and Stylelint (#44).
+- Threat model in `docs/threat-model.md`, summarized in `SECURITY.md` (#78).
 
 ### Added
 
+- A settings panel on the title overlay (#37): mouse sensitivity, field of
+  view, and switches for screen shake and flash, kept in the browser's local
+  storage (`src/core/settings.ts`).
+- Luminance gate in CI (#30): `pnpm frames` captures ten seeded frames from
+  the built site and fails on the mean, saturated-blob and whiteout budgets
+  in `scripts/frames.mjs`; the `frames` artifact holds the images.
+- Docs hygiene in CI (#43): frontmatter schema, typos, Vale (advisory) and
+  an internal link check behind `pnpm lint:docs`.
 - The dropship moment (#58): when a wave's first pod launches, a dark
   Hull craft with a Rose underlight crosses the arena in 4 s, in over the
   wall behind that pod, over the centre and out the far side. Each
@@ -121,6 +132,15 @@ and this project adheres to
 
 ### Changed
 
+- The Pages build waits on the lint, unit, build, balance, docs and
+  security jobs only; the luminance gate and the browser smoke tests still
+  fail the run but no longer hold the deploy. The smoke tests wait up to
+  four minutes for the first simulation step and the e2e job uploads the
+  Playwright traces on failure (#100).
+- Pickups glow through their own emissive rig instead of one point light
+  each (#29).
+- HUD and overlay styling moved onto the brand tokens and type scale, with
+  the banner and the brand document brought into line (#10).
 - Night and weather readability (#31): dust motes are a hint rather than
   white discs (size 0.09, 3.5 to 10 m out, at most 11 px at 720p) with
   rate, life and brightness per time of day and weather; rain streaks are
@@ -137,6 +157,8 @@ and this project adheres to
 
 ### Fixed
 
+- Weapon muzzle flashes, tracers and the beam re-tuned under the HDR
+  composer so they read without blooming out (#28).
 - Review sweep for #51 and #52, after the owning pull requests merged:
   - Every point light comes from a fixed pool of twelve in the scene from
     the first frame (`src/render/lights.ts`), so a bolt, a beam, an
@@ -249,7 +271,7 @@ and this project adheres to
   damage that also hurts the thrower.
 - Two enemy types: fast melee skimmers and ranged striders that keep their
   distance and fire dodgeable energy bolts.
-- Eight escalating waves with countdowns, clear bonuses, a victory state, and
+- Escalating waves with countdowns, clear bonuses, a victory state, and
   a death state, each returning to the overlay for a rematch.
 - Heads-up display with shield and health bars, ammo, grenade count, wave
   status, score, announcements, and a 2D motion tracker.

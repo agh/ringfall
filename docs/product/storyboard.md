@@ -43,7 +43,7 @@ settles back into calm.
 | 3 to 5 s | Trim lines across the cover slabs ignite. The Deploy button draws its border and breathes. | Second phrase. | Finds the controls hint bottom-right. |
 | 5 to 6 s | Clicks Deploy. The blur drops, the mouse locks, HUD panels slide in with a stagger. | Shield-recharge sting; combat bus armed, silent. | "Oh, nice." |
 | 6 to 9 s | "WAVE 1" with the three second countdown. The sun sits low behind the ring. | Chant continues; a low string drone joins. | Looks up. This is the screenshot. |
-| 9 to 10 s | Three skimmers descend from six meters on the 26 m ring, invulnerable for one second. | Drop impacts. | Raises the rifle; one test shot shows kick, tracer and muzzle light. |
+| 9 to 10 s | Three drop pods fall onto the 26 m ring over 1.5 s; the skimmers are invulnerable until they land. | Drop impacts. | Raises the rifle; one test shot shows kick, tracer and muzzle light. |
 | 10 to 14 s | Skimmers close at 7 m/s with lateral jitter, fanning out. | Hover whine rising. | Picks one; first hit flashes it. |
 | 14 to 15 s | Second shot. First kill: 50 ms hit-stop, squash and tilt, kill ring, sparks, plus 100. | Kill chime, first drum. | Grins. |
 | 15 to 22 s | Two skimmers reach 2 m and zap for 12 every 0.9 s. The hex lattice flares on each hit. | Glassy FM shield hits. | Strafes and kills the second. |
@@ -52,7 +52,7 @@ settles back into calm.
 
 ## One beat per wave
 
-The composition per wave is the first five rows of the roster in
+The composition per wave is the five-row roster in
 design-doc.md. The names and the pacing windows come from the research
 note; the beats are the MLP items that make each wave different.
 
@@ -60,9 +60,9 @@ note; the beats are the MLP items that make each wave different.
 | - | ---- | ----- | ---------- |
 | 0:30 to 1:30, Scouts | Three skimmers. The player learns two shots per kill and the shield recharge. | Calm bus, percussion stinger on the first kill. | Confidence. |
 | 1:30 to 2:45, The Leader | Four skimmers and the first strider, which lands last with an idle posture (MLP 8). Its lens goes white before each bolt. When it dies, every skimmer flees with a bark (MLP 3). | Horn stinger on the strider; a bark on the flee. | "They noticed." The first spectacle, before minute three. |
-| 2:45 to 4:30, Fallback | Five skimmers and a strider that takes firing points behind cover (MLP 5) and falls back when pushed. | Combat bus full; the chant drops out. | Patience; the player hunts rather than holds. |
-| 4:30 to 6:30, The Push | Six skimmers and two striders. The first bounced grenade sees a strider dive (MLP 4). The shield breaks at least once, the enemies ease off (MLP 1). | Chant returns under percussion. | "It let me breathe." |
-| 6:30 to 8:00, Last Stand | Seven skimmers and two striders. The player is low on grenades and health never came back. | Everything in the mix. | Stakes. |
+| 2:45 to 4:30, Fallback | Five skimmers and two striders that take firing points behind cover (MLP 5) and fall back when pushed. | Combat bus full; the chant drops out. | Patience; the player hunts rather than holds. |
+| 4:30 to 6:30, The Push | Six skimmers and three striders. The first bounced grenade sees a strider dive (MLP 4). The shield breaks at least once, the enemies ease off (MLP 1). | Chant returns under percussion. | "It let me breathe." |
+| 6:30 to 8:00, Last Stand | Six skimmers and three striders, one armoured at three times the health; the wave ends when it falls. The player is low on grenades and health never came back. | Everything in the mix. | Stakes. |
 
 ## The victory tableau
 
@@ -133,10 +133,10 @@ Pipeline notes, from cutting it on a software GPU:
   are cut at their final timeline position, so the identical audio on both
   sides of each crossfade sums back to one continuous choir.
 - The large soft discs in the daytime frames are the airborne dust motes
-  (`size: 3` in `src/render/scene.ts`, scaled by `300 / -mv.z` in
+  (then `size: 3` in `src/render/scene.ts`, since tuned to 0.09, scaled by `300 / -mv.z` in
   `src/render/particles.ts`), which become hundreds of pixels wide within a
-  meter of the eye. They are a renderer setting, not a capture artifact;
-  the reel is re-cut with `--force` once that is tuned.
+  meter of the eye. They were a renderer setting, not a capture artifact;
+  a re-cut from the tuned build uses `--force`.
 
 ```bash
 pnpm build

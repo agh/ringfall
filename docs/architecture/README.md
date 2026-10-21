@@ -108,9 +108,10 @@ forbids, so the diagrams cannot show a dependency the architecture does not
 allow.
 
 Two shapes are worth knowing before opening the file. In the core,
-`game.ts` is the hub that imports every other simulation module and nothing
+`game.ts` is the hub that imports every simulation system and nothing
 imports it back except the bot, the playtest and the presentation layers;
-the leaves are `vec3.ts`, `rng.ts` and `raycast.ts`. In the renderer,
+the leaves are `vec3.ts`, `rng.ts`, `vitality.ts`, `records.ts` and
+`settings.ts`. In the renderer,
 `scene.ts` is the hub that owns the sub-renderers, `particles.ts` is the
 shared pool that the environment, pickups and weapons draw into, and every
 module imports three.js directly.
@@ -156,7 +157,7 @@ position, pickups are taken before the trigger is read so a fresh weapon
 can fire in the same step, grenades burst before enemies move, bolts fly
 after enemies have fired them, and the wave system sees the step's deaths.
 
-![One tick: the guard, the draft, the eight systems in order, vitality, and the freeze](render/tick.png)
+![One tick: the guard, the draft, the ten systems in order, vitality, and the freeze](render/tick.png)
 
 Source: [diagrams/tick.mmd](diagrams/tick.mmd).
 
@@ -195,10 +196,11 @@ runs the same scripts.
 | `pnpm demo` | Films seed 7 and scores it into `demo.mp4` |
 
 The one workflow, `.github/workflows/ci.yml`, runs eight independent gate
-jobs on every push and pull request; a pull request push cancels a
+jobs on every pull request and every push to `main`; a pull request push cancels a
 superseded run, a push to `main` always runs to completion. Two more jobs,
 Pages build and Pages deploy, run only on a push to `main` and only after
-every gate except the browser smoke tests has passed, so a merge never
+every gate except the luminance gate and the browser smoke tests has
+passed (#100), so a merge never
 publishes a build that failed a gate. Every action is pinned to a commit
 SHA and checkouts do not persist credentials; the deploy job is the only
 one with write permission.
@@ -207,13 +209,13 @@ one with write permission.
 | --- | ----- | -------- |
 | Lint and type check | Biome, markdownlint, strict TypeScript | none |
 | Unit tests | Every core rule and the coverage thresholds in `vitest.config.ts` | `coverage` |
-| Browser smoke tests | The built page loads, starts, advances, moves on keys, no page errors | `playwright-report` on failure |
+| Browser smoke tests | The built page loads, starts, advances, moves on keys, no page errors | `playwright-traces` (the `test-results/` directory) on failure |
 | Luminance gate | Ten seeded frames within the mean and blob budgets in `scripts/frames.mjs` | `frames` |
 | Production build | `vite build` succeeds | `dist` |
 | Balance gate | Twenty seeded games per profile within `tests/balance/gate.ts` | `balance-report`, also appended to the job summary |
 | Docs hygiene | Frontmatter, typos, Vale, internal links; external links advisory | none |
-| Security and workflow hygiene | `pnpm audit`, actionlint, zizmor and gitleaks, each pinned by checksum | none |
-| Pages build | `main` only, after the gates: `pnpm build` and `upload-pages-artifact` | `github-pages` |
+| Security and workflow hygiene | `pnpm audit`, actionlint, zizmor and gitleaks; actionlint and gitleaks pinned by checksum, zizmor by version | none |
+| Pages build | `main` only, after the fast gates: `pnpm build` and `upload-pages-artifact` | `github-pages` |
 | Pages deploy | `main` only, after Pages build: `deploy-pages` with `pages: write` and an OIDC token | the live site |
 
 ![Build and delivery: the eight gate jobs, the two Pages jobs behind them, and the local recorder, reel and documentation pipelines](render/build.png)
@@ -243,7 +245,7 @@ Each architecture decision record and each row of the
 | Local storage | Personal bests stay in the browser; missing or corrupt storage is a clean slate | [decisions.md](../decisions.md), "Keep personal bests in the browser's local storage" |
 | Browser smoke tests | The smoke test waits on simulation time, not on a wave, and idle title rendering is throttled | [decisions.md](../decisions.md), "Make the browser smoke test wait on simulation time" |
 | Post stack | Bloom threshold above 1.0 in HDR, ACES tone mapping at a fixed exposure | [decisions.md](../decisions.md), "Keep the bloom threshold above 1.0" |
-| Wave system | Eight uniform waves from a formula with `FINAL_WAVE` as the lever | [decisions.md](../decisions.md), "Ship eight uniform waves" |
+| Wave system | Five named beats (`WAVE_BEATS`) with drop pods and a victory tableau, superseding the eight-wave formula (#57) | [decisions.md](../decisions.md), "Ship eight uniform waves" (overruled by #57) |
 | Environment | The ring is a torus the player stands on, so the arc rises on both horizons | [decisions.md](../decisions.md), "Make the ring a torus" |
 
 ## Invariants and constraints

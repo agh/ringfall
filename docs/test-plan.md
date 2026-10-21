@@ -105,8 +105,8 @@ issue #12, halving rifle damage from 20 to 10, under the eight-wave
 formula: there it moved steady wins from 15% to 5%, steady waves from 5.35
 to 4.35, and reckless wins from 0% to 25% (steady accuracy rose to 57%, so
 accuracy is not a damage signal). Each margin is about half of that shift.
-The margins have not been re-measured under the five beats; that is open
-in issue #12. The reckless bound's original intent ("never retreating must
+The margins have not been re-measured under the five beats; issue #12 is
+closed and no issue tracks that re-measurement. The reckless bound's original intent ("never retreating must
 not become the way to win") does not hold under the compositions #8
 specifies: the reckless profile wins 85% of its games. Issue #63 holds
 that question.
@@ -130,7 +130,7 @@ The thresholds live in `tests/balance/gate.ts`; the report shape
 `src/core/playtest.ts`. Issue #12 asked for 60% steady wins and a five to
 nine minute median run; the five beats meet the first (85%) and miss the
 second (the median won run is under two minutes), so the gate holds what
-the game does today and the run-length target stays with issue #8.
+the game does as of 2026-10-21 and the run-length target stays with issue #8.
 
 ## The "I played it" layer
 

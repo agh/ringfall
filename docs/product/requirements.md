@@ -43,11 +43,11 @@ competes with them.
 
 The player stands at the center of a 60 m walled arena among sixteen cover
 blocks. After a three second countdown a wave descends on a 26 m ring
-around them, each enemy taking one invulnerable second to land. Skimmers
+around them, each enemy taking 1.5 invulnerable seconds to land. Skimmers
 close at 7 m/s and zap for 12 damage every 0.9 s; striders hold 8 to 16 m
 and fire bolts for 18 damage every 1.4 s. Damage strips a 100 point shield
 first and 100 points of health second. When the shield breaks the screen
-flares and the enemies ease off; four seconds without damage starts a
+flares (the enemies easing off is #4, not yet built); four seconds without damage starts a
 35 point per second recharge, and the player re-engages, often with one of
 four bouncing grenades. Clearing the wave pauses the arena for 2.5 s, then
 the next wave arrives with something new, until the final wave ends on a
@@ -74,9 +74,10 @@ confirmed in the demo film (visual review).
 
 **S3.** As a first-time player, I kill a skimmer in two rifle shots inside
 the first wave so that the gun feels good before I am in danger. Accepted
-when unit tests prove 20 damage against 40 health and the 50 ms hit-stop
-event fires on the kill, and the steady bot clears wave one on every tested
-seed (playtest bot).
+when unit tests prove 20 damage against 40 health and the `enemyKilled`
+event that `src/main.ts` turns into the 50 ms hit-stop, and the steady bot
+clears wave one on most tested seeds (playtest bot; 20 of 20 in the
+balance report).
 
 ### The shield loop
 
@@ -86,8 +87,9 @@ prove damage ordering and that health never regenerates.
 
 **S5.** As a player whose shield has just broken, I feel the game pause
 and the enemies ease off so that I know to break contact. Accepted when a
-unit test proves the shield-break event with its 120 ms hit-stop and the
-aggression drop, and visual review confirms the flare and vignette.
+unit test proves the `shieldBroken` event (`src/main.ts` turns it into the
+120 ms hit-stop), the aggression drop is #4, and visual review confirms the
+flare and vignette.
 
 **S6.** As a player behind cover, I watch the shield return after four
 seconds at 35 per second so that I learn the rhythm. Accepted when unit
@@ -162,7 +164,7 @@ values in local storage.
 
 ## Open questions
 
-Whether five named waves replace the eight uniform ones or sit on top of
-them is undecided; design-doc.md lists a `FINAL_WAVE` constant as the lever.
+Five named waves replaced the eight uniform ones (PR #57); `FINAL_WAVE` and
+`WAVE_BEATS` in `src/core/waves.ts` hold the shape.
 Whether the strider should lead its shots is open in design-doc.md and
 affects how dodgeable S7 feels.

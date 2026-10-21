@@ -35,7 +35,7 @@ const RESPONSIBILITIES = {
   'src/main.ts':
     'Fixed 60 Hz accumulator loop, hit-stop, overlay and pointer-lock lifecycle, settings panel, the `?record` capture hook',
   'src/core/game.ts':
-    '`GameState`, `InputFrame`, the `GameEvent` union and `stepGame`: one simulation tick as a draft, eight systems in order, then a frozen state',
+    '`GameState`, `InputFrame`, the `GameEvent` union and `stepGame`: one simulation tick as a draft, ten systems in order, then a frozen state',
   'src/core/enemy.ts':
     'Enemy state machine (`spawning`, `chase`, `attack`, `flee`, `dead`), skimmer temperaments, the rout and its bark lines',
   'src/core/weapon.ts':

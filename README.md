@@ -97,6 +97,7 @@ tests in real Chromium.
 | [docs/launch-checklist.md](docs/launch-checklist.md) | Go or no-go before a release tag |
 | [docs/glossary.md](docs/glossary.md) | Glossary |
 | [docs/audit.md](docs/audit.md) | Adversarial audits: findings and outcomes |
+| [docs/threat-model.md](docs/threat-model.md) | Trust boundaries, threats per boundary, controls and gaps, admin items |
 
 The backlog lives in GitHub Issues: the MLP epic (#2) and the Later epic (#3).
 
@@ -115,7 +116,7 @@ pnpm demo                         # film seed 7 to demo.mp4 (needs pnpm build an
 ## Develop
 
 ```bash
-pnpm lint           # Biome (CI mode) and markdownlint
+pnpm lint           # Biome (CI mode), markdownlint, then stylelint and prettier over CSS
 pnpm typecheck      # tsc --noEmit, strict
 pnpm test           # Vitest unit tests and the balance gate, with V8 coverage thresholds
 pnpm test:e2e       # Playwright smoke tests against a production preview
