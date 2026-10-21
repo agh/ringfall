@@ -175,7 +175,7 @@ and ring surface are procedural canvases).
 - Calm and combat are two gain buses over one clock. The drone never stops;
   the beat only ever joins it. Crossfades are ramps, never cuts.
 
-## Developer landing (github.com/agh/hack)
+## Developer landing (github.com/agh/ringfall)
 
 - One-liner: "Ringfall: a browser-native arena shooter. One ring, one dawn,
   two kinds of thing that want you dead. TypeScript + three.js, zero

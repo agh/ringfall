@@ -37,7 +37,7 @@ Only the latest release is supported; older releases are not patched.
 Security vulnerabilities **MUST NOT** be reported through public issues.
 
 Report privately at
-<https://github.com/agh/hack/security/advisories/new>. Do not open a
+<https://github.com/agh/ringfall/security/advisories/new>. Do not open a
 public placeholder issue.
 
 **Why**: the private advisory thread protects players before a fix.
