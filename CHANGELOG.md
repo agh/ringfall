@@ -116,7 +116,7 @@ and this project adheres to
   the recorder refuses frame rates that do not divide 60, as the audit
   claimed it already did; the purity test and the Biome denied-globals
   list cover `crypto`, `globalThis`, `structuredClone`, `Intl`, timers,
-  storage and `console`; the Pages deploy waits for a green CI run; the
+  storage and `console`; the Pages deploy is a job in the CI workflow that runs only after every other job is green; the
   browser smoke tests fail on page errors in every test and check for a
   WebGL 2 context; `tests/scratch/` is ignored by git, Biome and tsc.
 
