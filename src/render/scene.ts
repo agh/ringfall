@@ -6,6 +6,7 @@ import type { Vec3 } from '../core/vec3';
 import { WAVE_COUNTDOWN, waveAtmosphere } from '../core/waves';
 import { ARENA_HALF_SIZE, type Arena } from '../core/world';
 import { disposeTree } from './dispose';
+import { Dropship } from './dropship';
 import { type EnemyRig, makeEnemyRig } from './enemies';
 import { createEnvironment, type Environment } from './environment';
 import { LightPool } from './lights';
@@ -202,6 +203,7 @@ export class SceneRenderer {
   /** Wave whose atmosphere the environment was last told to blend towards. */
   private lastAtmosphereWave = 0;
   private readonly particles = new ParticleSystem();
+  private readonly dropship = new Dropship(this.dynamic);
   private readonly watcherBeams = new WatcherBeamLayer();
   private readonly environment: Environment;
   private readonly enemies = new Map<number, EnemyRig>();
@@ -438,6 +440,7 @@ export class SceneRenderer {
   handle(events: readonly GameEvent[], now: number): void {
     this.weaponViewmodels.handle(events, now, this.camera);
     this.pickupMeshes.handle(events, now);
+    this.dropship.handle(events, now);
     this.watcherBeams.handle(events, now);
     for (const e of events) {
       switch (e.type) {
@@ -497,16 +500,22 @@ export class SceneRenderer {
     this.syncGrenades(state, now);
     this.pickupMeshes.sync(state, now);
     this.weaponViewmodels.update(now, state);
+    this.dropship.update(now);
     this.updateEffects(now);
     this.particles.update(now);
 
-    // Airborne dust around the player: a few slow motes per frame, lit by bloom at the edges.
-    if (renderRandom() < 0.6) {
+    // Airborne dust around the player: a hint of drift, never a disc. The rig sets motes per
+    // second, their life and brightness per time of day and weather. The enemy rigs take the
+    // same rig's night factor here, the one place render() reads the blend each frame.
+    const atmosphere = this.environment.lighting();
+    for (const rig of this.enemies.values()) rig.setNight?.(atmosphere.night);
+    const motes = Math.floor(atmosphere.dustRate * frameDt + renderRandom());
+    for (let i = 0; i < motes; i += 1) {
       const e = playerEye(state.player);
-      const dust = this.environment.lighting().dust;
-      // Never closer than 2.5 m: a size-3 mote a metre away would be a 900 px disc.
+      // Spawned 3.5 to 10 m out at size 0.09: the largest a mote can draw is 0.09 * 1.4 * 300
+      // / 3.5 = 11 px, and most are 2 to 5 px.
       const angle = renderRandom() * Math.PI * 2;
-      const radius = 2.5 + renderRandom() * 5;
+      const radius = 3.5 + renderRandom() * 6.5;
       this.particles.burst(
         {
           at: {
@@ -515,11 +524,11 @@ export class SceneRenderer {
             z: e.z + Math.sin(angle) * radius,
           },
           count: 1,
-          color: scratchDust.setHex(DUST_COLOR).multiplyScalar(dust),
-          colorEnd: scratchDustEnd.setHex(DUST_COLOR_END).multiplyScalar(dust),
+          color: scratchDust.setHex(DUST_COLOR).multiplyScalar(atmosphere.dust),
+          colorEnd: scratchDustEnd.setHex(DUST_COLOR_END).multiplyScalar(atmosphere.dust),
           speed: 0.25,
-          life: 5,
-          size: 3,
+          life: atmosphere.dustLife,
+          size: 0.09,
           gravity: -0.05,
         },
         now,

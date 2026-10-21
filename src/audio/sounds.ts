@@ -166,6 +166,10 @@ export const SOUNDS: Readonly<Record<SoundKey, Sound>> = {
   // A routed skimmer's squeal: a rising chirp that answers the strider's death. The flee itself
   // (`enemyFled`) is silent; the bark carries the sound so a pack of three squeals three times.
   enemyBark: { voices: [tone('sine', 900, 1500, 0.14, 0.18, { jitter: true })] },
+  /** The dropship passing over: a low engine sweep that falls as it recedes, under a rumble. */
+  dropPod: {
+    voices: [tone('sawtooth', 110, 38, 1.8, 0.22), noise(1.2, 0.28, 220, { q: 1.4 })],
+  },
 };
 
 /** The table entry for an event, or null for an event in `SILENT`. */

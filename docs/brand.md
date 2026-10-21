@@ -157,8 +157,9 @@ Anything smaller is decoration and must not carry gameplay meaning.
 shared datum (the top edge of every cover slab). One horizontal line across
 every block is the "manufactured by the same people" tell.
 
-**The ring.** Real ringworlds are too thin to see as a band
-([Niven][ringworld]; [Banks][orbital]). We cheat for readability: the arc is
+**The ring.** Fiction's rings dwarf ours: Niven's is 1.6 million km wide on
+a 299 million km diameter, and a Culture Orbital is about 3.7 million km
+across ([Niven][ringworld]; [Banks][orbital]). We cheat for readability: the arc is
 6 km in radius with a 360 m tube, sunk 820 m below the horizon so it rises
 from both sides and crosses overhead, with ocean, land and cloud bands on
 its inner face and a bright rim.

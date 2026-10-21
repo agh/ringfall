@@ -17,9 +17,44 @@ and this project adheres to
 - `window.ringfallDebug` exists only on the dev server and under `?record`
   (#52, item 16). The failed-e2e artifact now carries the HTML report and
   the traces (#52, item 14).
+- Content Security Policy and `no-referrer` meta tags in `index.html`; the
+  dev server relaxes only `style-src` and `connect-src` for hot reload.
+- `?seed` is parsed by `parseSeed` (decimal uint32 only) and personal bests
+  are re-validated field by field with a 1 KB cap before `JSON.parse`, so
+  hostile query strings and storage values cannot stall or corrupt the end
+  card (`src/core/rng.ts`, `src/core/records.ts`).
+- Hidden production source maps, a 24 h release cooldown and no lifecycle
+  scripts for pnpm, `engine-strict`, a `pnpm audit --prod` script, grouped
+  Dependabot updates with a seven-day cooldown, `markdownlint-cli2` 0.24.0.
+- Per-job least-privilege tokens in the Pages deploy workflow; CI runs on
+  `main` are no longer cancelled by the next push.
+- Threat model in `SECURITY.md`.
 
 ### Added
 
+- The dropship moment (#58): when a wave's first pod launches, a dark
+  Hull craft with a Rose underlight crosses the arena in 4 s, in over the
+  wall behind that pod, over the centre and out the far side. Each
+  `dropPod` falls as a capsule from the craft's altitude to its landing
+  point over the 1.5 s lead and raises a Slate dust ring on touchdown.
+  New `src/render/dropship.ts`, one hook in `scene.ts`, and a low pass-by
+  sweep for `dropPod` in the sound table. Presentation only: spawn times
+  and positions per seed are unchanged.
+- Five named wave beats (Scouts, The Leader, Fallback, The Push, Last
+  Stand) replace the eight-wave formula; `waveStarted` carries the name and
+  the HUD announces it. Enemies arrive by drop pod (`dropPod` event 1.5 s
+  before they go active; The Leader's strider lands 4 s late). The Last
+  Stand ends when its armoured strider (3x health) falls: `victory` carries
+  kills and shield breaks, the survivors flee off the arena, and the state
+  holds a 5 s tableau before the run is won. `scripts/wave-table.mjs`
+  generates the design doc's composition table from the constants.
+
+- An architecture package under `docs/architecture/`: C4 context and
+  container diagrams, component diagrams and a module map generated from the
+  import graph, an event catalogue generated from the `GameEvent` union and
+  its consumers, the frame and tick data flows, the build and delivery view,
+  a decision index and the invariants, with `pnpm docs:architecture` to
+  regenerate and render and a unit test that fails on drift (#79).
 - A unit test that fails if the pre-rename repository path reappears outside
   `docs/journey/`, and a runbook note on the rename order (#70).
 
@@ -86,6 +121,13 @@ and this project adheres to
 
 ### Changed
 
+- Night and weather readability (#31): dust motes are a hint rather than
+  white discs (size 0.09, 3.5 to 10 m out, at most 11 px at 720p) with
+  rate, life and brightness per time of day and weather; rain streaks are
+  brighter and longer with larger splashes; enemy rigs own their materials
+  and lift their emissives (skimmer ring and core, strider lens and muzzle)
+  with a night factor from the atmosphere rig, so one strider charging no
+  longer whitens every strider's lens.
 - The repository no longer names the console shooter franchise it was
   inspired by outside the cited titles and URLs under `docs/research/`
   (ADR-0003). The research note on feel and the MLP cut dropped the name
@@ -130,19 +172,16 @@ and this project adheres to
     temporary directory, and a resumed reel retakes its last frame (T10).
   - The contributing guide and the issue chooser point at the custom
     domain (#52, item 18).
-
-- Content Security Policy and `no-referrer` meta tags in `index.html`; the
-  dev server relaxes only `style-src` and `connect-src` for hot reload.
-- `?seed` is parsed by `parseSeed` (decimal uint32 only) and personal bests
-  are re-validated field by field with a 1 KB cap before `JSON.parse`, so
-  hostile query strings and storage values cannot stall or corrupt the end
-  card (`src/core/rng.ts`, `src/core/records.ts`).
-- Hidden production source maps, a 24 h release cooldown and no lifecycle
-  scripts for pnpm, `engine-strict`, a `pnpm audit --prod` script, grouped
-  Dependabot updates with a seven-day cooldown, `markdownlint-cli2` 0.24.0.
-- Per-job least-privilege tokens in the Pages deploy workflow; CI runs on
-  `main` are no longer cancelled by the next push.
-- Threat model in `SECURITY.md`.
+- Documentation sweep of the second audit's deferred findings (#54): the
+  VFX rules quoted from a live source, a login-walled course link dropped,
+  the ringworld sentence restated from its sources, two journey frames
+  renamed to the minute captured, and the freeze counts re-read after the
+  last merges.
+- Design and UX review (#53): HUD labels and card copy never below 14 px and
+  scale to 4K; the card is a dialog that names Victory, Defeat or Paused and
+  takes focus when it returns; low ammo, an empty magazine and a kill are
+  signalled in words or size, not colour alone; a
+  `prefers-reduced-motion` rule stops the looping pulses.
 
 - Still too much flare after the bloom prefilter: bloom strength and radius
   halved again (0.15, 0.25), the flare ghosts at 0.3 opacity and the core
@@ -160,7 +199,7 @@ and this project adheres to
   the recorder refuses frame rates that do not divide 60, as the audit
   claimed it already did; the purity test and the Biome denied-globals
   list cover `crypto`, `globalThis`, `structuredClone`, `Intl`, timers,
-  storage and `console`; the Pages deploy waits for a green CI run; the
+  storage and `console`; the Pages deploy is a job in the CI workflow that runs only after every other job is green; the
   browser smoke tests fail on page errors in every test and check for a
   WebGL 2 context; `tests/scratch/` is ignored by git, Biome and tsc.
 

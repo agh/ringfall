@@ -64,21 +64,20 @@ to the job summary.
 
 ### Baseline
 
-The run the thresholds are derived from, printed by `pnpm balance` at
-`84a835b`, the merge of the skimmer temperaments (#14) onto the rout (#40):
+The run the thresholds are derived from, printed by `pnpm balance` on the
+branch that cut Chapter 1 to five named waves (#8) merged onto the rout
+(#40) and the skimmer temperaments (#47), seeds 100 to 119, 480 s cap:
 
-| Profile | Win rate | Mean waves cleared | Mean seconds | Accuracy | Shield breaks | Mean clear per wave (s) |
-| ------- | -------- | ------------------ | ------------ | -------- | ------------- | ----------------------- |
-| Steady | 15% | 5.05 | 241 | 47% | 0.70 | 4, 12, 14, 20, 22, 26, 28 |
-| Reckless | 15% | 5.15 | 279 | 51% | 0.90 | 4, 11, 11, 20, 20, 20, 19 |
+| Profile | Win rate | Mean waves cleared (of 5) | Mean seconds | Accuracy | Shield breaks | Mean clear per wave (s) |
+| ------- | -------- | ------------------------- | ------------ | -------- | ------------- | ----------------------- |
+| Steady | 75% | 4.35 | 152 | 52% | 0.10 | 4, 13, 14, 20 |
+| Reckless | 70% | 4.55 | 127 | 43% | 0.45 | 4, 14, 19, 23 |
 
-The gate's first baseline, on `main` at the commit that introduced it, was
-steady 15% / 5.35 waves / 245 s / 39% / 1.15 breaks and reckless 0% / 4.20
-waves / 254 s / 42% / 0.75 breaks; every row but the reckless win rate
-still carries the limits derived from it, which this run stays inside.
-
-This supersedes the earlier table in `docs/journey/README.md` (0% wins,
-3.40 waves), which was printed before the wave and weapon changes landed.
+This supersedes the eight-wave baseline the gate was introduced with
+(steady 15% wins, 5.35 waves of 8, 39% accuracy; reckless 0% wins, 4.20
+waves), the reckless re-derivation at `84a835b` for the temperaments (15%
+wins), both of which could not hold once `FINAL_WAVE` became 5, and the
+earlier table in `docs/journey/README.md` (0% wins, 3.40 waves).
 
 ### Thresholds
 
@@ -90,33 +89,37 @@ so the margin covers design drift, not sampling noise. Moving a limit is a
 design decision that belongs in the same pull request as the tuning
 change, with the new baseline in this table.
 
-The margins are sized against the reference breaking change named in
-issue #12, halving rifle damage from 20 to 10. On the baseline seeds that
-moves steady wins from 15% to 5%, steady waves from 5.35 to 4.35, and
-reckless wins from 0% to 25% (steady accuracy rises to 57%, so accuracy is
-not a damage signal). Each margin is about half of that shift: the
-reference change fails three bounds with room, and a drift of one game or
-a fraction of a wave from an unrelated change does not fail any.
+The margins were sized against the reference breaking change named in
+issue #12, halving rifle damage from 20 to 10, under the eight-wave
+formula: there it moved steady wins from 15% to 5%, steady waves from 5.35
+to 4.35, and reckless wins from 0% to 25% (steady accuracy rose to 57%, so
+accuracy is not a damage signal). Each margin is about half of that shift.
+The margins have not been re-measured under the five beats; that is open
+in issue #12. The reckless bound's original intent ("never retreating must
+not become the way to win") does not hold under the compositions #8
+specifies: the reckless profile wins 70% of its games. Issue #63 holds
+that question.
 
 | Profile | Metric | Bound | Limit | Baseline | Margin |
 | ------- | ------ | ----- | ----- | -------- | ------ |
-| Steady | Win rate | at least | 10% | 15% | one game of twenty; halving rifle damage costs two |
-| Steady | Mean waves cleared | at least | 4.85 | 5.35 | half a wave; halving rifle damage costs one |
-| Steady | Accuracy | at least | 29% | 39% | ten points |
-| Steady | Slowest mean wave clear | at most | 50 s | 25 s | twice the slowest baseline wave |
-| Reckless | Win rate | at most | 25% | 15% | two games of twenty above the 15% measured at 84a835b; the temperaments stagger pack arrival and a never-retreating bot kills staggered skimmers one at a time (sweeps over flanker ratio and skittish hold all land 15 to 30%) |
-| Reckless | Mean waves cleared | at least | 3.70 | 4.20 | half a wave |
+| Steady | Win rate | at least | 70% | 75% | one game of twenty |
+| Steady | Mean waves cleared | at least | 3.85 | 4.35 | half a wave of five |
+| Steady | Accuracy | at least | 42% | 52% | ten points |
+| Steady | Slowest mean wave clear | at most | 40 s | 20 s | twice the slowest baseline wave |
+| Reckless | Win rate | at most | 80% | 70% | two games of twenty; drift only, see above and #63 |
+| Reckless | Mean waves cleared | at least | 4.05 | 4.55 | half a wave of five |
 
 The original intent of the reckless row, that never retreating must not
-become the way to win, is now expressed as reckless not exceeding steady
-by more than two games of twenty; the gate has no cross-profile metric
-yet, so that bound is a follow-up issue rather than a row.
+become the way to win, would be a cross-profile bound (reckless not
+exceeding steady by more than two games of twenty); the gate has no
+cross-profile metric yet, so that is issue #63 rather than a row.
 
 The thresholds live in `tests/balance/gate.ts`; the report shape
 (`BalanceReport`, `GateThreshold`, `evaluateGate`) in
 `src/core/playtest.ts`. Issue #12 asked for 60% steady wins and a five to
-nine minute median run; the baseline is nowhere near that, so the gate
-holds what the game does today and the targets stay with issue #8.
+nine minute median run; the five beats meet the first (75%) and miss the
+second (the median won run is under two minutes), so the gate holds what
+the game does today and the run-length target stays with issue #8.
 
 ## The "I played it" layer
 

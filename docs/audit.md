@@ -9,7 +9,9 @@ created: 2026-10-21
 
 # Adversarial audit
 
-> [spec](spec.md) · [evolution](evolution.md) · [journey](journey/README.md)
+> [Ringfall](../README.md) > [Specification](spec.md) > Audit
+
+See also [evolution](evolution.md) and the [journey](journey/README.md).
 
 Late in the morning an unanchored reviewer was given the whole repository
 and asked to find the tics, shortcuts, and hollow patterns that mark
@@ -113,13 +115,14 @@ procedures.
 | Medium | Journey: wrong-calls list missing two calls the log narrates; "an hour and a half left" at 16:05; "thirty-three by the end"; PR #1 times off by a minute; three film frames never embedded; decisions index claimed a tag that does not exist | Fixed |
 | Medium | Brand document still said "source of truth"; two research notes graded the project's own work; concept proposal said the demo has an ending | Fixed |
 | Medium | Dead screenshake devlog and quakejs.com links | Fixed: removed, attribution kept |
-| Medium | Riot VFX guide redirects to a homepage, a UW course link needs a login, three bungie.org and Princeton pages reset the connection from the sandbox | Deferred: needs verification or a Wayback capture from an unproxied network |
-| Medium | Every document fails the crefft frontmatter schema; four carry `approved:` with no reviewers on a draft | Deferred to #43, which owns the schema |
+| Medium | Riot VFX guide redirects to a homepage, a UW course link needs a login, three bungie.org and Princeton pages reset the connection from the sandbox | Fixed after the freeze: the VFX rules are quoted from a live summary, the login-walled course link is dropped; the bungie.org and Princeton pages are unreachable from the cloud container, so the formant numbers were confirmed against a second copy of the table and the two quotations stay unverified |
+| Medium | Every document fails the crefft frontmatter schema; four carry `approved:` with no reviewers on a draft | Fixed by #59: schema and `pnpm docs:frontmatter`, 24 of 24 valid |
 | Low | Command comments, controls table, "two research reports", research MLP numbering, Griesemer row dropping the cover condition, misattributed trailer structure and requirement tagging, the fleeing-minion quotation's speakers, "every claim carries a source" | Fixed |
-| Low | Journey images named `1535-*` for frames committed at 15:29; a brand sentence on ringworld width the citations do not support; the complexity rule still at warn (seven warnings) | Open |
+| Low | Journey images named `1535-*` for frames committed at 15:29; a brand sentence on ringworld width the citations do not support; the complexity rule still at warn (seven warnings) | Images renamed `1529-*` and the sentence restated from the sources after the freeze; the complexity rule stays open |
 
 Seventy findings, fifty-six fixed in the pull request for #54, fourteen
-deferred or verified as not needing a change.
+deferred or verified as not needing a change. A sweep after the freeze
+closed the deferred ones; the complexity rule stays open.
 
 ### The tics to add to the list
 

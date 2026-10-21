@@ -37,6 +37,7 @@ const EVENT_TYPES = Object.keys({
   enemyKilled: true,
   enemyFled: true,
   enemyBark: true,
+  dropPod: true,
   playerDamaged: true,
   shieldBroken: true,
   boltFired: true,

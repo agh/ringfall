@@ -1,0 +1,61 @@
+%%{init: {"flowchart": {"curve": "basis"}} }%%
+flowchart LR
+  subgraph render["src/render/ (three.js)"]
+    render_dispose["dispose.ts"]
+    render_dropship["dropship.ts"]
+    render_enemies["enemies.ts"]
+    render_environment["environment.ts"]
+    render_lights["lights.ts"]
+    render_particles["particles.ts"]
+    render_pickups["pickups.ts"]
+    render_post["post.ts"]
+    render_random["random.ts"]
+    render_scene["scene.ts"]
+    render_watcher-rig["watcher-rig.ts"]
+    render_weapons["weapons.ts"]
+  end
+  render_enemies -.-> render_lights
+  render_enemies --> render_watcher-rig
+  render_environment -.-> render_particles
+  render_environment --> render_random
+  render_particles --> render_random
+  render_pickups -.-> render_particles
+  render_pickups --> render_weapons
+  render_scene --> render_dispose
+  render_scene --> render_dropship
+  render_scene --> render_enemies
+  render_scene --> render_environment
+  render_scene --> render_lights
+  render_scene --> render_particles
+  render_scene --> render_pickups
+  render_scene --> render_post
+  render_scene --> render_random
+  render_scene --> render_watcher-rig
+  render_scene --> render_weapons
+  render_watcher-rig -.-> render_enemies
+  render_watcher-rig -.-> render_lights
+  render_weapons -.-> render_lights
+  render_weapons -.-> render_particles
+  render_weapons --> render_random
+  core(["src/core/"])
+  three(["three.js"])
+  render_dispose -.->|"three"| three
+  render_dropship -->|"three"| three
+  render_dropship -->|"game, vec3, waves, world"| core
+  render_enemies -->|"three"| three
+  render_enemies -->|"enemy"| core
+  render_environment -->|"Sky, three"| three
+  render_environment -.->|"vec3, waves"| core
+  render_lights -->|"three"| three
+  render_particles -->|"three"| three
+  render_particles -.->|"vec3"| core
+  render_pickups -->|"three"| three
+  render_pickups -.->|"game, pickups, vec3, weapon"| core
+  render_post -->|"EffectComposer, OutputPass, RenderPass, ShaderPass, UnrealBloomPass, three"| three
+  render_random -->|"rng"| core
+  render_scene -->|"three"| three
+  render_scene -->|"enemy, game, grenade, vec3, waves, world"| core
+  render_watcher-rig -->|"three"| three
+  render_watcher-rig -->|"enemy, game, vec3, watcher"| core
+  render_weapons -->|"three"| three
+  render_weapons -->|"game, vec3, weapon"| core

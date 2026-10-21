@@ -1,0 +1,19 @@
+%%{init: {"flowchart": {"curve": "basis"}} }%%
+flowchart LR
+  player(["Player<br/>desktop browser, WebGL 2, pointer lock"])
+  agents(["Maintainer and coding agents<br/>pull requests, issues"])
+  subgraph ringfall["Ringfall (software system)"]
+    page["Static page<br/>index.html, one JS bundle, one stylesheet"]
+  end
+  pages[("GitHub Pages<br/>ringfall.alexhowells.com, agh.github.io/ringfall")]
+  fonts[("Google Fonts<br/>Chakra Petch, JetBrains Mono")]
+  storage[("Browser local storage<br/>personal bests, settings")]
+  repo[("GitHub repository<br/>agh/ringfall")]
+  ci["GitHub Actions<br/>CI gates, Pages deploy"]
+  player -->|"plays, sees, hears"| page
+  page -->|"served from"| pages
+  page -->|"two font families over HTTPS"| fonts
+  page -->|"reads and writes, same device only"| storage
+  agents -->|"push branches, open pull requests"| repo
+  repo -->|"every push and pull request"| ci
+  ci -->|"deploys dist/ from main"| pages

@@ -54,7 +54,7 @@ a friend. Each MLP item names that moment.
 | 5 | Firing points for striders | "They take positions." | Not started | #7 |
 | 6 | The ring overhead, dawn sky, terrain, fog | "Where am I?" | Done | n/a |
 | 7 | Procedural chant, calm and combat states, stingers | "What is that music?" | Partial (drone, states) | #9 |
-| 8 | Five named waves, drop-pods, victory tableau | "It had an ending." | Not started (eight uniform waves today) | #8 |
+| 8 | Five named waves, drop-pods, victory tableau | "It had an ending." | Partial (five beats, `dropPod` and `victory` events, tableau state in `src/core`; rendering follows) | #8 |
 | 9 | Title choreography and the Deploy moment | "Oh, nice." | Not started | #9 |
 | 10 | Brand compliance (fonts, tokens, banner) | Consistency, not a moment | Partial (fonts and tokens in HUD v2; the compliance pass is #10) | #10 |
 | 11 | Frame budget on an integrated GPU | It runs on the laptop in the room | Not measured | #11 |
@@ -63,6 +63,17 @@ a friend. Each MLP item names that moment.
 | 14 | Easter eggs: temperaments, sector number, crouch, switch | "IYKYK." | Core done (temperaments, Sector 117, crouch and bark, switch scoring); glyph, tint and chime are render and audio follow-ups | #14 |
 | 15 | Personal bests in the browser: this round against your previous best score, deepest wave, runs and clears | "I got further." | Done (`src/core/records.ts`, localStorage, nothing leaves the device) | n/a |
 | 16 | Six weapons, pickups during waves, two slots with a swap key | "What does this one do?" | Done (`src/core/weapon.ts`, `src/core/pickups.ts`) | #16 |
+
+### Review 2026-10-21 (#53)
+
+A five-reviewer design and user-experience pass over captured frames at
+1280x720 and 3840x2160 found the HUD labels at 9 to 12 px (checklist item 4
+says 14), no reduced-motion rule, no focus management on the card, a pause
+that looked like the title screen, and an end card that never said Victory
+or Defeat. Those are fixed. What the review left for the owner issues: the
+title choreography and Deploy moment (#9), the victory tableau and death
+camera (#8), the sun bloom hiding the reticle (renderer), and the settings
+toggles for shake and flash (#37).
 
 ## Later (explicit choices)
 

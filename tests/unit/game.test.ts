@@ -14,15 +14,27 @@ import {
   SECRET_SCORE,
   STARTING_GRENADES,
   stepGame,
+  TABLEAU_DURATION,
+  TABLEAU_SLOW_SECONDS,
+  TABLEAU_TIME_SCALE,
   TAUNT_BARK,
   TAUNT_RADIUS,
   TAUNT_WINDOW,
+  timeScaleOf,
 } from '../../src/core/game';
+
 import { createPickup, PICKUP_KINDS, WAVE_REWARD_DISTANCE } from '../../src/core/pickups';
 import { createRng } from '../../src/core/rng';
 import { distanceXZ, vec3 } from '../../src/core/vec3';
 import { WATCHER_CHARGE, WATCHER_COOLDOWN, WATCHER_STATS } from '../../src/core/watcher';
-import { WAVE_COUNTDOWN, waveComposition } from '../../src/core/waves';
+import {
+  DROP_POD_LEAD,
+  FINAL_WAVE,
+  LEADER_STRIDER_DELAY,
+  WAVE_COUNTDOWN,
+  waveBeat,
+  waveComposition,
+} from '../../src/core/waves';
 import { createWeapon, type WeaponKind } from '../../src/core/weapon';
 import { aabbFromCenter, placeSecret, SECRET_RADIUS } from '../../src/core/world';
 
@@ -85,11 +97,64 @@ describe('game', () => {
     expect(lookDirection(g.player).z).toBeCloseTo(-1);
   });
 
-  it('spawns the first wave after the countdown', () => {
+  it('spawns the first wave by drop pod after the countdown', () => {
     const { state, events } = run(createGame({ seed: 2 }), IDLE_INPUT, WAVE_COUNTDOWN + 0.1);
     expect(state.wave.phase).toBe('active');
     expect(state.enemies.length).toBe(3);
-    expect(events.some((e) => e.type === 'waveStarted')).toBe(true);
+    expect(state.pendingSpawns).toEqual([]);
+    const started = events.find((e) => e.type === 'waveStarted');
+    expect(started).toEqual({ type: 'waveStarted', number: 1, name: 'Scouts' });
+    const pods = events.filter((e) => e.type === 'dropPod');
+    expect(pods).toHaveLength(3);
+    for (const pod of pods) {
+      if (pod.type !== 'dropPod') continue;
+      const enemy = state.enemies.find((e) => e.id === pod.id);
+      expect(enemy?.kind).toBe(pod.kind);
+      expect(enemy?.position).toEqual(pod.at);
+      expect(enemy?.activeAt).toBeCloseTo(pod.activeAt);
+      expect(pod.leader).toBe(false);
+      // The pod is announced DROP_POD_LEAD before the enemy can act; it is invulnerable until then.
+      expect(pod.activeAt - (state.time - 0.1)).toBeCloseTo(DROP_POD_LEAD, 1);
+    }
+    expect(state.enemies.every((e) => e.state === 'spawning')).toBe(true);
+  });
+
+  it("lands The Leader's strider four seconds after its skimmers", () => {
+    const base = openGame();
+    const leader: GameState = {
+      ...base,
+      wave: { number: 2, phase: 'countdown', phaseEndsAt: base.time + WAVE_COUNTDOWN },
+    };
+    const early = run(leader, IDLE_INPUT, WAVE_COUNTDOWN + 0.1);
+    expect(early.events.find((e) => e.type === 'waveStarted')).toEqual({
+      type: 'waveStarted',
+      number: 2,
+      name: 'The Leader',
+    });
+    expect(early.state.enemies.map((e) => e.kind)).toEqual([
+      'skimmer',
+      'skimmer',
+      'skimmer',
+      'skimmer',
+    ]);
+    expect(early.state.pendingSpawns).toHaveLength(1);
+    expect(early.state.pendingSpawns[0]?.spawn.kind).toBe('strider');
+    expect(early.state.pendingSpawns[0]?.dropAt).toBeCloseTo(
+      WAVE_COUNTDOWN + LEADER_STRIDER_DELAY,
+      1,
+    );
+    // Killing the skimmers does not clear the wave while the strider is still inbound.
+    const skimmersDown: GameState = {
+      ...early.state,
+      enemies: early.state.enemies.map((e) => ({ ...e, state: 'dead' as const, diedAt: 3 })),
+    };
+    const late = run(skimmersDown, IDLE_INPUT, LEADER_STRIDER_DELAY);
+    expect(late.events.some((e) => e.type === 'waveCleared')).toBe(false);
+    const pod = late.events.find((e) => e.type === 'dropPod');
+    expect(pod?.type === 'dropPod' && pod.kind).toBe('strider');
+    expect(late.state.enemies.filter((e) => e.kind === 'strider')).toHaveLength(1);
+    expect(late.state.pendingSpawns).toEqual([]);
+    expect(late.state.wave.phase).toBe('active');
   });
 
   it('moves the player with WASD-style input relative to yaw', () => {
@@ -538,15 +603,99 @@ describe('game', () => {
     expect(events.some((e) => e.type === 'pickupSpawned')).toBe(false);
   });
 
-  it('declares victory when the final wave is cleared', () => {
+  it('spawns the Last Stand with one armoured leader at triple health', () => {
     const base = openGame();
+    const last: GameState = {
+      ...base,
+      wave: { number: FINAL_WAVE, phase: 'countdown', phaseEndsAt: base.time + WAVE_COUNTDOWN },
+    };
+    const { state, events } = run(last, IDLE_INPUT, WAVE_COUNTDOWN + 0.1);
+    expect(events.find((e) => e.type === 'waveStarted')).toEqual({
+      type: 'waveStarted',
+      number: FINAL_WAVE,
+      name: 'Last Stand',
+    });
+    expect(state.enemies).toHaveLength(waveBeat(FINAL_WAVE).spawns.length);
+    const leaders = state.enemies.filter((e) => e.leader);
+    expect(leaders).toHaveLength(1);
+    expect(leaders[0]?.kind).toBe('strider');
+    expect(leaders[0]?.health).toBe(360);
+    expect(leaders[0]?.maxHealth).toBe(360);
+    const pods = events.filter((e) => e.type === 'dropPod' && e.leader);
+    expect(pods).toHaveLength(1);
+  });
+
+  it('ends the final wave when the leader falls: the survivors flee and the tableau holds', () => {
+    const base = openGame();
+    const leader = {
+      ...createEnemy(50, 'strider', vec3(0, 0, -12), 0, { healthScale: 3, leader: true }),
+      state: 'attack' as const,
+    };
+    const survivor = awake(51, 'skimmer', vec3(6, 0, -4));
     const final: GameState = {
       ...base,
-      wave: { number: 8, phase: 'active', phaseEndsAt: 0 },
+      enemies: [leader, survivor],
+      kills: 30,
+      shieldBreaks: 2,
+      wave: { number: FINAL_WAVE, phase: 'active', phaseEndsAt: 0 },
     };
-    const { state, events } = run(final, IDLE_INPUT, 0.1);
-    expect(state.status).toBe('won');
-    expect(events.some((e) => e.type === 'victory')).toBe(true);
+    // The leader is still up: the wave carries on and the player can be hurt.
+    const fighting = run(final, IDLE_INPUT, 2);
+    expect(fighting.state.status).toBe('playing');
+    expect(fighting.state.tableau).toBeNull();
+    expect(fighting.events.some((e) => e.type === 'victory')).toBe(false);
+    expect(fighting.events.some((e) => e.type === 'playerDamaged')).toBe(true);
+
+    const leaderDown: GameState = {
+      ...final,
+      enemies: [{ ...leader, state: 'dead', health: 0, diedAt: 0 }, survivor],
+    };
+    const won = run(leaderDown, IDLE_INPUT, 0.5);
+    const victory = won.events.find((e) => e.type === 'victory');
+    expect(victory).toEqual({ type: 'victory', kills: 30, shieldBreaks: 2 });
+    expect(won.state.wave.phase).toBe('won');
+    expect(won.state.status).toBe('playing');
+    expect(won.state.tableau).not.toBeNull();
+    expect(won.state.score).toBe(500);
+    const fleeing = won.state.enemies.find((e) => e.id === 51);
+    expect(fleeing?.state).toBe('flee');
+    expect(fleeing?.fleeUntil).toBe(Number.POSITIVE_INFINITY);
+    expect(distanceXZ(fleeing?.position ?? vec3(), won.state.player.position)).toBeGreaterThan(
+      distanceXZ(survivor.position, final.player.position),
+    );
+    // Slow motion for the opening of the tableau, then normal speed.
+    const opened = stepGame(leaderDown, IDLE_INPUT, DT, createRng(1));
+    expect(opened.tableau?.startedAt).toBeCloseTo(DT);
+    expect(timeScaleOf(opened)).toBe(TABLEAU_TIME_SCALE);
+    expect(timeScaleOf({ ...opened, time: DT + TABLEAU_SLOW_SECONDS * TABLEAU_TIME_SCALE })).toBe(
+      1,
+    );
+    expect(timeScaleOf(final)).toBe(1);
+    // Input is ignored and the player cannot be hurt while the tableau holds.
+    const held = run(won.state, { ...IDLE_INPUT, forward: 1, fire: true, yaw: 1 }, 1);
+    expect(held.state.player.position).toEqual(won.state.player.position);
+    expect(held.state.player.yaw).toBe(won.state.player.yaw);
+    expect(held.events.some((e) => e.type === 'shot')).toBe(false);
+    expect(held.events.some((e) => e.type === 'playerDamaged')).toBe(false);
+    // The tableau ends after TABLEAU_DURATION with the survivors gone and the run won.
+    const ended = run(won.state, IDLE_INPUT, TABLEAU_DURATION);
+    expect(ended.state.status).toBe('won');
+    expect(ended.state.enemies.filter((e) => e.state === 'flee')).toEqual([]);
+    expect(stepGame(ended.state, IDLE_INPUT, DT, createRng(1)).events).toEqual([]);
+  });
+
+  it('counts shield breaks for the tableau', () => {
+    const g = createGame({ seed: 4 });
+    expect(g.shieldBreaks).toBe(0);
+    const swarm = Array.from({ length: 4 }, (_, i) =>
+      awake(60 + i, 'skimmer', vec3(i - 1.5, 0, -1.5)),
+    );
+    const base = openGame();
+    const swarmed: GameState = { ...base, enemies: swarm, wave: { ...base.wave, phase: 'active' } };
+    const { state, events } = run(swarmed, IDLE_INPUT, 8);
+    const breaks = events.filter((e) => e.type === 'shieldBroken').length;
+    expect(breaks).toBeGreaterThan(0);
+    expect(state.shieldBreaks).toBe(breaks);
   });
 
   it('keeps a death that lands in the same step as the last kill', () => {

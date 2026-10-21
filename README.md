@@ -4,7 +4,7 @@
 
 A browser-native arena shooter. One ring, one dawn, two kinds of thing that
 want you dead. TypeScript + three.js, zero assets. Built in four hours on
-2026-10-21 by one person coaching thirty cloud agents; the
+2026-10-21 by one person coaching thirty-three cloud agents; the
 [journey](docs/journey/README.md) has the clock.
 
 <p align="center"><sub>The banner is the game itself: seed 7 at night, t = 10 s, 3840x1600 with the post stack on. Recipe in <a href="docs/brand.md#hero-and-social">docs/brand.md</a>.</sub></p>
@@ -84,7 +84,8 @@ tests in real Chromium.
 | [docs/spec.md](docs/spec.md) | Chapter 1 specification, Minimum Lovable Product versus Later, mastery goals, easter eggs |
 | [docs/product/](docs/product/) | Concept proposal (PR/FAQ), product requirements with traceability, text storyboard and demo-reel cut list, art direction |
 | [docs/evolution.md](docs/evolution.md) | How intent is proven in code, how regressions are prevented, how the product evolves with agents |
-| [docs/design-doc.md](docs/design-doc.md) | Architecture and every gameplay number with its rationale |
+| [docs/architecture/](docs/architecture/README.md) | C4 context, containers and generated components, one frame and one tick, event catalogue, build and delivery, decision index, invariants |
+| [docs/design-doc.md](docs/design-doc.md) | Every gameplay number with its rationale |
 | [docs/brand.md](docs/brand.md) | Palette, typography, geometry language, audio identity, feel values, PR checklist |
 | [docs/test-plan.md](docs/test-plan.md) | Static, unit, playtest, balance gate, browser, visual, and recording layers |
 | [docs/research/](docs/research/) | Sourced research on the reference console shooter's design, on browser WebGL prior art, and on product management practice |

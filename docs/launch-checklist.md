@@ -45,8 +45,10 @@ prevents tagging a release whose history carries a token or whose
 toolchain carries a published high-severity advisory, which a green build
 job says nothing about.
 
+**The threat model has been re-read against the commit to be tagged.** Every row in [threat-model.md](threat-model.md) is checked against the tree (its section 5 lists the triggers: a new dependency, workflow, storage key, URL parameter, third-party origin or contributor) and the date of the reading is attached as evidence. This prevents tagging a release whose controls the model still describes but the tree no longer carries.
+
 **A person has played through to the final wave.** Someone plays the
-deployed page from the title card to the victory tableau on wave 8 with a
+deployed page from the title card to the victory tableau on wave 5 with a
 mouse and keyboard, and records the time taken against the five to ten
 minute target in [spec.md](spec.md). This prevents shipping a game the bot
 can win but a human cannot, which the playtest layer is explicitly not
