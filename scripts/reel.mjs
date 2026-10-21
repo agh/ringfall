@@ -24,7 +24,9 @@ import { chromium } from '@playwright/test';
 
 const args = Object.fromEntries(
   process.argv.slice(2).reduce((pairs, arg, i, all) => {
-    if (arg.startsWith('--')) pairs.push([arg.slice(2), all[i + 1] ?? 'true']);
+    const next = all[i + 1];
+    if (arg.startsWith('--'))
+      pairs.push([arg.slice(2), next?.startsWith('--') ? 'true' : (next ?? 'true')]);
     return pairs;
   }, []),
 );
@@ -197,7 +199,7 @@ const capturePlay = async (browser, segment, flags, skipUntil) => {
     const started = Date.now();
     while (!skipUntil(state) && state.status === 'playing') {
       // Coarse until the wave number is right, then fine so the capture opens on the first tick.
-      state = await advance(state.wave < skipUntil.wave ? 30 : 1);
+      state = await advance(state.wave < skipUntil.wave ? 30 : 6);
     }
     console.log(
       `skipped to t=${state.time.toFixed(2)} wave=${state.wave}/${state.phase} (${((Date.now() - started) / 1000).toFixed(0)}s)`,

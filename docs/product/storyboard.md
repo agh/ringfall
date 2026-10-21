@@ -87,3 +87,58 @@ The reel is cut from the seeded recording described in
 | 0:27 to 0:33 | A grenade bounces round a slab; a strider dives. | Thud, blast. | "It dodged my grenade." |
 | 0:33 to 0:39 | The strider falls; skimmers scatter. | Horn, barks. | "They noticed." |
 | 0:39 to 0:45 | Tableau: tilt to the ring, wordmark, score. | The chant resolves and holds. | Wanting to play it. |
+
+## The awards reel
+
+The 45 second cut above is the gameplay-only reel. The awards reel is
+longer and spends its time on three things: the story behind the game, the
+approach taken in the hackathon morning, and gameplay of wave 1 by day
+against wave 2 by night so the viewer sees the atmosphere change. It is
+cut by `scripts/reel.mjs` from the card pages in `scripts/reel-cards/` and
+two captures of the seeded bot run (`?record&bot&seed=7`), with the offline
+score under the gameplay and the choir drone alone under the cards. Every
+segment is reproducible: the cards are rendered by seeking their CSS
+animations frame by frame, and the captures step the simulation one tick
+at a time, so the same command gives the same film.
+
+| t | sees | hears | does/feels |
+| - | ---- | ----- | ---------- |
+| 0:00 to 0:06 | Title: the wordmark locks in under the ring arc. "Chapter 1 · Sector 117. A browser-native arena shooter. Zero assets." | The choir fades up from silence. | Curiosity. |
+| 0:06 to 0:16 | Story: the ring at dawn, the walled arena, a shield that recharges and health that does not. | Choir alone. | Reads the premise. |
+| 0:15 to 0:24 | Approach, part one: built in one morning; the simulation is a pure function with a seeded random source; the same step drives the game, the bot, the tests and this film. | Choir alone. | "That is how it was made." |
+| 0:23 to 0:32 | Approach, part two: research agents, a product pass and an adversarial audit in parallel; seventeen issues; every claim traced to a test or a source. | Choir alone. | Trust. |
+| 0:31 to 0:34 | Intertitle: "Wave 1 · Day". | Choir alone. | Anticipation. |
+| 0:33 to 0:48 | Wave 1 from Deploy: countdown, three skimmers, first kill at about five seconds, the wave cleared, the wave 2 countdown begins. | The score from t=0: drone, then the combat pulse, shots and kill chimes. | "The gun feels good." |
+| 0:47 to 0:50 | Intertitle: "Wave 2 · Night". | Choir alone. | A beat of calm. |
+| 0:49 to 1:06 | Wave 2 at night (`?atmo=night`): the first strider, bolts, trims and emissives carrying the frame. | The score from the same run, trimmed to where wave 2 goes active. | "Same arena, different world." |
+| 1:05 to 1:14 | Outro: wordmark, `ringfall.alexhowells.com`, TypeScript + three.js, `github.com/agh/hack`. | The choir resolves and fades. | Wanting to play it. |
+
+Segments overlap by the 0.5 s crossfade, which is why each start is half a
+second before the previous end. The total is 75 s; the day-only cut, made
+with `--no-night` while the night capture was still running, is 56.5 s and
+drops the two wave 2 segments.
+
+Pipeline notes, from cutting it on a software GPU:
+
+- The capture runs at one to three seconds per frame under SwiftShader, so
+  the script caches every step in its work directory and resumes a capture
+  from the last frame on disk if the browser dies. Wave 2 is reached by
+  advancing the simulation without screenshots until
+  `wave.number === 2 && wave.phase === 'active'`.
+- The score is rendered three times: a long lead-in with a token run, which
+  gives the choir alone for the cards; the first 16 s of the run for wave
+  1; and the whole run to the end of wave 2, trimmed with `atrim` to the
+  simulation time where that capture began. Drone slices under the cards
+  are cut at their final timeline position, so the identical audio on both
+  sides of each crossfade sums back to one continuous choir.
+- The large soft discs in the daytime frames are the airborne dust motes
+  (`size: 3` in `src/render/scene.ts`, scaled by `300 / -mv.z` in
+  `src/render/particles.ts`), which become hundreds of pixels wide within a
+  metre of the eye. They are a renderer setting, not a capture artefact;
+  the reel is re-cut with `--force` once that is tuned.
+
+```bash
+pnpm build
+FFMPEG=/path/to/full/ffmpeg node scripts/reel.mjs --seed 7 --port 4181 --fps 30 \
+  --wave1-seconds 15 --wave2-seconds 17 --out ringfall-reel.mp4
+```
