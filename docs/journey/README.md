@@ -797,6 +797,7 @@ Each row is a human or agent watching the game play, not a screenshot.
 
 | When | Seed | What was watched | Verdict |
 | ---- | ---- | ---------------- | ------- |
+| 18:14 | 7 | The final 69 s reel, cut from main at 17:50 (bloom prefilter and explosion rework in), sampled at 3, 15, 33, 40, 50, 56 and 62 s | No whiteout at any sample: the day wave peaks at 66 of 255 and the night kill frame, which was 205 on the 17:04 build, is 11. Night reads as night: stars, purple beam, the ring's glow. Left in: daytime dust discs (#31 still open) and the outro card's old repository name, which #74 renamed after this build. Shipped as the demo reel. |
 | 17:54 | 7 | Frames at 1, 6 and 10 s at 720p, title card at 720p, computed styles and sampled contrast behind each HUD text, for #53 | Seven HUD texts under 14 px, top corners at 2.6:1 on sky, compass drawing no letters, keyboard locked out of Deploy, no reduced-motion rule; all fixed in the #53 PR; 4K and end-card frames did not finish under load. |
 | 17:30 | 7 | The first kill at night (t = 10 s), the launcher kill at 3 m (t = 47 s) and a blast in the open (t = 45.5 s), by day and by night, at 50 ms steps, after the explosion rework | The crest reads as a pressure wave from 3 m and from 19 m (an arc on the floor past the cover); chips and sparks fall where the eye expects them; the smoke column shows by day and against lit walls at night, and is invisible against the night sky, which is right for soot. The scorch is the one thing that is still there a second later. The frame at the first kill is still dominated by the dying skimmer's own core and light, not by the kill effect. |
 | 17:00 | 7 | A 75 s bot run by day, frames every 3 s, and the night kill at 10 s, after the weapon integration | Weapon swaps read (beam at 18 s, scatter at 45 s, launcher at 48 s), pickup columns are visible from across the arena, the night frame keeps its stars and trims. The launcher round the bot fired at its own feet at 48 s still washes the frame pink with the shield-down effect; that is the jolt it should be, but the bot should not do it (issue for the bot: no launcher inside the blast radius). |
@@ -808,6 +809,10 @@ Each row is a human or agent watching the game play, not a screenshot.
 ![The first film at 22 s](images/1556-film-22s.jpg)
 
 ![The first film at 46 s](images/1556-film-46s.jpg)
+
+![Final reel, wave 1 by day at 40 s](images/1814-reel-final-day.jpg)
+
+![Final reel, wave 2 at night at 50 s](images/1814-reel-final-night.jpg)
 
 ![Wave 1, the sun behind a slab](images/1535-demo-seed7-wave1-sun.jpg)
 
