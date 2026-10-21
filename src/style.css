@@ -807,7 +807,7 @@ body {
 .settings {
   margin: clamp(14px, 2.4vmin, 24px) 0 0;
   border: 1px solid var(--slate);
-  background: rgb(16 31 54 / 60%);
+  background: color-mix(in srgb, var(--hull) 70%, transparent);
   text-align: left;
 }
 
@@ -847,7 +847,7 @@ body {
   display: grid;
   gap: clamp(8px, 1.4vmin, 12px);
   padding: 0 clamp(12px, 2vmin, 18px) clamp(10px, 1.6vmin, 14px);
-  border-top: 1px solid rgb(138 160 184 / 40%);
+  border-top: 1px solid color-mix(in srgb, var(--slate) 40%, transparent);
   padding-top: clamp(10px, 1.6vmin, 14px);
 }
 
