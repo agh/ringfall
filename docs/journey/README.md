@@ -284,6 +284,14 @@ under the 64 px cap. Same frame, same tick, before and after:
 
 ![Pickup at 3 m, after: an emblem with a halo and a short plume](images/1715-pickup-glow-after.jpg)
 
+No pickup in the seed 7 run is ever seen from far away (rewards land 6 m
+ahead and the bot walks into them), so the range check pushed a launcher
+pickup into the live state through the `ringfall.state()` hook, 21 m
+along the view at 43 s, night. It reads as a lime point on a post with
+its plume, between the trims:
+
+![Injected pickup at 21 m, night](images/1724-pickup-glow-21m-night.jpg)
+
 ## Playtest reviews
 
 Each row is a human or agent watching the game play, not a screenshot.
