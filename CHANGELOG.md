@@ -74,6 +74,15 @@ and this project adheres to
   colours. The particle pool gains `spark`, `smoke` and `shard` shapes with
   premultiplied blending so smoke can darken the frame (#26).
 
+### Changed
+
+- The repository no longer names the console shooter franchise it was
+  inspired by outside the cited titles and URLs under `docs/research/`
+  (ADR-0003). The research note on feel and the MLP cut dropped the name
+  from its file name (`docs/research/feel-and-mlp.md`), and
+  `tests/unit/originality.test.ts` greps the tree for the term list in
+  `tests/unit/originality.terms.ts`.
+
 ### Fixed
 
 - The frame bloomed and flared too much: the bloom prefilter passed the
