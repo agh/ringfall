@@ -94,24 +94,35 @@ const anglesTo = (from: Vec3, to: Vec3): { yaw: number; pitch: number } => {
   return { yaw: Math.atan2(-d.x, -d.z), pitch: Math.atan2(d.y, flat) };
 };
 
-const pickTarget = (state: GameState): Enemy | null => {
+/** The enemy the bot engages and whether its eye has a clear line to that enemy's centre. */
+interface Target {
+  readonly enemy: Enemy;
+  readonly visible: boolean;
+}
+
+/** True when nothing but air lies between `eye` and the enemy's collision sphere. */
+export const hasLineOfSight = (eye: Vec3, enemy: Enemy, obstacles: readonly Aabb[]): boolean => {
+  const center = enemyCenter(enemy);
+  const hit = hitscan(
+    eye,
+    normalize(sub(center, eye)),
+    [{ id: enemy.id, center, radius: ENEMY_STATS[enemy.kind].radius }],
+    obstacles,
+    150,
+  );
+  return hit.targetId === enemy.id;
+};
+
+const pickTarget = (state: GameState): Target | null => {
   const eye = playerEye(state.player);
-  let best: Enemy | null = null;
+  let best: Target | null = null;
   let bestScore = Number.POSITIVE_INFINITY;
   for (const enemy of state.enemies) {
     if (enemy.state === 'dead' || enemy.state === 'spawning') continue;
-    const center = enemyCenter(enemy);
-    const dist = distanceXZ(eye, center);
-    const toward = normalize(sub(center, eye));
-    const hit = hitscan(
-      eye,
-      toward,
-      [{ id: enemy.id, center, radius: ENEMY_STATS[enemy.kind].radius }],
-      state.arena.obstacles,
-      150,
-    );
-    const visible = hit.targetId === enemy.id;
+    const dist = distanceXZ(eye, enemyCenter(enemy));
+    const visible = hasLineOfSight(eye, enemy, state.arena.obstacles);
     // A player knows about enemies they can see or that show on the 28 m tracker; nothing else.
+    // A tracker-only target is still worth facing and strafing around, but not shooting at.
     if (!visible && dist > TRACKER_RANGE) continue;
     // Prefer visible and close enemies; skimmers in melee range are urgent, and a charging
     // watcher in sight is a static target about to land 35 damage, so it comes first. Once a
@@ -129,7 +140,7 @@ const pickTarget = (state: GameState): Enemy | null => {
     const score = (visible ? dist : dist * 4) * urgency;
     if (score < bestScore) {
       bestScore = score;
-      best = enemy;
+      best = { enemy, visible };
     }
   }
   return best;
@@ -162,10 +173,15 @@ const coverOnAimRay = (
  * settles; the scatter gun waits for close range; the launcher wants striders or clusters at a
  * safe distance with no cover in the way of the round; the minigun is forgiving of aim because
  * its spread is wide anyway.
+ *
+ * A hitscan weapon needs line of sight: a target that only shows on the tracker is behind cover,
+ * and a ray fired at it stops at the slab (issue #93). The launcher is the exception, because
+ * its round can burst on the cover beside the target; its own clearance rule still applies. The
+ * beam keeps a charge it already holds, so it is ready the moment the target steps out.
  */
 const decideFire = (
   weapon: Weapon,
-  target: Enemy | null,
+  target: Target | null,
   aimError: number,
   dist: number,
   cluster: number,
@@ -174,9 +190,10 @@ const decideFire = (
 ): boolean => {
   if (!target || weapon.magazine === 0) return false;
   const spec = weaponSpec(weapon);
+  if (!target.visible && !spec.projectile) return spec.chargeTime > 0 && weapon.charge > 0;
   if (spec.chargeTime > 0) return weapon.charge < 1 || aimError >= profile.fireTolerance;
   if (spec.projectile) {
-    const worth = isHeavyTarget(target) || cluster >= 2;
+    const worth = isHeavyTarget(target.enemy) || cluster >= 2;
     if (coverDist !== null && coverDist < LAUNCHER_COVER_CLEARANCE) return false;
     return (
       worth && dist >= LAUNCHER_MIN && dist <= LAUNCHER_MAX && aimError < profile.fireTolerance
@@ -186,7 +203,7 @@ const decideFire = (
   if (spec.spinUp > 0) return aimError < MINIGUN_TOLERANCE;
   // A watcher at 24 to 32 m subtends less than the usual tolerance: wait for the reticle to
   // settle on it rather than spending the magazine around it.
-  if (target.kind === 'watcher')
+  if (target.enemy.kind === 'watcher')
     return aimError < Math.min(profile.fireTolerance, ENEMY_STATS.watcher.radius / dist);
   return aimError < profile.fireTolerance;
 };
@@ -242,7 +259,9 @@ export const decideBot = (
 ): BotDecision => {
   const { player } = state;
   const eye = playerEye(player);
-  const target = pickTarget(state);
+  const picked = pickTarget(state);
+  const target = picked?.enemy ?? null;
+  const visible = picked?.visible ?? false;
   const shieldFrac = player.vitality.shield / player.vitality.maxShield;
   const maxTurn = ((profile.turnRate * Math.PI) / 180) * dt;
 
@@ -280,6 +299,8 @@ export const decideBot = (
     if (retreating) forward = -1;
     // A watcher backs off as fast as it is approached; closing on it only leaves cover behind.
     else if (dist > 22 && target.kind !== 'watcher') forward = 1;
+    // A target behind cover is found, not waited for: walk at it and slide round the slab.
+    else if (!visible && dist > LAUNCHER_MIN) forward = 1;
     else if (dist < 4 && target.kind === 'skimmer') forward = -1;
     if (retreating) strafe = strafeSign;
   }
@@ -308,7 +329,7 @@ export const decideBot = (
     target && weaponSpec(weapon).projectile
       ? coverOnAimRay(eye, yaw, pitch, target, state.arena.obstacles)
       : null;
-  const fire = decideFire(weapon, target, aimError, dist, cluster, profile, coverDist);
+  const fire = decideFire(weapon, picked, aimError, dist, cluster, profile, coverDist);
 
   const swapWeapon = decideSwap(player, target, dist, state.time - memory.lastSwapAt);
   const lastSwapAt = swapWeapon ? state.time : memory.lastSwapAt;

@@ -177,6 +177,16 @@ and this project adheres to
   the ringworld sentence restated from its sources, two journey frames
   renamed to the minute captured, and the freeze counts re-read after the
   last merges.
+
+- The bot no longer fires a hitscan weapon at a target it cannot see (#93).
+  On the reel seed, 94 of its 210 shots in the first 60 s went into cover
+  with the target on the tracker only; the tracer and flash read as a shot
+  through the wall. It now holds fire without line of sight (the launcher
+  still fires over cover, the beam keeps a charge it holds) and walks at a
+  target behind cover instead of waiting. The hit point of every shot and
+  beam was already at the first obstacle; the balance baseline is re-derived
+  in `tests/balance/gate.ts`.
+
 - Design and UX review (#53): HUD labels and card copy never below 14 px and
   scale to 4K; the card is a dialog that names Victory, Defeat or Paused and
   takes focus when it returns; low ammo, an empty magazine and a kill are

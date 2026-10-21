@@ -312,6 +312,50 @@ describe('game', () => {
     });
   });
 
+  it('every hitscan path stops at the first obstacle: the tracer end, each pellet, and the beam', () => {
+    // A slab 1 m thick, 3 m tall, its near face 6 m ahead of the eye; the enemy stands 12 m out,
+    // on the tracker but not in sight (issue #93). Nothing may reach it, and the `to` the
+    // renderer draws the tracer to must sit on the slab's near face, never beyond it.
+    const slab = { min: vec3(-3, 0, -7), max: vec3(3, 3, -6) };
+    const covered = (kind: WeaponKind, enemy: GameState['enemies'][number]): GameState => {
+      const g = armedWith(kind, [enemy]);
+      return { ...g, arena: { ...g.arena, obstacles: [slab] } };
+    };
+    const faceZ = slab.max.z;
+    for (const kind of ['rifle', 'laser', 'minigun', 'scatter'] as const) {
+      const enemy = awake(1, 'skimmer', vec3(0, 0, -12));
+      const start = covered(kind, enemy);
+      const { state, events } = run(
+        start,
+        { ...IDLE_INPUT, fire: true, pitch: pitchTo(0.6, 12) },
+        0.5,
+      );
+      const shots = events.filter((e) => e.type === 'shot');
+      expect(shots.length, kind).toBeGreaterThan(0);
+      for (const shot of shots) {
+        if (shot.type !== 'shot') continue;
+        expect(shot.hitEnemy, kind).toBe(false);
+        // The tracer ends on the near face: never past it, and not short of it either.
+        expect(shot.to.z, kind).toBeGreaterThanOrEqual(faceZ - 1e-6);
+        expect(shot.to.z, kind).toBeLessThan(faceZ + 0.05);
+      }
+      // Every pellet of every pull, not only the first one the event reports, was stopped.
+      expect(state.enemies.find((e) => e.id === 1)?.health, kind).toBe(enemy.health);
+    }
+
+    const beamState = covered('beam', awake(1, 'strider', vec3(0, 0, -12)));
+    const pitch = pitchTo(1.3, 12);
+    const held = run(beamState, { ...IDLE_INPUT, fire: true, pitch }, 1);
+    const released = run(held.state, { ...IDLE_INPUT, pitch }, 0.05);
+    const beam = released.events.find((e) => e.type === 'beamFired');
+    expect(beam).toMatchObject({ hits: 0 });
+    if (beam?.type === 'beamFired') {
+      expect(beam.to.z).toBeGreaterThanOrEqual(faceZ - 1e-6);
+      expect(beam.to.z).toBeLessThan(faceZ + 0.05);
+    }
+    expect(released.state.enemies.find((e) => e.id === 1)?.health).toBe(120);
+  });
+
   it('minigun: fires slowly until it spins up, then at full rate, and cannot reload', () => {
     const armed = armedWith('minigun', []);
     const first = run(armed, { ...IDLE_INPUT, fire: true }, 0.5);
