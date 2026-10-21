@@ -9,6 +9,7 @@ import {
   FLEE_RADIUS,
   hasFled,
   pickBark,
+  STILL_TRACKING,
   startExit,
   startFlee,
   type Temperament,
@@ -684,11 +685,15 @@ const stepEnemies = (d: Draft, dt: number): void => {
   const eye = playerEye(d.player);
   const skimmers = d.enemies.filter((e) => e.kind === 'skimmer' && e.state !== 'dead');
   d.enemies = d.enemies.map((e) => {
-    const tracking: Tracking = {
-      velocity: d.player.velocity,
-      yaw: d.player.yaw,
-      pack: skimmers.filter((s) => s.id !== e.id).map((s) => s.position),
-    };
+    // Only skimmer temperaments read the tracking; striders and watchers get the still default.
+    const tracking: Tracking =
+      e.kind === 'skimmer'
+        ? {
+            velocity: d.player.velocity,
+            yaw: d.player.yaw,
+            pack: skimmers.filter((s) => s.id !== e.id).map((s) => s.position),
+          }
+        : STILL_TRACKING;
     const { enemy, action } = updateEnemy(e, d.arena, feet, eye, dt, d.time, d.rng, tracking);
     if (action?.type === 'melee') hurtPlayer(d, action.damage, enemy.position);
     if (action?.type === 'bolt') {
@@ -783,8 +788,10 @@ const stepPendingSpawns = (d: Draft): void => {
 /** Enemies still standing between the player and the end of the wave, pods included. */
 const holdouts = (d: Draft, beat: WaveBeat): number => {
   const counts = beat.ending === 'leaderDown' ? (leader: boolean) => leader : () => true;
-  const standing = d.enemies.filter((e) => e.state !== 'dead' && counts(e.leader)).length;
-  return standing + d.pendingSpawns.filter((p) => counts(p.spawn.leader)).length;
+  let standing = 0;
+  for (const e of d.enemies) if (e.state !== 'dead' && counts(e.leader)) standing += 1;
+  for (const p of d.pendingSpawns) if (counts(p.spawn.leader)) standing += 1;
+  return standing;
 };
 
 const stepWaves = (d: Draft): void => {
@@ -844,7 +851,27 @@ export const stepGame = (state: GameState, input: InputFrame, dt: number, rng: R
   stepBolts(d, dt);
   stepWaves(d);
   stepTableau(d);
-  d.player = { ...d.player, vitality: tickVitality(d.player.vitality, dt, d.time) };
-  const { rng: _rng, ...rest } = d;
-  return rest;
+  const vitality = tickVitality(d.player.vitality, dt, d.time);
+  if (vitality !== d.player.vitality) d.player = { ...d.player, vitality };
+  // Listed field by field: an object rest that excludes `rng` goes through a slow runtime path.
+  return {
+    time: d.time,
+    status: d.status,
+    arena: d.arena,
+    player: d.player,
+    enemies: d.enemies,
+    pendingSpawns: d.pendingSpawns,
+    bolts: d.bolts,
+    grenades: d.grenades,
+    pickups: d.pickups,
+    wave: d.wave,
+    tableau: d.tableau,
+    score: d.score,
+    kills: d.kills,
+    shieldBreaks: d.shieldBreaks,
+    graves: d.graves,
+    secretsFound: d.secretsFound,
+    nextId: d.nextId,
+    events: d.events,
+  };
 };

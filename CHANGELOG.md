@@ -132,6 +132,13 @@ and this project adheres to
 
 ### Changed
 
+- Five per-step allocations gone from the simulation (#105, block 1): the
+  stepped state is returned as a literal instead of an object rest, enemy
+  tracking is built for skimmers only, holdouts are counted without filter
+  arrays, the player is copied only when the shield changed, and the
+  collision probe takes coordinates instead of a fresh vector. About a
+  quarter off `stepGame` on 184,758 recorded steps; same output, same
+  `pnpm balance` summaries.
 - The luminance gate is its own optional workflow (`.github/workflows/frames.yml`)
   on pull requests that touch the renderer and by hand; the smoke job is
   capped at twelve minutes (#104).
