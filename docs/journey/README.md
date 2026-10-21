@@ -178,6 +178,43 @@ recover the event timeline, schedules every voice, drum and effect into an
 muxes into the silent capture. Determinism makes the audio line up with
 frames rendered minutes apart.
 
+## 15:45 HUD v2 and the full-tab experience
+
+The second presentation pass: Deploy requests fullscreen, the HUD is
+sized in viewport units so it fits any laptop, a segmented shield arc sits
+over the health arc, the tracker sweeps, a compass strip shows heading
+and hostile bearings, damage segments orbit the reticle pointing at the
+source, the magazine is drawn as pips, and the brand fonts and tokens are
+finally applied. The renderer gained a sun flare, airborne dust, hit-stop
+on kills and shield breaks, death and victory cameras, and a frame-time
+driven resolution scaler. The first flare used the three.js addon and
+failed on the multisampled target; it was replaced with sprites.
+
+## 15:50 The audit
+
+An unanchored reviewer audited the whole repository for agent slop and
+scored it two and a half out of five: real code, clean prose, but
+documents running ahead of the code and one real bug in the recorder's
+frame stepping. The findings and what was done with each are in
+[audit.md](../audit.md). The one that stung: the bot "sees what a human
+sees" sentence was false (it read enemy health and targeted enemies
+beyond the tracker). It is true now.
+
+### Balance baseline
+
+First printed run of `pnpm balance` after the bot was made fair, twenty
+seeds per profile, 480 s cap:
+
+| Profile | Win rate | Mean waves cleared | Mean seconds | Accuracy | Shield breaks |
+| ------- | -------- | ------------------ | ------------ | -------- | ------------- |
+| Steady | 0% | 3.40 | 342 | 41% | 0.40 |
+| Reckless | 0% | 3.55 | 302 | 38% | 0.45 |
+
+No profile reaches wave eight. Either the bot is too weak or the later
+waves are too hard for a five-to-ten-minute demo; issue #8 (five named
+waves) and #12 (the balance gate) decide which. Until then this table is
+the baseline every tuning change is measured against.
+
 ## Playtest reviews
 
 Each row is a human or agent watching the game play, not a screenshot.
