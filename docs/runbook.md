@@ -80,8 +80,9 @@ One repository setting must be made once by hand, because a workflow
 cannot make it: under Settings, Pages, Build and deployment, the Source
 must be set to GitHub Actions. Until that is done the deploy job fails at
 `configure-pages`, and with the branch source the site at
-<https://agh.github.io/ringfall/> serves the repository's raw `index.html`
-rather than the build (observed 2026-10-21). The `github-pages` environment is created by the first successful
+<https://agh.github.io/ringfall/> served the repository's raw `index.html`
+rather than the build (observed 2026-10-21 until the source was set later
+that day). The `github-pages` environment is created by the first successful
 run.
 
 To redeploy without a code change, re-run the last `CI` run on `main`
@@ -218,8 +219,9 @@ not captured in parallel because SwiftShader already uses every core.
 
 ### Custom domain
 
-The site's custom domain is <https://ringfall.alexhowells.com> (not live as
-of 2026-10-21; the Pages source setting is #85). `public/CNAME` holds
+The site is served at <https://ringfall.alexhowells.com> (the build, over
+HTTPS, as of 2026-10-21, 19:10 UTC; plain HTTP still answers, so "Enforce
+HTTPS" is not yet on, #85). `public/CNAME` holds
 the hostname so every Pages deploy keeps it. One-time setup: a DNS `CNAME`
 record for `ringfall` pointing at `agh.github.io`, then in the repository's
 Settings, Pages, enter the custom domain and tick "Enforce HTTPS" once the

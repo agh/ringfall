@@ -158,6 +158,7 @@ and this project adheres to
 
 ### Fixed
 
+- The dropship and its pods borrow their lights from the pool too (#103).
 - Weapon muzzle flashes, tracers and the beam re-tuned under the HDR
   composer so they read without blooming out (#28).
 - Review sweep for #51 and #52, after the owning pull requests merged:

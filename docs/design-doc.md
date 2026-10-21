@@ -170,7 +170,7 @@ the rout below: steady win 20 % to 15 %, mean waves 5.40 to 5.05, accuracy
 cleared on 20 of 20 seeds by both profiles. Packs that arrive from four
 directions arrive staggered, and a player who never retreats kills them one
 at a time: the reckless win rate sat above the gate's 10 % reckless ceiling
-of the time (`tests/balance/gate.ts`; 80 % under the five beats, see
+of the time (`tests/balance/gate.ts`; 95 % since #98, see
 [test-plan.md](test-plan.md)) by one game of twenty, with every
 flanker and skittish setting tried between 0.3 and 0.6 of the distance and
 6 to 12 m of hold landing between 15 % and 30 %. Removing any one

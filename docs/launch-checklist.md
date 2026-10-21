@@ -22,8 +22,8 @@ every verification claim. Any unticked item is a no-go.
 ## The list
 
 **Pages is live and playable.** Open <https://ringfall.alexhowells.com> (or
-<https://agh.github.io/ringfall/>, which redirects there; neither serves
-the build as of 2026-10-21) in a clean browser profile, click Deploy, and play into wave 2. This prevents
+<https://agh.github.io/ringfall/>, which redirects there; both serve the
+build as of 2026-10-21, 19:10 UTC) in a clean browser profile, click Deploy, and play into wave 2. This prevents
 tagging a release whose public link shows a blank canvas because the Pages
 source was never set to GitHub Actions or the deploy job failed quietly
 after the CI jobs passed. The Pages jobs are the last two jobs of the CI workflow and run only on
@@ -59,8 +59,8 @@ deliberately not tested".
 **The bot balance assertions are green.** Run `pnpm balance` and attach the
 output. `tests/balance/report.test.ts` must pass: twenty seeded games per
 profile inside the thresholds in `tests/balance/gate.ts` (steady wins at
-least 70%, waves at least 3.85, accuracy at least 42%, slowest mean wave
-clear at most 40 s; reckless wins at most 80%, waves at least 4.05). This
+least 80%, waves at least 4.00, accuracy at least 73%, slowest mean wave
+clear at most 40 s; reckless wins at most 95%, waves at least 4.20). This
 prevents a tuning change from making
 wave 1 unwinnable or the shield loop irrelevant without anyone noticing.
 
