@@ -43,7 +43,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: coverage
@@ -66,7 +66,7 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm build
       - run: pnpm test:e2e
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: playwright-report
@@ -87,8 +87,88 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dist
           path: dist
           retention-days: 7
+
+  balance:
+    name: Balance gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm balance
+      - if: always()
+        run: cat test-results/balance/balance-report.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: balance-report
+          path: test-results/balance
+          retention-days: 30
+
+  docs:
+    name: Docs hygiene
+    runs-on: ubuntu-latest
+    env:
+      # Versions and release-asset SHA-256 digests follow crefft's Makefile
+      # (typos v1.51.1 x86_64-unknown-linux-musl, vale_3.24.0_checksums.txt).
+      TYPOS_VERSION: '1.51.1'
+      TYPOS_SHA256: '93c301fd4120ff076e2cc2a6d6a61cab4a4bdb81899287c0938b452e56d1f454'
+      VALE_VERSION: '3.24.0'
+      VALE_SHA256: '867534ddb678abca7f214bc4706ead0922bd5252ffe8035fc227013f66c8b214'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install typos (checksum-pinned release)
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="typos-v${TYPOS_VERSION}-x86_64-unknown-linux-musl.tar.gz"
+          curl --fail-with-body --location --silent --show-error --retry 3 \
+            --output "$RUNNER_TEMP/$archive" \
+            "https://github.com/crate-ci/typos/releases/download/v${TYPOS_VERSION}/${archive}"
+          echo "${TYPOS_SHA256}  $RUNNER_TEMP/$archive" | sha256sum --check --strict
+          mkdir -p "$RUNNER_TEMP/typos"
+          tar -xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP/typos"
+          echo "$RUNNER_TEMP/typos" >> "$GITHUB_PATH"
+      - name: Install Vale (checksum-pinned release)
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="vale_${VALE_VERSION}_Linux_64-bit.tar.gz"
+          curl --fail-with-body --location --silent --show-error --retry 3 \
+            --output "$RUNNER_TEMP/$archive" \
+            "https://github.com/vale-cli/vale/releases/download/v${VALE_VERSION}/${archive}"
+          echo "${VALE_SHA256}  $RUNNER_TEMP/$archive" | sha256sum --check --strict
+          mkdir -p "$RUNNER_TEMP/vale"
+          tar -xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP/vale"
+          echo "$RUNNER_TEMP/vale" >> "$GITHUB_PATH"
+      - run: typos --version && vale --no-global --version
+      # Frontmatter schema, typos, and internal links block. Vale runs with
+      # --no-exit: its remaining findings are Crefft.Direct hits inside quoted
+      # playtester dialogue, which issue #43 says not to rewrite; drop --no-exit
+      # from `docs:vale` in package.json once they are addressed.
+      - run: pnpm lint:docs
+      - name: Check external URLs (advisory)
+        # Third-party availability is not a property of this repository, and
+        # several cited hosts throttle or refuse CI clients, so a failure here
+        # is a report to read, not a gate. Internal links blocked above.
+        continue-on-error: true
+        run: pnpm docs:links:external

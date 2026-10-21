@@ -70,6 +70,7 @@ pnpm test:e2e                 # Playwright smoke tests against `vite preview`
 # Linting & Formatting
 pnpm lint                     # biome ci .
 pnpm lint:fix                 # biome check --write .
+pnpm lint:docs                # frontmatter schema, typos, Vale (advisory), internal links
 pnpm typecheck                # tsc --noEmit
 
 # Everything CI runs
@@ -145,7 +146,8 @@ bank never mutate game state; they read it and react to events.
 - Coordinates follow three.js: +Y up, the camera looks down -Z at yaw 0. The
   helper `directionFromAngles(yaw, pitch)` in `src/core/vec3.ts` is the single
   source of truth for that convention; do not re-derive it elsewhere.
-- Core modules **MUST NOT** import `three` or touch `window`/`document`.
+- Core modules **MUST NOT** import `three` or touch `window`/`document`;
+  enforced by Biome and `tests/unit/purity.test.ts`.
 - Game-feel constants (speeds, damage, timings) live as exported `const`s at
   the top of the module that owns them, with the reasoning in
   `docs/design-doc.md`.
