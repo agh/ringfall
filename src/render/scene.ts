@@ -188,6 +188,9 @@ export class SceneRenderer {
   private effects: Effect[] = [];
   private recoil = 0;
   private shake = 0;
+  private shakeCap = SHAKE_CAP;
+  private baseFov = BASE_FOV;
+  private flashEnabled = true;
   private bobPhase = 0;
   private lastYaw = 0;
   private lastPitch = 0;
@@ -259,6 +262,21 @@ export class SceneRenderer {
   }
 
   /** (Re)builds the static arena when a new game starts. */
+  /** Settings panel: field of view before the sprint widening, 70 to 100 degrees. */
+  setBaseFov(fov: number): void {
+    this.baseFov = fov;
+  }
+
+  /** Settings panel: the accessibility toggle sets the shake cap to zero. */
+  setShakeEnabled(enabled: boolean): void {
+    this.shakeCap = enabled ? SHAKE_CAP : 0;
+  }
+
+  /** Settings panel: off suppresses the hex shield lattice on hits. */
+  setFlashEnabled(enabled: boolean): void {
+    this.flashEnabled = enabled;
+  }
+
   setArena(arena: Arena): void {
     if (this.arenaBuilt === arena) return;
     this.arenaBuilt = arena;
@@ -396,7 +414,7 @@ export class SceneRenderer {
         case 'playerDamaged':
           this.shake = Math.max(this.shake, 0.3);
           this.post.onDamage();
-          this.post.onShieldHit();
+          if (this.flashEnabled) this.post.onShieldHit();
           break;
         case 'shieldBroken':
           this.particles.burst(
@@ -498,7 +516,7 @@ export class SceneRenderer {
     this.camera.updateMatrixWorld();
     this.updateFlare();
     if (this.shake > 0) {
-      const amount = Math.min(SHAKE_CAP, 0.03 * this.shake);
+      const amount = Math.min(this.shakeCap, 0.03 * this.shake);
       this.camera.rotation.z += (Math.random() - 0.5) * amount;
       this.camera.rotation.x += (Math.random() - 0.5) * amount * 0.5;
       this.shake = Math.max(0, this.shake - frameDt * 2.5);
@@ -526,7 +544,7 @@ export class SceneRenderer {
     sway.position.set(this.swayX + bobX * 0.6, this.swayY + bobY * 0.8, this.recoil * 0.09);
     sway.rotation.set(this.recoil * 0.08 - this.swayY * 0.8, this.swayX * 1.2, this.swayX * 0.6);
 
-    const targetFov = BASE_FOV + (speed > 7.5 && state.player.onGround ? 6 : 0);
+    const targetFov = this.baseFov + (speed > 7.5 && state.player.onGround ? 6 : 0);
     if (Math.abs(this.camera.fov - targetFov) > 0.01) {
       this.camera.fov = THREE.MathUtils.lerp(
         this.camera.fov,

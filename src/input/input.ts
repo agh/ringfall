@@ -2,6 +2,8 @@ import { IDLE_INPUT, type InputFrame } from '../core/game';
 import { clamp } from '../core/vec3';
 
 const MAX_PITCH = Math.PI / 2 - 0.02;
+/** Radians of look per pixel of mouse travel at sensitivity 1 (docs/design-doc.md). */
+const BASE_SENSITIVITY = 0.0022;
 
 /**
  * Collects keyboard and mouse state between simulation steps. Held actions (move, fire, jump)
@@ -15,7 +17,7 @@ export class InputController {
   private reloadLatched = false;
   private grenadeLatched = false;
   private swapLatched = false;
-  private sensitivity = 0.0022;
+  private sensitivity = BASE_SENSITIVITY;
   private readonly target: HTMLElement;
 
   constructor(target: HTMLElement) {
@@ -43,6 +45,11 @@ export class InputController {
     } catch {
       return false;
     }
+  }
+
+  /** Settings panel: a multiplier on the base look sensitivity. */
+  setSensitivity(scale: number): void {
+    this.sensitivity = BASE_SENSITIVITY * scale;
   }
 
   reset(): void {

@@ -10,6 +10,11 @@ and this project adheres to
 
 ### Added
 
+- Enemy theatre: when a strider dies, every skimmer within 25 m breaks and
+  runs for 4 s at 1.3x speed without attacking, then returns to the chase.
+  New enemy state `flee` and two events for the presentation layers,
+  `enemyFled { id, kind }` and `enemyBark { id, line }`, with three original
+  bark lines (`src/core/enemy.ts`).
 - Renderer v2: scattering dawn sky, a ringworld you stand on, rolling
   terrain with mountains, image-based lighting, a GPU particle pool, an HDR
   composer with bloom and a custom feel pass (vignette, chromatic
