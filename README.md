@@ -1,9 +1,11 @@
-<p align="center"><img src="docs/banner.svg" alt="Ringfall" width="100%"></p>
+<p align="center"><img src="docs/banner.png" alt="Ringfall: an in-game render at night, seed 7, t = 10 s, with the wordmark" width="100%"></p>
 
 # Ringfall
 
 A browser-native arena shooter. One ring, one dawn, two kinds of thing that
 want you dead. TypeScript + three.js, zero assets.
+
+<p align="center"><sub>The banner is the game itself: seed 7 at night, t = 10 s, 3840x1600 with the post stack on. Recipe in <a href="docs/brand.md#hero-and-social">docs/brand.md</a>.</sub></p>
 
 **[Play now](https://ringfall.alexhowells.com)** (not yet live as of 2026-10-21: the Pages source is unset and the DNS record is not published; deploys from `main` once set).
 
@@ -29,11 +31,20 @@ pnpm dev            # http://localhost:5173
 | Fire           | Left click         |
 | Grenade        | G or right click   |
 | Reload         | R                  |
+| Swap weapon    | Q or wheel         |
 | Jump / Sprint  | Space / Shift      |
 | Swap weapon    | Q                  |
+| Fullscreen     | F                  |
 | Release mouse  | Esc                |
 
 Requires a browser with WebGL 2 and pointer lock.
+
+| Dawn, wave 5 | Night, wave 2 | Dusk, wave 3 |
+| :---: | :---: | :---: |
+| ![Dawn: the sun flares behind the ring over the cover slabs](docs/journey/images/1740-hero-dawn-s7-t95.jpg) | ![Night: the beam weapon in hand, stars and trims](docs/journey/images/1740-hero-night-s7-t18.jpg) | ![Dusk: the laser in hand against a rose horizon](docs/journey/images/1740-hero-dusk-s7-t45.jpg) |
+| seed 7, t = 95 s, `atmo=dawn` | seed 7, t = 18 s, `atmo=night` | seed 7, t = 45 s, `atmo=dusk` |
+
+Every frame above is a headless render of the shipped build (`?record&bot&seed=7&nohud`), not an illustration.
 
 ## How it works
 
@@ -44,8 +55,19 @@ events that happened during the step. Everything else reacts to those events:
 
 - `src/render/` mirrors the state into a three.js scene and plays effects
 - `src/hud/` draws vitals, ammo, wave status, and a motion tracker in the DOM
-- `src/audio/` synthesises every sound with WebAudio oscillators and filtered noise
+- `src/audio/` synthesizes every sound with WebAudio oscillators and filtered noise
 - `src/input/` turns keyboard, mouse, and pointer lock into an `InputFrame`
+
+```mermaid
+flowchart LR
+  loop[Fixed-step loop] -->|InputFrame + dt| world[World simulation]
+  world --> player[Player]
+  world --> enemies[Enemies]
+  world -->|GameEvent list| bus((Event bus))
+  bus --> audio[Audio]
+  bus --> hud[HUD]
+  bus --> loop
+```
 
 Because `src/core/` never touches the DOM or WebGL, it is unit-tested in Node
 to a coverage threshold. The browser layers are covered by Playwright smoke

@@ -2,10 +2,13 @@ import { IDLE_INPUT, type InputFrame } from '../core/game';
 import { clamp } from '../core/vec3';
 
 const MAX_PITCH = Math.PI / 2 - 0.02;
+/** Radians of look per pixel of mouse travel at sensitivity 1 (docs/design-doc.md). */
+const BASE_SENSITIVITY = 0.0022;
 
 /**
- * Collects keyboard and mouse state between simulation steps. Held actions (move, fire, jump)
- * are read live; one-shot actions (reload, grenade, swap) are latched until the next `take()`.
+ * Collects keyboard and mouse state between simulation steps. Held actions (move, fire, jump,
+ * crouch) are read live; one-shot actions (reload, grenade, swap) are latched until the next
+ * `take()`.
  */
 export class InputController {
   private readonly keys = new Set<string>();
@@ -15,7 +18,7 @@ export class InputController {
   private reloadLatched = false;
   private grenadeLatched = false;
   private swapLatched = false;
-  private sensitivity = 0.0022;
+  private sensitivity = BASE_SENSITIVITY;
   private readonly target: HTMLElement;
 
   constructor(target: HTMLElement) {
@@ -45,6 +48,11 @@ export class InputController {
     }
   }
 
+  /** Settings panel: a multiplier on the base look sensitivity. */
+  setSensitivity(scale: number): void {
+    this.sensitivity = BASE_SENSITIVITY * scale;
+  }
+
   reset(): void {
     this.yaw = 0;
     this.pitch = 0;
@@ -59,6 +67,7 @@ export class InputController {
       strafe: Number(this.down('KeyD', 'ArrowRight')) - Number(this.down('KeyA', 'ArrowLeft')),
       jump: this.down('Space'),
       sprint: this.down('ShiftLeft', 'ShiftRight'),
+      crouch: this.down('KeyC', 'ControlLeft', 'ControlRight'),
       fire: this.firing,
       reload: this.reloadLatched,
       throwGrenade: this.grenadeLatched,

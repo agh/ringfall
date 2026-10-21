@@ -1,8 +1,9 @@
 ---
 type: research
 title: "What S-tier Halo feel in a browser actually requires"
-status: reference
-authors: ["Ringfall research agent (Claude), reviewed by the hackathon team"]
+status: approved
+authors:
+  - name: "Ringfall research agent (Claude), reviewed by the hackathon team"
 created: 2026-10-21
 ---
 
@@ -17,7 +18,7 @@ not itself a commitment.
 
 Halo CE's magic is not content volume; it is a **3-second loop inside a
 30-second loop inside a 3-minute loop** where enemies are legible actors in
-a theatre the player directs ([Griesemer, Engadget 2011][griesemer]). A 5
+a theater the player directs ([Griesemer, Engadget 2011][griesemer]). A 5
 to 10 minute demo therefore needs exactly **one** great 30-second loop,
 varied four or five times, wrapped in one unforgettable image (the ring)
 and one unforgettable sound (the chant register). Everything else is
@@ -45,7 +46,7 @@ removes the "1% health" problem while keeping stakes
 aggression must drop when the player's shield pops. That is the single most
 Halo-feeling AI rule and it costs ten lines.
 
-**AI as theatre.** The GDC 2002 deck lists the design goals as
+**AI as theater.** The GDC 2002 deck lists the design goals as
 *Intelligible, Interactive, Unpredictable*; "Transparent thought process";
 "Communication of Intent... Language, Posture, Gesture, Focus of Attention";
 "Things to Avoid: Subtlety, Looking Broken"; and a "Thwarted / Breaking
@@ -56,10 +57,10 @@ killed... outrageously exaggerated panic run... I would still estimate that
 less than a third of our users made the connection" (Butcher and
 Griesemer, quoted in [Sturtevant's DU lecture][du]).
 Isla: "subtlety flies straight over the player's head... you really have to
-crank it to 11" ([Game Developer][isla-subtlety]). The Bungie behaviour
+crank it to 11" ([Game Developer][isla-subtlety]). The Bungie behavior
 list includes a "Dive impulse: if I'm in immediate danger from a vehicle or
 grenade... dive away", an "Evasion impulse: hop to the side", and
-"self-preserve" when shields are low ([behaviour list][bungie-ai]).
+"self-preserve" when shields are low ([behavior list][bungie-ai]).
 
 **Encounter shape.** Isla's canonical encounter: "Enemies occupy a
 territory; pushed to 'fallback' point; pushed to 'last-stand' point; player
@@ -143,9 +144,9 @@ that", then ask "why does it turn?" ([iTWire][itwire]).
   strider arrives last with a horn stinger and an idle posture. When it
   dies, all skimmers flee. This is the first spectacle; it must land before
   minute three.
-- **2:45 to 4:30 Wave 3, "Fallback":** two-stage fallback behaviour.
+- **2:45 to 4:30 Wave 3, "Fallback":** two-stage fallback behavior.
 - **4:30 to 6:30 Wave 4, "The Push":** chant returns under percussion.
-- **6:30 to 8:00 Wave 5, "Last Stand":** an armoured strider; on its death,
+- **6:30 to 8:00 Wave 5, "Last Stand":** an armored strider; on its death,
   slow motion, the survivors flee, the music resolves, the camera tilts to
   the ring. End on the image and the sound, not a menu.
 
@@ -161,7 +162,7 @@ mode, long cathedral tail, then strings and a drum pulse.
   "oo" is roughly 300 / 870 / 2240 Hz; "ah" is 730 / 1090 / 2440 Hz
   ([Peterson and Barney][formants]).
 - Melody: an original four-phrase Dorian line in D, unison, stepwise.
-- Space: a `ConvolverNode` with a synthesised impulse response (exponentially
+- Space: a `ConvolverNode` with a synthesized impulse response (exponentially
   decaying noise, 4 to 6 s, low-passed over time)
   ([MDN ConvolverNode][convolver]).
 - Percussion: filtered noise bursts plus a 60 Hz sine thump.

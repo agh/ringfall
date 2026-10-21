@@ -2,7 +2,8 @@
 type: risk-register
 title: "Ringfall risk register"
 status: draft
-authors: ["Ringfall hackathon team"]
+authors:
+  - name: "Ringfall hackathon team"
 created: 2026-10-21
 ---
 
@@ -23,7 +24,7 @@ criteria.
 | ID | Description | Impact | Probability | Trigger | Mitigation | Owner role |
 | -- | ----------- | ------ | ----------- | ------- | ---------- | ---------- |
 | R1 | The frame time on an integrated GPU at 1080p has never been measured; the 16.7 ms budget with the scene under 7 ms, bloom under 2 ms, and the feel pass under 0.5 ms in [requirements.md](product/requirements.md) is a target, not a number. | High | Medium | The demo stutters on the laptop in the room, or a player reports the page is unplayable. | Spec item 11 and issue #11 add a per-frame measurement on real hardware; until then the release owner plays the deployed page on an integrated GPU before every tag. | Render owner |
-| R2 | CI and sandboxes render with SwiftShader, which takes hundreds of milliseconds per frame and has lower depth precision than hardware, so the browser layer can pass in CI and fail on a real GPU, or the reverse. | Medium | High | A smoke test that is flaky only on CI, or a depth artefact visible on hardware that the captured frames never showed. | No test is timed against the wall clock; the smoke test waits on simulation time; large static geometry is separated in depth (the terrain under the arena is sunk 6 m); films are reviewed by a person. | CI owner |
+| R2 | CI and sandboxes render with SwiftShader, which takes hundreds of milliseconds per frame and has lower depth precision than hardware, so the browser layer can pass in CI and fail on a real GPU, or the reverse. | Medium | High | A smoke test that is flaky only on CI, or a depth artifact visible on hardware that the captured frames never showed. | No test is timed against the wall clock; the smoke test waits on simulation time; large static geometry is separated in depth (the terrain under the arena is sunk 6 m); films are reviewed by a person. | CI owner |
 | R3 | Pointer lock is refused in headless browsers, iframes without the right `allow` attribute, and during the browser's cool-down after Esc, so a player can press Deploy and get a game with no mouse look. | Medium | Medium | A report that the game started but the view does not turn, most often right after an Esc. | `InputController.lock()` swallows the rejection and the `pointerlockchange` handler returns to the overlay so the player can click again; the copy on the overlay says Esc releases the mouse. | Input owner |
 | R4 | Bloom is the most expensive pass in the stack and the only one whose cost scales with resolution; the first playtest review found the sun behind a slab blooming hard enough to hide the reticle. | Medium | Medium | The frame budget in R1 is missed with bloom on and met with it off, or a review logs the reticle lost in glare. | The threshold stays above 1.0 so only emitters bloom; a radius reduction is recorded as a candidate in [journey/README.md](journey/README.md); exposure 0.38 is the lever in `src/render/scene.ts`. | Render owner |
 | R5 | Two playtest thresholds were lowered when first written so the tests would pass, and [evolution.md](evolution.md) records that they are not tuned targets; a balance regression can hide beneath them. | Medium | Medium | A tuning change passes `pnpm balance` while a human finds wave 1 noticeably harder or easier than before. | `tests/balance/gate.ts` derives thresholds from a baseline and CI publishes the `balance-report` artifact (#39); the launch checklist still requires a human playthrough. | Design owner |
