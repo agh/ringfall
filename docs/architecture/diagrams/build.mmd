@@ -1,18 +1,18 @@
 %%{init: {"flowchart": {"curve": "basis"}} }%%
 flowchart LR
   push(["push or pull request"])
-  subgraph ciwf["ci.yml: eight independent gate jobs on every pull request and push to main"]
+  subgraph ciwf["ci.yml: seven gate jobs on every pull request and push to main; frames.yml: the optional luminance gate"]
     direction TB
     lint["Lint and type check<br/>pnpm lint, pnpm typecheck"]
     unit["Unit tests<br/>pnpm test: Vitest with coverage thresholds"]
     e2e["Browser smoke tests<br/>pnpm build, pnpm test:e2e in Chromium"]
-    frames["Luminance gate<br/>pnpm build, pnpm frames: ten seeded frames within budget"]
+    frames["Luminance gate (frames.yml: renderer pull requests, or by hand)<br/>pnpm build, pnpm frames: ten seeded frames within budget"]
     build["Production build<br/>pnpm build, dist/ uploaded"]
     balance["Balance gate<br/>pnpm balance: twenty seeds per profile within bounds"]
     docs["Docs hygiene<br/>pnpm lint:docs: frontmatter, typos, Vale, links"]
     security["Security and workflow hygiene<br/>pnpm audit, actionlint, zizmor, gitleaks"]
   end
-  subgraph pagewf["ci.yml: push to main only, needs every gate but the luminance gate and the smoke tests"]
+  subgraph pagewf["ci.yml: push to main only, needs every gate but the smoke tests"]
     direction TB
     pbuild["Pages build (contents: read)<br/>pnpm build, upload-pages-artifact"]
     pdeploy["Pages deploy (pages: write, id-token: write)<br/>deploy-pages"]

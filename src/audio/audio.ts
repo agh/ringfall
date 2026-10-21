@@ -5,8 +5,9 @@ import {
   chargeSeconds,
   makeLimiter,
   scheduleVoices,
-  soundFor,
   startChargeHum,
+  stepSounds,
+  warmNoise,
 } from './sounds';
 
 /** Live-only pitch jitter so a magazine does not sound like one looped sample. */
@@ -55,6 +56,8 @@ export class AudioBank {
     musicBus.gain.value = 0.5;
     musicBus.connect(limiter);
     this.music.start(this.ctx, musicBus);
+    // Inside the gesture, beside the reverb impulse: the noise buffers are built once, here.
+    warmNoise(this.ctx);
   }
 
   setMusic(state: MusicState): void {
@@ -87,8 +90,9 @@ export class AudioBank {
 
   handle(events: readonly GameEvent[]): void {
     if (!this.ctx || !this.master) return;
+    const soundOf = stepSounds();
     for (const e of events) {
-      const sound = soundFor(e);
+      const sound = soundOf(e);
       if (!sound) continue;
       const now = this.ctx.currentTime;
       if (sound.cutsCharge) this.stopCharge(now);
