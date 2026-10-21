@@ -64,21 +64,28 @@ pnpm install --frozen-lockfile
 pnpm dev                      # http://localhost:5173
 
 # Testing
-pnpm test                     # Vitest unit tests and the balance gate, V8 coverage thresholds on src/core
+pnpm test                     # Vitest unit tests with V8 coverage thresholds
 pnpm test:e2e                 # Playwright smoke tests against `vite preview`
 
 # Linting & Formatting
-pnpm lint                     # biome ci . && markdownlint-cli2 "**/*.md"
-pnpm lint:fix                 # biome check --write .
+pnpm lint                     # biome ci, markdownlint, then pnpm lint:css
+pnpm lint:css                 # stylelint and prettier --check over CSS
+pnpm lint:fix                 # biome check --write, stylelint --fix, prettier --write
 pnpm lint:docs                # frontmatter schema, typos, Vale (advisory), internal links
 pnpm typecheck                # tsc --noEmit
+
+# Security and workflow hygiene (the CI security job; pins in .github/workflows/ci.yml)
+pnpm audit --audit-level=high # advisories; ignores and their reasons under pnpm.auditConfig
+actionlint -shellcheck= -pyflakes= .github/workflows/*.yml          # actionlint 1.7.12
+uvx --from zizmor==1.31.1 zizmor --offline --persona=pedantic .github/workflows/*.yml
+gitleaks dir . --config .gitleaks.toml --no-banner --redact         # gitleaks 8.30.1
 
 # Everything CI runs
 pnpm check                    # lint, typecheck, unit tests, production build
 
 # Playing the game without a person
 pnpm balance                  # headless bot games with balance assertions
-pnpm demo                     # film seed 7 and score it: demo.mp4 (needs pnpm build first and a full ffmpeg)
+pnpm demo                     # film seed 7 and score it: demo.mp4 (needs ffmpeg)
 ```
 
 ## Structure
@@ -96,25 +103,22 @@ ringfall/
 │   │   └── enemies.ts     # Composite enemy rigs
 │   ├── input/        # Keyboard, mouse, pointer lock -> InputFrame
 │   ├── hud/          # DOM heads-up display and 2D-canvas motion tracker
-│   ├── audio/        # sounds.ts (event-to-sound table), sound bank, live score (music.ts), offline score (offline.ts)
+│   ├── audio/        # WebAudio sound bank, live score (music.ts), offline score (offline.ts)
 │   ├── main.ts       # Fixed-timestep loop wiring the layers together
 │   └── style.css     # HUD and overlay styling
 ├── tests/
 │   ├── unit/         # Vitest; covers src/core only
-│   ├── balance/      # Vitest; the playtest gate (pnpm balance), report under test-results/balance/
 │   └── e2e/          # Playwright; real Chromium, real WebGL
-├── scripts/          # record-demo.mjs (film a seeded bot run), render-score.mjs (its soundtrack), reel.mjs and reel-cards/ (cut the reel)
+├── scripts/          # record-demo.mjs (film a seeded bot run), render-score.mjs (its soundtrack)
 ├── docs/
 │   ├── spec.md       # Chapter 1 spec: MLP vs Later
 │   ├── design-doc.md # Architecture and gameplay numbers
 │   ├── brand.md      # Palette, type, geometry, audio, feel, PR checklist
 │   ├── test-plan.md  # Test layers and gates
-│   ├── runbook.md    # Run, build, deploy, test, film, and known faults
-│   ├── metrics.md    # Definitions of the numbers pnpm balance prints
 │   ├── research/     # Sourced research reports
 │   ├── journey/      # Time-indexed build log and frames
 │   └── adr/          # Architecture decision records
-└── .github/workflows # CI (lint, test, e2e, build, balance gate) and GitHub Pages deploy
+└── .github/workflows # CI (lint, test, e2e, build) and GitHub Pages deploy
 ```
 
 **Key Files:**
@@ -165,7 +169,7 @@ bank never mutate game state; they read it and react to events.
 **Problem**: `playwright test` reports a missing executable under
 `chromium_headless_shell-NNNN`.
 **Solution**: set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` to an installed Chromium
-binary (in the sandbox: `/opt/pw-browsers/chromium`); `playwright.config.ts` passes it through as `launchOptions.executablePath`.
+binary; `playwright.config.ts` passes it through as `launchOptions.executablePath`.
 CI installs the matching browser with `playwright install --with-deps chromium`.
 
 ### Pointer lock is refused

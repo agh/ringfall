@@ -93,6 +93,12 @@ and this project adheres to
 
 ### Fixed
 
+- Still too much flare after the bloom prefilter: bloom strength and radius
+  halved again (0.15, 0.25), the flare ghosts at 0.3 opacity and the core
+  sprite at two thirds of its size, and the day and dawn skies given a
+  thinner, tighter mie lobe so the sun reads as a disc; facing the sun the
+  saturated blob went from 13% to 3% of the frame height (#71).
+
 - The bot no longer fires the launcher when cover sits inside the blast
   radius (#36).
 - The frame bloomed and flared too much: the bloom prefilter passed the

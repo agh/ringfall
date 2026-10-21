@@ -35,6 +35,16 @@ head of `main`, not on an earlier commit. This prevents a tag pointing at a
 commit that was pushed after the last green run, which is how a release
 ships with a type error nobody saw.
 
+**No secret and no known high-severity advisory ships.** The
+`Security and workflow hygiene` job in `.github/workflows/ci.yml` must be
+green on the same commit: `pnpm audit --audit-level=high` with every ignore
+under `pnpm.auditConfig` in `package.json` re-read and still justified,
+gitleaks over the working tree and the pushed history with
+`.gitleaks.toml`, and actionlint and zizmor over the workflows. This
+prevents tagging a release whose history carries a token or whose
+toolchain carries a published high-severity advisory, which a green build
+job says nothing about.
+
 **A person has played through to the final wave.** Someone plays the
 deployed page from the title card to the victory tableau on wave 8 with a
 mouse and keyboard, and records the time taken against the five to ten

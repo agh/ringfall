@@ -17,7 +17,7 @@ does not have to for every change.
 
 | Layer | Tool | What it proves | Where | Gate |
 | ----- | ---- | -------------- | ----- | ---- |
-| Static | Biome, tsc strict, markdownlint | Style, types, docs hygiene | `pnpm lint`, `pnpm typecheck` | CI lint job |
+| Static | Biome, tsc strict, markdownlint, Stylelint, Prettier (CSS), pnpm audit, actionlint, zizmor, gitleaks | Style, types, docs hygiene, CSS conventions, no known high-severity advisories, workflow syntax and permissions, no secrets in the tree or the history | `pnpm lint`, `pnpm typecheck`, `pnpm audit --audit-level=high`, the security job in `.github/workflows/ci.yml` | CI lint job, CI security job |
 | Unit | Vitest, Node | Every core rule: movement, collision, weapons, grenades, enemy AI, bolts, waves, vitality, the whole step | `tests/unit/` | 85% lines on `src/core`, 75% branches |
 | Playtest | Vitest, Node | A scripted player plays whole games; determinism, accuracy, wave clearing, profile differences | `tests/unit/bot.test.ts` | Floors in the test |
 | Balance gate | Vitest, Node | Twenty seeded games per profile stay within baseline-derived bounds; the report is a CI artifact | `tests/balance/` | CI balance job, thresholds in `tests/balance/gate.ts` |
