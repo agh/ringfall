@@ -37,6 +37,13 @@ import {
   SHIELD_RECHARGE_RATE,
 } from '../../src/core/vitality';
 import {
+  WATCHER_BEAM_DURATION,
+  WATCHER_CHARGE,
+  WATCHER_COOLDOWN,
+  WATCHER_MAX_RANGE,
+  WATCHER_MIN_RANGE,
+} from '../../src/core/watcher';
+import {
   ATMOSPHERE_TABLE,
   FINAL_WAVE,
   WAVE_BONUS,
@@ -250,7 +257,28 @@ describe('design-doc.md enemy archetypes', () => {
   ];
 
   it('lists every archetype once', () => {
-    expect(table.rows.map((r) => r[0])).toEqual(rows.map(([label]) => label));
+    expect(table.rows.map((r) => r[0])).toEqual([...rows.map(([label]) => label), 'Watcher']);
+  });
+
+  it('matches the watcher constants', () => {
+    const stats = ENEMY_STATS.watcher;
+    expectCell(table, 'Watcher', 'Health', String(stats.maxHealth));
+    expectCell(table, 'Watcher', 'Speed', `${stats.speed} m/s`);
+    expectCell(table, 'Watcher', 'Score', String(stats.score));
+    expectCell(
+      table,
+      'Watcher',
+      'Attack',
+      `Hitscan beam, ${stats.damage} dmg: ${WATCHER_CHARGE} s charge, ` +
+        `${WATCHER_BEAM_DURATION} s beam, ${WATCHER_COOLDOWN} s cooldown`,
+    );
+    expect(/^Holds (\S+) to (\S+) m/.exec(cell(table, 'Watcher', 'Behavior'))?.slice(1)).toEqual([
+      String(WATCHER_MIN_RANGE),
+      String(WATCHER_MAX_RANGE),
+    ]);
+    expectSentence('enemies', /A watcher takes (\w+)\./, [
+      word(shotsToKill('watcher', WEAPON_SPECS.rifle.damage)),
+    ]);
   });
 
   it.each(rows)('matches ENEMY_STATS for the %s', (label, kind) => {

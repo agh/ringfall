@@ -4,8 +4,10 @@ import {
   createWaveState,
   FINAL_WAVE,
   tickWave,
+  WATCHERS_IN_ROSTER,
   WAVE_CLEAR_PAUSE,
   WAVE_COUNTDOWN,
+  watcherCount,
   waveAtmosphere,
   waveComposition,
 } from '../../src/core/waves';
@@ -15,6 +17,12 @@ describe('waves', () => {
     expect(waveComposition(1)).toEqual(['skimmer', 'skimmer', 'skimmer']);
     expect(waveComposition(2).filter((k) => k === 'strider')).toHaveLength(1);
     expect(waveComposition(6).length).toBeGreaterThan(waveComposition(3).length);
+    const waves = [1, 2, 3, 4, 5, 6, 7, 8];
+    expect(waves.map(watcherCount)).toEqual([0, 0, 0, 0, 1, 1, 2, 2]);
+    const inRoster = (wave: number) => waveComposition(wave).filter((k) => k === 'watcher').length;
+    expect(waves.map(inRoster)).toEqual(
+      WATCHERS_IN_ROSTER ? waves.map(watcherCount) : waves.map(() => 0),
+    );
   });
 
   it('walks countdown -> active -> cleared -> next', () => {
@@ -32,6 +40,17 @@ describe('waves', () => {
     expect(next.transition).toBe('next');
     expect(next.wave.number).toBe(2);
     expect(next.wave.phase).toBe('countdown');
+  });
+
+  it('moves to the final wave, not to victory, when the one before it clears', () => {
+    // Nothing else pins FINAL_WAVE: a `>= FINAL_WAVE - 1` slip passed every other test.
+    const w = { number: FINAL_WAVE - 1, phase: 'active' as const, phaseEndsAt: 0 };
+    const cleared = tickWave(w, 0, 100);
+    expect(cleared.wave.phase).toBe('cleared');
+    const next = tickWave(cleared.wave, 0, cleared.wave.phaseEndsAt);
+    expect(next.transition).toBe('next');
+    expect(next.wave.number).toBe(FINAL_WAVE);
+    expect(next.wave.phase).not.toBe('won');
   });
 
   it('declares victory after the final wave', () => {

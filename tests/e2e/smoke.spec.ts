@@ -4,13 +4,20 @@ import { expect, test } from '@playwright/test';
 test.describe.configure({ timeout: 120_000 });
 
 test.describe('Ringfall smoke', () => {
-  test('loads the title screen and starts a game', async ({ page }) => {
-    const pageErrors: string[] = [];
+  // Every test fails on a page error or a console error, not only the first one.
+  let pageErrors: string[] = [];
+  test.beforeEach(({ page }) => {
+    pageErrors = [];
     page.on('pageerror', (err) => pageErrors.push(err.message));
     page.on('console', (msg) => {
       if (msg.type() === 'error') pageErrors.push(msg.text());
     });
+  });
+  test.afterEach(() => {
+    expect(pageErrors).toEqual([]);
+  });
 
+  test('loads the title screen and starts a game', async ({ page }) => {
     await page.goto('/');
     await expect(page).toHaveTitle('Ringfall');
     await expect(page.getByRole('heading', { name: 'RINGFALL' })).toBeVisible();
@@ -39,7 +46,12 @@ test.describe('Ringfall smoke', () => {
     expect(snapshot.status).toBe('playing');
     expect(['countdown', 'active']).toContain(snapshot.wavePhase);
     expect(snapshot.time).toBeGreaterThan(0.5);
-    expect(pageErrors).toEqual([]);
+    // "Renders" means a live WebGL 2 context on the scene canvas, not only a DOM that updates.
+    const hasContext = await page.evaluate(() => {
+      const canvas = document.querySelector<HTMLCanvasElement>('#scene');
+      return canvas?.getContext('webgl2') !== null;
+    });
+    expect(hasContext).toBe(true);
   });
 
   test('keyboard input moves the player', async ({ page }) => {

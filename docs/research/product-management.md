@@ -16,7 +16,7 @@ operational documents listed in the shelf table below.
 ## Verdict
 
 The engineering shelf (design doc, ADRs, test plan, changelog, journey)
-was unusually complete for a morning. The product shelf was not: the
+existed. The product shelf did not: the
 specification was doing the job of a concept pitch, a requirements
 document, and a scope cut at once. The highest-value hour was to split it
 into a PR/FAQ and a PRD with numbered, testable requirements, add a text
@@ -51,7 +51,7 @@ and Steve Morin's one-pager for success criteria ([Lenny][lenny]). Google
 design docs cover context, goals and non-goals, design, alternatives, and
 cross-cutting concerns ([Ubl][google]). Pillars are "for settling
 arguments, not for decoration" ([Allo][allo]). Acceptance criteria tie to
-tests by tagging scenarios with the requirement ID
+tests by making every scenario "map back to a requirement or user story"
 ([Fowler][gwt]; [TestQuality][tq]). A PRD states the what; an ADR records
 why X over Y and is superseded, never edited ([Cognitect][nygard]). For
 coding agents, Addy Osmani's rules apply: exact versions, commands, a
@@ -64,7 +64,8 @@ acceptance criteria that name the test layer, and a traceability table.
 ## Storyboards
 
 Beat sheets list beats in order; thumbnails come before an animatic
-([UW CSE 456][uw]; [Gnomon][gnomon]). Trailer structure per Derek Lieu:
+([UW CSE 456][uw]; [Gnomon][gnomon]). Trailer structure per presskit.gg's
+field guide (which quotes Derek Lieu on "burying your hook"):
 hook in the first five seconds, core loop to twenty-five, escalation to
 forty-five, title last ([presskit.gg][lieu]; [PC Gamer][pcgamer]). The
 first thirty seconds decide retention ([Game Developer][hook]). Because
@@ -77,17 +78,18 @@ Applied: `docs/product/storyboard.md`.
 
 ## Art direction
 
-An art bible holds per-state mood targets, silhouette readability at
-thumbnail size, a semantic palette, and a VFX language
-([makko survey][makko]). Valve's TF2 paper is the primary source for
+Public art bibles hold a fixed "silhouette envelope" and a "reserved
+color per character" ([makko survey][makko]); the mood, palette and VFX
+sections below are this project's additions. Valve's TF2 paper is the primary source for
 silhouette rules: "Even when viewed only in silhouette with no internal
 shading at all, the characters are readily identifiable"
 ([Valve][tf2]). Riot's VFX style guide sets the effects rules: emphasize
 focus, scale matches importance, anticipation then payoff
-([Riot][riot]). Overwatch's pillars include big bold silhouettes that skins
-must not change ([Game Developer][overwatch]). With procedural art and no
-artist, the art bible is the constraint set
-([No Man's Sky][nms]; [EA SEED][seed]).
+([Riot][riot]). Overwatch's art direction was fixed early around a diverse
+cast, a hopeful future and a vibrant world ([Game Developer][overwatch]).
+Procedural art still needs "artistic control" ([No Man's Sky][nms]) and is
+"a form of language, where we view the world through rules"
+([EA SEED][seed]); with no artist, this document is where those rules live.
 
 Applied: `docs/product/art-direction.md` complementing `docs/brand.md`.
 

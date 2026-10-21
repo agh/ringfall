@@ -9,6 +9,8 @@ created: 2026-10-21
 
 # Ringfall Chapter 1: specification
 
+> [Ringfall](../README.md) > Specification
+
 This document is the contract for the demo. It says what Chapter 1 is, what
 "lovable" means for each part, and what is explicitly deferred. The
 engineering numbers live in [design-doc.md](design-doc.md); the look and
@@ -47,26 +49,26 @@ a friend. Each MLP item names that moment.
 | - | ---- | ---------- | ------ | ----- |
 | 1 | Shield break as an event: hit-stop, flare, vignette, enemies ease off | "It let me breathe." | Partial (flare, vignette) | #4 |
 | 2 | Weapon juice: kick, recoil, tracer, hit-flash, sway, bob | "The gun feels good." | Done | n/a |
-| 3 | Skimmers flee when a strider dies, with a bark | "They noticed." | Not started | #5 |
+| 3 | Skimmers flee when a strider dies, with a bark | "They noticed." | Done (`src/core/enemy.ts`, #40) | #5 |
 | 4 | Striders dive from grenades and sidestep | "It dodged my grenade." | Not started | #6 |
 | 5 | Firing points for striders | "They take positions." | Not started | #7 |
 | 6 | The ring overhead, dawn sky, terrain, fog | "Where am I?" | Done | n/a |
 | 7 | Procedural chant, calm and combat states, stingers | "What is that music?" | Partial (drone, states) | #9 |
 | 8 | Five named waves, drop-pods, victory tableau | "It had an ending." | Not started (eight uniform waves today) | #8 |
 | 9 | Title choreography and the Deploy moment | "Oh, nice." | Not started | #9 |
-| 10 | Brand compliance (fonts, tokens, banner) | Consistency, not a moment | Not started | #10 |
+| 10 | Brand compliance (fonts, tokens, banner) | Consistency, not a moment | Partial (fonts and tokens in HUD v2; the compliance pass is #10) | #10 |
 | 11 | Frame budget on an integrated GPU | It runs on the laptop in the room | Not measured | #11 |
-| 12 | Playtest bot as a CI gate | We know it is fair | Harness done; gate not | #12 |
+| 12 | Playtest bot as a CI gate | We know it is fair | Done (`tests/balance/`, CI job `Balance gate`, #39) | #12 |
 | 13 | Demo recording pipeline | The awards reel | Done (recorder, offline score, mux); CI artifact not | #13 |
 | 14 | Easter eggs: temperaments, sector number, crouch, switch | "IYKYK." | Core done (temperaments, Sector 117, crouch and bark, switch scoring); glyph, tint and chime are render and audio follow-ups | #14 |
 | 15 | Personal bests in the browser: this round against your previous best score, deepest wave, runs and clears | "I got further." | Done (`src/core/records.ts`, localStorage, nothing leaves the device) | n/a |
+| 16 | Six weapons, pickups during waves, two slots with a swap key | "What does this one do?" | Done (`src/core/weapon.ts`, `src/core/pickups.ts`) | #16 |
 
 ## Later (explicit choices)
 
 | Item | Why deferred | Issue |
 | ---- | ------------ | ----- |
 | Melee | Needs a telegraph and a reason; promote after the shield event. | #15 |
-| Second weapon and swap | Choice without a new rhythm. | #16 |
 | Third enemy and encounter spice | Base dance first. | #17 |
 | Mobile, WebGPU, co-op | No loop change; platform work. | #18 |
 | Vehicles, campaign, second arena | A second game. | #3 |
