@@ -195,8 +195,9 @@ minutes.
 by day, night, dusk with rain, and night with fog) on software GL, writes the
 PNG files and `report.json` to `node_modules/.cache/ringfall-frames/`, prints a
 table, and exits 1 when a frame is over its budget. It needs a production
-build. CI runs it as the `frames` job on every pull request and uploads the
-directory as the `frames` artifact. [test-plan.md](test-plan.md) explains the
+build. The `Luminance gate` workflow (`.github/workflows/frames.yml`) runs it on
+pull requests that touch the renderer and by hand from the Actions tab, not as a
+gate on `main` or the Pages deploy, and uploads the directory as the `frames` artifact. [test-plan.md](test-plan.md) explains the
 measurement and the budgets.
 
 ```bash

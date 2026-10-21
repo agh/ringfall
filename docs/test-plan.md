@@ -177,7 +177,9 @@ so the mean drifts by about 2 of 255 between runs on software GL; a budget
 should stay clear of a measured value by more than that.
 
 A frame over its mean budget or its blob budget fails `pnpm frames`, and
-the CI `frames` job with it; the PNG files and `report.json` are uploaded as the
+the `Luminance gate` workflow with it (`.github/workflows/frames.yml`: pull requests
+that touch the renderer, or by hand; it takes 17 to 40 minutes on a runner, so it does
+not gate `main` or the deploy); the PNG files and `report.json` are uploaded as the
 `frames` artifact on every run so a failure can be looked at. Frame rates
 that do not divide 60 are refused, as the recorder refuses them.
 
