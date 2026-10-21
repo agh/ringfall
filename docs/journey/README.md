@@ -1,14 +1,17 @@
 # The journey
 
-A time-indexed log of how Ringfall was built in one hackathon morning, with
-the frames that were captured along the way. Times are UTC on 2026-10-21.
-Each entry says what was tried, what was seen, and what was decided, so a
-reader can follow the reasoning and not just the result. Images live in
-`images/` and are named by the time they were captured.
+A time-indexed log of how Ringfall was built in one hackathon session,
+with the frames that were captured along the way. Times are UTC on
+2026-10-21; the user's clock ran seven hours behind (10:12 for 17:12 UTC)
+and the hard stop was 18:30 UTC. Each entry says what was tried, what was
+seen, and what was decided, so a reader can follow the reasoning and not
+just the result. Images live in `images/` and are named by the minute they
+were captured.
 
 ## The story, not the straight line
 
-The morning had three acts, and the second one started with a correction.
+The session had four acts. The second started with a correction, and the
+fourth with a change of role.
 
 **Act one: a working game in forty minutes.** The first decisions were
 made fast and have held: TypeScript on the house toolchain, three.js on
@@ -34,7 +37,9 @@ flags to split that one symptom into three unrelated faults: the camera was
 inside the ring's tube; the first animation frame after Deploy carried a
 negative delta that made every decay term grow until the lights blew out;
 and the terrain under the arena was fighting the floor in the depth buffer
-at range. Each fix was small. Finding them was the work. Most flags were removed afterwards; `?nopost`, the uniform probe, and the `ringfallDebug` global stayed as documented diagnostics.
+at range. Each fix was small. Finding them was the work. Most flags were
+removed afterwards; `?nopost`, the uniform probe, and the `ringfallDebug`
+global stayed as documented diagnostics.
 
 **Act three: the game plays itself.** Determinism paid off. The same seeded
 `stepGame` that a person drives became a bot's playground: a headless
@@ -48,8 +53,18 @@ later lines up with the frames.
 Meanwhile three research agents ran in parallel and came back with sourced
 reports on the design philosophy being borrowed, the browser prior art, and
 a brand system. Their findings became the specification, the brand doc,
-and seventeen GitHub issues, each with acceptance criteria a person can
-check.
+and a backlog of GitHub issues, each with acceptance criteria a person can
+check; it started at seventeen and stood at thirty-three by the end.
+
+**Act four: the coach.** With an hour and a half left the asks came five
+at a time (day and night, six weapons, weather, a story reel, a domain)
+and the role changed: dispatch to agents, review what comes back, land
+the code. The first round was four local streams with disjoint files; it
+landed, but the flare the user had complained about survived two rounds
+of tuning because nobody had measured a frame. The second round, after
+main was merged, was thirteen cloud sessions, one issue each, with a
+luminance gate among them so the next tuning argument is a number. The
+entries from 16:05 on are that act.
 
 ### Calls that were made, then overruled
 
@@ -70,6 +85,22 @@ check.
   unblocked first so other agents could branch from it. That was right:
   thirteen agents were about to branch from it. Merged at 17:06 as
   8566f27.
+
+### Calls that were wrong on the evidence
+
+Not overruled by anyone; found out by measuring.
+
+- **Briefing the flare fix as light numbers.** The coach sent stream A
+  exact intensities and opacities. The frame stayed white because the
+  cause was the particle size law, which a headless replay and a read of
+  the shader found in ten minutes (16:45 entry).
+- **Filing frames under guessed times.** The first journey frames of the
+  afternoon were named by the time the entry was written, not captured.
+  Renamed in 627c55d; the audit's warning about timestamps applied to the
+  coach too.
+- **A checkpoint commit to satisfy the stop hook.** It swept an agent's
+  scratch harness into the tree and broke CI lint for one run (16:35 to
+  16:42). Checkpoints now go through the same gates as any commit.
 
 ## 14:08 Kick-off
 
@@ -222,7 +253,7 @@ the baseline every tuning change is measured against.
 
 ## 16:05 Coach, not player
 
-The sixth ask was five things at once: day and night per wave, a
+The sixth ask was six things at once: day and night per wave, a
 ninety-second story reel, six weapons with a swap key, weather, a custom
 domain, and a change of role: dispatch to agents, review their outcomes,
 land the code. Four streams were cut with disjoint file ownership so they
@@ -237,6 +268,20 @@ And a brief that said both "wave 1 unchanged" and "day: sun at 35
 degrees" was resolved by the agent in favour of the first; the right
 call, flagged in its report, and the kind of ambiguity a coach should not
 write.
+
+### Balance after weapons
+
+Stream B1 landed the six weapons at 16:22 (b09ff28) and re-ran
+`pnpm balance` with the same twenty seeds and 480 s cap. This replaces the
+15:50 table as the baseline the gate in #12 is set against.
+
+| Profile | Win rate | Mean waves cleared | Accuracy |
+| ------- | -------- | ------------------ | -------- |
+| Steady | 15% | 5.35 | 39% |
+| Reckless | 0% | 4.20 | 42% |
+
+Weapons, not tuning, moved the bot from never reaching wave eight to
+winning three runs in twenty.
 
 ## 16:45 "The flare when enemies explode is way too much"
 
@@ -271,10 +316,6 @@ gun with a pickup column beside it, from the deterministic run at seed 7:
 
 ## 17:03 Three streams land
 
-A note on clocks, so the journal can be lined up with the user's
-messages: the user's own clock reads 10:12 when it is 17:12 UTC, and the
-hackathon must be finished by 18:30 UTC, which is 11:30 on theirs.
-
 The three agent streams were landed by the coach in five commits on the
 feature branch. b3ab847 `fix(render)` tamed the explosion and death flare
 per the user's complaint: light 600 to 140, flash opacity 1.0 to 0.55,
@@ -284,7 +325,7 @@ cards and day and night captures, cached and resumable. 0192cbb
 and pickup emblems into the scene from the agent's own integration
 snippet, and carried the real whiteout fix: the 64 px particle cap, the
 near fade, dust kept 2.5 m from the eye, blasts scaled by distance.
-d86c910 was docs for the atmosphere and weapon presentation, the
+d86c910 carried the docs for the atmosphere and weapon presentation, the
 changelog and the journey. 627c55d renamed the journey frames to the
 minute they were captured; the coach had first filed them under guessed
 times, so the audit's warning about timestamps applied to the coach too.
