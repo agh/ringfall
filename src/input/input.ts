@@ -97,7 +97,8 @@ export class InputController {
     if (e.code === 'KeyR') this.reloadLatched = true;
     if (e.code === 'KeyG') this.grenadeLatched = true;
     if (e.code === 'KeyQ') this.swapLatched = true;
-    if (e.code === 'Space' || e.code === 'Tab') e.preventDefault();
+    // Only while the game owns the pointer; on the title card Tab and Space belong to the button.
+    if ((e.code === 'Space' || e.code === 'Tab') && this.locked) e.preventDefault();
   };
 
   private readonly onKeyUp = (e: KeyboardEvent): void => {
