@@ -5,6 +5,12 @@ import { accumulateWheel } from './wheel';
 const MAX_PITCH = Math.PI / 2 - 0.02;
 /** Radians of look per pixel of mouse travel at sensitivity 1 (docs/design-doc.md). */
 const BASE_SENSITIVITY = 0.0022;
+/**
+ * Largest mouse delta one event may apply, in pixels. A fast flick on a high-DPI mouse is a few
+ * hundred pixels per event; the first event after the lock returns (Resume after Esc) can carry
+ * the whole cursor trip to the button, which whipped the view across the arena.
+ */
+const MAX_MOVEMENT = 400;
 
 /**
  * Collects keyboard and mouse state between simulation steps. Held actions (move, fire, jump,
@@ -114,8 +120,10 @@ export class InputController {
 
   private readonly onMouseMove = (e: MouseEvent): void => {
     if (!this.locked) return;
-    this.yaw -= e.movementX * this.sensitivity;
-    this.pitch = clamp(this.pitch - e.movementY * this.sensitivity, -MAX_PITCH, MAX_PITCH);
+    const dx = clamp(e.movementX, -MAX_MOVEMENT, MAX_MOVEMENT);
+    const dy = clamp(e.movementY, -MAX_MOVEMENT, MAX_MOVEMENT);
+    this.yaw -= dx * this.sensitivity;
+    this.pitch = clamp(this.pitch - dy * this.sensitivity, -MAX_PITCH, MAX_PITCH);
   };
 
   private readonly onMouseDown = (e: MouseEvent): void => {

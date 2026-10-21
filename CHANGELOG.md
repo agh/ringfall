@@ -168,6 +168,14 @@ and this project adheres to
 
 ### Fixed
 
+- The HUD no longer forces a synchronous layout and style recalc on every
+  playing frame: text is written only when it changes and the tracker and
+  compass canvas sizes come from a `ResizeObserver` instead of a per-frame
+  `getBoundingClientRect()` (layouts per frame 1.0 to 0.008 on a headless
+  `?record&bot&seed=7` capture). One `mousemove` delta is capped at 400 px
+  per axis, so the lock regained after Esc cannot whip the view (#105,
+  block 4).
+
 - Audio block of the quality pass (#105): noise buffers are built once per
   context and warmed at unlock, instead of a fresh buffer filled on the main
   thread for every shot, explosion and drop pod (141 fills and 11.7 MB over
