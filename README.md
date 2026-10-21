@@ -82,7 +82,7 @@ tests in real Chromium.
 | [docs/design-doc.md](docs/design-doc.md) | Architecture and every gameplay number with its rationale |
 | [docs/brand.md](docs/brand.md) | Palette, typography, geometry language, audio identity, feel values, PR checklist |
 | [docs/test-plan.md](docs/test-plan.md) | Static, unit, playtest, browser, visual, and recording layers |
-| [docs/research/](docs/research/) | Sourced research on Halo's design and on browser WebGL prior art |
+| [docs/research/](docs/research/) | Sourced research on the reference console shooter's design and on browser WebGL prior art |
 | [docs/journey/](docs/journey/) | Time-indexed build log with captured frames |
 | [docs/adr/](docs/adr/) | Architecture decision records |
 

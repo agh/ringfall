@@ -1,13 +1,13 @@
 ---
 type: research
-title: "What S-tier Halo feel in a browser actually requires"
+title: "What S-tier console-shooter feel in a browser actually requires"
 status: approved
 authors:
   - name: "Ringfall research agent (Claude), reviewed by the hackathon team"
 created: 2026-10-21
 ---
 
-# What "S-tier Halo feel in a browser" actually requires
+# What "S-tier console-shooter feel in a browser" actually requires
 
 This is a research note produced during the hackathon by a delegated
 research agent, then reviewed and lightly edited. Every claim carries a
@@ -16,7 +16,7 @@ not itself a commitment.
 
 ## The thesis in three sentences
 
-Halo CE's magic is not content volume; it is a **3-second loop inside a
+The reference console shooter's magic is not content volume; it is a **3-second loop inside a
 30-second loop inside a 3-minute loop** where enemies are legible actors in
 a theater the player directs ([Griesemer, Engadget 2011][griesemer]). A 5
 to 10 minute demo therefore needs exactly **one** great 30-second loop,
@@ -24,17 +24,17 @@ varied four or five times, wrapped in one unforgettable image (the ring)
 and one unforgettable sound (the chant register). Everything else is
 "later".
 
-## Why Halo CE's opening lands (primary sources)
+## Why the reference shooter's opening lands (primary sources)
 
 **The loop, not the level.** Griesemer: "there was maybe 30 seconds of fun
 that happened over and over... you can pretty much stretch that out to be
 an entire game", but the half everyone forgets is "in different
 environments, with different weapons, different vehicles, against different
-enemies... No 30 second stretch of Halo is ever repeated." His canonical
+enemies... No 30 second stretch of [the game] is ever repeated." His canonical
 example is melee on an unaware enemy, grenade into a group, clean up
-stragglers ([Engadget][griesemer]). Bungie called the
+stragglers ([Engadget][griesemer]). The studio called the
 weapons-grenades-melee triad the "Golden Triangle"
-([Halopedia][halopedia-weapons]).
+([Halopedia][wiki-weapons]).
 
 **Shield rhythm is a pacing contract with the AI.** Griesemer: when your
 shields drop and you take cover, the enemies back off and let you catch
@@ -44,19 +44,19 @@ after a brief damage-free window; health beneath it needs a medkit, which
 removes the "1% health" problem while keeping stakes
 ([Film Stories][filmstories]). **Design consequence for Ringfall:** enemy
 aggression must drop when the player's shield pops. That is the single most
-Halo-feeling AI rule and it costs ten lines.
+genre-defining AI rule and it costs ten lines.
 
 **AI as theater.** The GDC 2002 deck lists the design goals as
 *Intelligible, Interactive, Unpredictable*; "Transparent thought process";
 "Communication of Intent... Language, Posture, Gesture, Focus of Attention";
 "Things to Avoid: Subtlety, Looking Broken"; and a "Thwarted / Breaking
 point: Flee in Terror, Berserk, Retreat" ([Butcher & Griesemer][gdc2002]).
-The famous Grunt story: "Initially nobody noticed so we had to keep adding
-clues... every single Grunt run away every single time an Elite is
+The famous fleeing-minion story: "Initially nobody noticed so we had to keep adding
+clues... every single [minion] run away every single time a [leader] is
 killed... outrageously exaggerated panic run... I would still estimate that
 less than a third of our users made the connection" ([DU lecture][du]).
 Isla: "subtlety flies straight over the player's head... you really have to
-crank it to 11" ([Game Developer][isla-subtlety]). The Bungie behavior
+crank it to 11" ([Game Developer][isla-subtlety]). The studio's behavior
 list includes a "Dive impulse: if I'm in immediate danger from a vehicle or
 grenade... dive away", an "Evasion impulse: hop to the side", and
 "self-preserve" when shields are low ([behavior list][bungie-ai]).
@@ -70,12 +70,12 @@ territory; pushed to 'fallback' point; pushed to 'last-stand' point; player
 scattered green grass", a cliff over ocean, and looking up, the far side of
 the ring overhead: "Everything feels simultaneously familiar and alien"
 ([Game Informer][gameinformer]). The whole game's AI and encounter design
-was prototyped on one sandbox level ([Wikipedia][wiki-halo]). One arena is
-the Halo way.
+was prototyped on one sandbox level ([Wikipedia][wiki-ce]). One arena is
+the reference shooter's way.
 
 **Music.** O'Donnell chose "Gregorian chant, string orchestra, percussion,
 and just a bit of a 'Qawwali voice'", written in under a week
-([HBO 1999 Q&A][hbo1999]). In-game: "The music of Halo is designed so that
+([HBO 1999 Q&A][hbo1999]). In-game: "The music of [the game] is designed so that
 the player feels that their personal game experience was scored. They
 should never be aware of what they did to cause it to be scored"
 ([halo.bungie.org/music][hbo-music]).
@@ -117,7 +117,7 @@ theatrical enemies**.
 
 | Priority | Item | Why it is lovable, not merely functional |
 | -------- | ---- | ---------------------------------------- |
-| MLP 1 | Shield pop and recharge as a full audiovisual event; enemies back off while the shield is down | The Halo contract. The player feels the game letting them breathe. |
+| MLP 1 | Shield pop and recharge as a full audiovisual event; enemies back off while the shield is down | The reference shooter's contract. The player feels the game letting them breathe. |
 | MLP 2 | Skimmers flee when a strider dies, with exaggerated animation and a bark | Fewer than a third of players noticed even at 11; the demo must crank to 12. |
 | MLP 3 | Striders dive from grenades and sidestep fire; seek cover on low shield | Makes bouncing grenades a conversation. |
 | MLP 4 | Weapon juice: camera kick, recoil, tracer, hit-flash, distinct chimes | Cheapest wow available. |
@@ -184,7 +184,7 @@ mode, long cathedral tail, then strings and a drum pulse.
 ## Sources
 
 [griesemer]: https://www.engadget.com/2011-07-14-half-minute-halo-an-interview-with-jaime-griesemer.html
-[halopedia-weapons]: https://www.halopedia.org/Weapons_(gameplay)
+[wiki-weapons]: https://www.halopedia.org/Weapons_(gameplay)
 [filmstories]: https://filmstories.co.uk/features/killer-feature-halo-and-halo-2s-regenerating-shields/
 [gdc2002]: https://www.jmeiners.com/shamans/papers/ai/the_illusion_of_intelligence.pdf
 [du]: https://www.cs.du.edu/~sturtevant/s13-ai/lecture2.pdf
@@ -192,7 +192,7 @@ mode, long cathedral tail, then strings and a drum pulse.
 [bungie-ai]: https://learn.microsoft.com/en-us/halo-master-chief-collection/h2/ai/aibehaviorlist
 [isla-battle]: https://web.cs.wpi.edu/~rich/courses/imgd4000-d11/lectures/halo3.pdf
 [gameinformer]: https://gameinformer.com/b/features/archive/2012/12/25/places-the-halo-ring.aspx
-[wiki-halo]: https://en.wikipedia.org/wiki/Halo:_Combat_Evolved
+[wiki-ce]: https://en.wikipedia.org/wiki/Halo:_Combat_Evolved
 [hbo1999]: https://halo.bungie.org/music_interviews/hbo_qanda_1999.html
 [hbo-music]: https://halo.bungie.org/music.html
 [caniuse]: https://caniuse.com/webgpu

@@ -22,6 +22,9 @@ export interface Settings {
 
 export const SETTINGS_KEY = 'ringfall.settings.v1';
 
+/** A well-formed record is under 100 bytes; anything larger is not ours and is not parsed. */
+export const MAX_SETTINGS_BYTES = 1024;
+
 export const SENSITIVITY_RANGE = { min: 0.5, max: 2, step: 0.05 } as const;
 export const FOV_RANGE = { min: 70, max: 100, step: 1 } as const;
 
@@ -69,7 +72,9 @@ export const loadSettings = (store: SettingsStore | null): Settings => {
   if (!store) return DEFAULT_SETTINGS;
   try {
     const raw = store.getItem(SETTINGS_KEY);
-    if (!raw) return DEFAULT_SETTINGS;
+    if (typeof raw !== 'string' || raw.length === 0 || raw.length > MAX_SETTINGS_BYTES) {
+      return DEFAULT_SETTINGS;
+    }
     return parseSettings(JSON.parse(raw));
   } catch {
     return DEFAULT_SETTINGS;
