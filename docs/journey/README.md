@@ -1,3 +1,12 @@
+---
+type: readme
+title: "The journey"
+status: draft
+authors:
+  - name: "Ringfall hackathon team"
+created: 2026-10-21
+---
+
 # The journey
 
 A time-indexed log of how Ringfall was built in one hackathon session,
@@ -136,7 +145,7 @@ brand system. Their reports are under [`../research/`](../research/) and
 ## 14:34 to 15:05 Renderer v2 and three bugs
 
 The brief said "10x more sophisticated". The second renderer added a
-scattering sky, a ring you actually stand on (six kilometres in radius,
+scattering sky, a ring you actually stand on (six kilometers in radius,
 sunk below the horizon so it rises on both sides and crosses overhead),
 rolling terrain with mountains at the rim, image-based lighting from the
 sky, a GPU particle pool, an HDR composer with bloom, a custom feel pass
@@ -157,8 +166,8 @@ flags and headless screenshots:
    in the code.
 3. **Terrain fighting the floor.** The terrain under the arena sat 0.6 m
    below the floor, but with a 0.08 m near plane and a 40 km far plane the
-   depth buffer could not separate them at ten metres. Fix: sink the inner
-   terrain six metres.
+   depth buffer could not separate them at ten meters. Fix: sink the inner
+   terrain six meters.
 
 ![Renderer v2 before terrain, direct path](images/1450-renderer-v2-first-light.png)
 
@@ -169,7 +178,7 @@ flags and headless screenshots:
 ## 15:05 Procedural score
 
 A choir drone in D minor (three detuned oscillators per voice, vowel
-formant filters drifting between "ah", "oh" and "oo", a synthesised
+formant filters drifting between "ah", "oh" and "oo", a synthesized
 cathedral impulse response) with calm and combat buses that crossfade on
 wave state. No samples anywhere.
 
@@ -189,7 +198,7 @@ drives balance measurement, browser smoke tests, and the demo film.
 ## 15:17 Backlog landed
 
 Seventeen GitHub issues: an MLP epic with eleven children (shield-break
-event, enemy theatre, grenade dives, firing points, five named waves,
+event, enemy theater, grenade dives, firing points, five named waves,
 stingers and title choreography, brand compliance, frame budget, playtest
 gate, demo pipeline, easter eggs) and a Later epic with four explicitly
 deferred items. Each child has context, scope, acceptance criteria, and an
@@ -265,7 +274,7 @@ checking frames, running the gates and writing commits. Two things went
 wrong with that. A checkpoint commit made to satisfy the stop hook swept
 an agent's scratch harness into the tree and broke CI lint for one run.
 And a brief that said both "wave 1 unchanged" and "day: sun at 35
-degrees" was resolved by the agent in favour of the first; the right
+degrees" was resolved by the agent in favor of the first; the right
 call, flagged in its report, and the kind of ambiguity a coach should not
 write.
 
@@ -293,8 +302,8 @@ was still white. The agent ran out of budget and handed back an honest
 that moment (a skimmer kill 8.3 m away and the wave clear, nothing else)
 and then read the particle shader: a sprite's size is `size * 300 /
 depth`, so each of the forty size-10 sparks was 375 px wide, additive,
-with a three-times colour boost at the centre. Nobody had tuned a light
-that mattered. Sprites are now capped at 64 px and fade within two metres
+with a three-times color boost at the center. Nobody had tuned a light
+that mattered. Sprites are now capped at 64 px and fade within two meters
 of the eye, blasts scale with distance from the camera, and the death
 burst is sixteen motes. Mean frame brightness at that moment went from
 204 to 61 on a scale of 255.
@@ -458,7 +467,7 @@ dust discs, and two browser deaths recovered by the resume logic.
 Issue #37 asked for the four things a demo on a borrowed laptop needs:
 mouse sensitivity, field of view, and switches for screen shake and the hit
 flash, all kept between visits. The values live in a pure module,
-`src/core/settings.ts`, modelled on the personal-bests store: missing,
+`src/core/settings.ts`, modeled on the personal-bests store: missing,
 blocked or corrupt storage yields the defaults, and the defaults are
 exactly what the game did before the panel existed. The panel itself is a
 collapsed "Settings" strip under the controls list so the title card stays
@@ -475,7 +484,7 @@ overlay now scrolls and the label column is wider.
 
 ## 17:29 Brand compliance
 
-The stylesheet had thirty-odd literal colours that predated the brand doc
+The stylesheet had thirty-odd literal colors that predated the brand doc
 (an `rgba` of Beacon here, a lime grenade pip there, a sky-blue hover
 borrowed from a utility palette). Every one is now a token or a
 `color-mix()` of a token, the shield arc gradient lost its two hex stops,
