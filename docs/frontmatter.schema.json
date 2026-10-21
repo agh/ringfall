@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/agh/ringfall/docs/frontmatter.schema.json",
   "title": "Ringfall document frontmatter",
-  "description": "The crefft frontmatter contract (guides/docs/specifications.md, Machine-Readable Frontmatter) with the `type` enum extended for the document kinds this repository keeps under docs/. Applied by scripts/check-frontmatter.mjs to every Markdown file under docs/. `threat-model` was added for docs/threat-model.md (#78). The root README.md carries no frontmatter because GitHub renders it as a table above the banner.",
+  "description": "The crefft frontmatter contract (guides/docs/specifications.md, Machine-Readable Frontmatter) with the `type` enum extended for the document kinds this repository keeps under docs/ (`architecture` is the C4 package under docs/architecture/, index and generated files alike; `threat-model` is docs/threat-model.md, #78). Applied by scripts/check-frontmatter.mjs to every Markdown file under docs/. The root README.md carries no frontmatter because GitHub renders it as a table above the banner.",
   "type": "object",
   "additionalProperties": false,
   "required": ["title", "type", "status", "authors", "created"],
@@ -12,6 +12,7 @@
       "enum": [
         "rfc",
         "adr",
+        "architecture",
         "design-doc",
         "prd",
         "spec",

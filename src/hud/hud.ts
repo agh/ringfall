@@ -123,9 +123,11 @@ export class Hud {
           if (e.from) this.pendingDamage.push(e.from);
           break;
         }
-        case 'waveStarted':
-          this.announce(e.number === FINAL_WAVE ? 'Final wave' : `Wave ${e.number}`, 1800);
+        case 'waveStarted': {
+          const label = e.number === FINAL_WAVE ? 'Final wave' : `Wave ${e.number}`;
+          this.announce(`${label} · ${e.name}`, 2200);
           break;
+        }
         case 'waveCleared':
           this.announce('Wave cleared', 1600);
           break;
@@ -138,9 +140,11 @@ export class Hud {
         case 'pickupTaken':
           this.announce(WEAPON_SPECS[e.kind].name, 900);
           break;
-        case 'victory':
-          this.announce('Chapter 1 complete', 4000);
+        case 'victory': {
+          const breaks = `${e.shieldBreaks} shield break${e.shieldBreaks === 1 ? '' : 's'} survived`;
+          this.announce(`Chapter 1 complete · ${e.kills} kills · ${breaks}`, 6000);
           break;
+        }
         case 'playerDied':
           this.announce('Down', 1600);
           break;

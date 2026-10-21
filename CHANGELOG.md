@@ -25,6 +25,21 @@ and this project adheres to
 
 ### Added
 
+- Five named wave beats (Scouts, The Leader, Fallback, The Push, Last
+  Stand) replace the eight-wave formula; `waveStarted` carries the name and
+  the HUD announces it. Enemies arrive by drop pod (`dropPod` event 1.5 s
+  before they go active; The Leader's strider lands 4 s late). The Last
+  Stand ends when its armoured strider (3x health) falls: `victory` carries
+  kills and shield breaks, the survivors flee off the arena, and the state
+  holds a 5 s tableau before the run is won. `scripts/wave-table.mjs`
+  generates the design doc's composition table from the constants.
+
+- An architecture package under `docs/architecture/`: C4 context and
+  container diagrams, component diagrams and a module map generated from the
+  import graph, an event catalogue generated from the `GameEvent` union and
+  its consumers, the frame and tick data flows, the build and delivery view,
+  a decision index and the invariants, with `pnpm docs:architecture` to
+  regenerate and render and a unit test that fails on drift (#79).
 - A unit test that fails if the pre-rename repository path reappears outside
   `docs/journey/`, and a runbook note on the rename order (#70).
 
@@ -91,6 +106,13 @@ and this project adheres to
 
 ### Changed
 
+- Night and weather readability (#31): dust motes are a hint rather than
+  white discs (size 0.09, 3.5 to 10 m out, at most 11 px at 720p) with
+  rate, life and brightness per time of day and weather; rain streaks are
+  brighter and longer with larger splashes; enemy rigs own their materials
+  and lift their emissives (skimmer ring and core, strider lens and muzzle)
+  with a night factor from the atmosphere rig, so one strider charging no
+  longer whitens every strider's lens.
 - The repository no longer names the console shooter franchise it was
   inspired by outside the cited titles and URLs under `docs/research/`
   (ADR-0003). The research note on feel and the MLP cut dropped the name
