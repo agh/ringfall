@@ -895,6 +895,21 @@ versus new side by side: `images/1850-hero-rerender.jpg`.
 
 ![Old versus new hero frames](images/1850-hero-rerender.jpg)
 
+## 19:17 The reel and the deck join the tree
+
+The 69-second reel (`docs/reel/ringfall-reel.mp4`, seed 7, wave 1 by day
+and wave 2 by night, built from `cd16454` with the flare cut, the
+explosion rework and the night pass) and the walkthrough deck
+(`docs/deck/ringfall-journey.pptx`, the reel embedded on its jump-out
+slide) are tracked from here on. The approach card used to say "three
+research agents" and "seventeen issues", the counts from the product pass
+at 16:30; it now says thirty-three cloud agents, thirteen local
+subagents, fifty-four issues and forty-eight pull requests, the counts at
+19:15 UTC. Only that card was re-rendered; the game segments are the v4
+captures. Measured means on the 64x36 downscale: day wave 1 at 15 s 35,
+the kill at 36 s 85, night at 50 s 19, the night kill at 56 s 19. No frame
+whites out; the v3 reel peaked above 200 on the same kill.
+
 ## Playtest reviews
 
 Each row is a human or agent watching the game play, not a screenshot.

@@ -24,8 +24,9 @@ export default defineConfig({
     // Maps are still written for local debugging, but without a sourceMappingURL comment, so
     // browsers never fetch 3 MB of annotated source from the published site.
     sourcemap: 'hidden',
-    // three.js alone is ~550 kB minified; a single chunk is the right call for one scene.
-    chunkSizeWarningLimit: 650,
+    // One scene, one chunk: 706 kB minified at 2026.10.0, most of it three.js. The limit sits
+    // just above the measured size so growth past it is a warning, not a daily one.
+    chunkSizeWarningLimit: 750,
   },
   server: {
     port: 5173,

@@ -10,8 +10,8 @@ import * as THREE from 'three';
  * is out, the caller lights nothing rather than growing the count.
  *
  * The cost is the other way round from before: every lit fragment loops over the pool's full
- * size on every frame, even on the title card. Twelve covers a wave-8 roster (ten skimmers,
- * four striders) with two bolts in flight, and is below the fifteen or so that software GL in
+ * size on every frame, even on the title card. Twelve covers the largest beat (six skimmers,
+ * three striders) with two bolts in flight, and is below the fifteen or so that software GL in
  * CI already met at the peak of a wave.
  */
 export const LIGHT_POOL_SIZE = 12;

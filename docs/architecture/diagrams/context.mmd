@@ -6,13 +6,13 @@ flowchart LR
     page["Static page<br/>index.html, one JS bundle, one stylesheet"]
   end
   pages[("GitHub Pages<br/>ringfall.alexhowells.com, agh.github.io/ringfall")]
-  fonts[("Google Fonts<br/>Chakra Petch, JetBrains Mono")]
+  fonts[("Self-hosted fonts<br/>Chakra Petch, JetBrains Mono (src/fonts.css)")]
   storage[("Browser local storage<br/>personal bests, settings")]
   repo[("GitHub repository<br/>agh/ringfall")]
   ci["GitHub Actions<br/>CI gates, Pages deploy"]
   player -->|"plays, sees, hears"| page
   page -->|"served from"| pages
-  page -->|"two font families over HTTPS"| fonts
+  page -->|"two font families, same origin"| fonts
   page -->|"reads and writes, same device only"| storage
   agents -->|"push branches, open pull requests"| repo
   repo -->|"every push and pull request"| ci

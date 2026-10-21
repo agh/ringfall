@@ -132,11 +132,32 @@ and this project adheres to
 
 ### Changed
 
+- Five per-step allocations gone from the simulation (#105, block 1): the
+  stepped state is returned as a literal instead of an object rest, enemy
+  tracking is built for skimmers only, holdouts are counted without filter
+  arrays, the player is copied only when the shield changed, and the
+  collision probe takes coordinates instead of a fresh vector. About a
+  quarter off `stepGame` on 184,758 recorded steps; same output, same
+  `pnpm balance` summaries.
+- Browser smoke tests run at 640x360 and the movement test under `?nopost`:
+  on software GL a post-stack frame at 1280x720 costs about a second and the
+  first simulation step is five frames away, so each test took 90 s on the
+  runner (#105, block 6). The Pages build drops the hidden source map (3.4 MB
+  of a 4.2 MB `dist/`) that no browser requests. `scripts/frames.mjs` and
+  `scripts/reel.mjs` use the shared preview starter, which now refuses a port
+  that already answers, and every capture script launches the browser before
+  the preview server so a failed launch leaves no `vite preview` behind.
+  The chunk size warning limit follows the measured 706 kB bundle, and the
+  shadowed `audit` script (`pnpm audit` runs the built-in) is removed.
+- The luminance gate is its own optional workflow (`.github/workflows/frames.yml`)
+  on pull requests that touch the renderer and by hand; the smoke job is
+  capped at twelve minutes (#104).
 - The Pages build waits on the lint, unit, build, balance, docs and
-  security jobs only; the luminance gate and the browser smoke tests still
-  fail the run but no longer hold the deploy. The smoke tests wait up to
+  security jobs only; the browser smoke tests (and, until #104, the
+  luminance gate) still fail the run but no longer hold the deploy. The smoke tests wait up to
   four minutes for the first simulation step and the e2e job uploads the
-  Playwright traces on failure (#100).
+  Playwright traces, and since #96 the HTML report, as `playwright-report`
+  on failure (#100).
 - Pickups glow through their own emissive rig instead of one point light
   each (#29).
 - HUD and overlay styling moved onto the brand tokens and type scale, with
@@ -157,6 +178,40 @@ and this project adheres to
 
 ### Fixed
 
+- A chasing enemy wedged on the corner of a cover block, or pressed against
+  a face the player stood straight behind, never moved again; it now
+  sidesteps round the block after a second without headway (`STUCK_AFTER`
+  and `sidestepDirection` in `src/core/enemy.ts`, numbers in
+  `docs/design-doc.md`). A strider inside its range band with cover between
+  it and the player's eye closes instead of firing into the block
+  (`hasClearShot`). Seen in the balance traces for #93: five of the forty
+  gate games ran to the clock that way, none does now, and the gate is
+  re-derived from the new run (`tests/balance/gate.ts`, `docs/test-plan.md`).
+- The HUD no longer forces a synchronous layout and style recalc on every
+  playing frame: text is written only when it changes and the tracker and
+  compass canvas sizes come from a `ResizeObserver` instead of a per-frame
+  `getBoundingClientRect()` (layouts per frame 1.0 to 0.008 on a headless
+  `?record&bot&seed=7` capture). One `mousemove` delta is capped at 400 px
+  per axis, so the lock regained after Esc cannot whip the view (#105,
+  block 4).
+
+- Audio block of the quality pass (#105): noise buffers are built once per
+  context and warmed at unlock, instead of a fresh buffer filled on the main
+  thread for every shot, explosion and drop pod (141 fills and 11.7 MB over
+  a five-wave run before #107, which made the pod sound once per step); the
+  combat pulse looks two ticks ahead, so a timer tick a whole tick late no
+  longer drops a beat and shifts the grid.
+- Merge seams between features that landed from different branches (#97,
+  pass C), each pinned by a deterministic test that runs both in one go:
+  a skimmer already leaving after the final leader fell is no longer
+  downgraded to a timed rout by a strider a late blast kills, so it keeps
+  leaving and the tableau ends with an empty arena; an exiting watcher
+  flees instead of holding the perimeter and charging through the
+  tableau; the loop applies the core's `timeScaleOf`, so the tableau opens
+  in slow motion as the design doc says; the `dropPod` sound plays once per
+  launch step in the live bank and the offline score, one engine sweep for
+  the one craft the renderer draws, instead of once per pod.
+- The dropship and its pods borrow their lights from the pool too (#103).
 - Weapon muzzle flashes, tracers and the beam re-tuned under the HDR
   composer so they read without blooming out (#28).
 - Review sweep for #51 and #52, after the owning pull requests merged:

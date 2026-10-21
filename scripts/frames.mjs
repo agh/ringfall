@@ -16,11 +16,12 @@
  * fraction of the frame. Frames land in the output directory as PNG files next to `report.json`.
  * Needs a production build (`pnpm build`); runs on software GL (SwiftShader), as CI does.
  */
-import { execFileSync, spawn } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { inflateSync } from 'node:zlib';
 import { chromium } from '@playwright/test';
+import { startPreview } from './lib/preview.mjs';
 
 const args = Object.fromEntries(
   process.argv.slice(2).reduce((pairs, arg, i, all) => {
@@ -256,27 +257,6 @@ const measure = (png) => {
 
 // Capture ----------------------------------------------------------------------------------------
 
-/** Serves the production build on its own port so a concurrent recorder is not disturbed. */
-const startPreview = async () => {
-  const server = spawn(
-    'pnpm',
-    ['exec', 'vite', 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort'],
-    { stdio: 'ignore' },
-  );
-  const url = `http://127.0.0.1:${port}/`;
-  for (let attempt = 0; attempt < 40; attempt += 1) {
-    await new Promise((r) => setTimeout(r, 500));
-    try {
-      const res = await fetch(url);
-      if (res.ok) return server;
-    } catch {
-      // Not up yet.
-    }
-  }
-  server.kill();
-  throw new Error(`vite preview did not come up on ${url}`);
-};
-
 const gameUrl = (flags) => `http://127.0.0.1:${port}/?record&bot&seed=${seed}${flags}`;
 
 /** One rendered frame at the end of `ticks` simulation ticks, with the state reached. */
@@ -317,7 +297,8 @@ const captureGroup = async (browser, flags, group) => {
   for (const frame of [...group].sort((a, b) => a.t - b.t)) {
     const started = Date.now();
     state = await advanceTo(page, state, frame.t);
-    const png = await page.screenshot({ type: 'png' });
+    // Playwright's default is 30 s; a software-GL render of a late-wave frame can exceed it.
+    const png = await page.screenshot({ type: 'png', timeout: 600_000 });
     const file = `${frame.id}.png`;
     writeFileSync(resolve(out, file), png);
     const m = measure(png);
@@ -361,7 +342,7 @@ try {
   // Not a checkout.
 }
 
-const server = await startPreview();
+// Browser first: Playwright reaps it when the process dies, nothing reaps the preview server.
 const browser = await chromium.launch({
   executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,
   args: [
@@ -371,6 +352,7 @@ const browser = await chromium.launch({
     '--ignore-gpu-blocklist',
   ],
 });
+const server = await startPreview(port);
 const frames = [];
 const pageErrors = [];
 const started = Date.now();

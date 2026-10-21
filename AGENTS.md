@@ -80,11 +80,12 @@ actionlint -shellcheck= -pyflakes= .github/workflows/*.yml          # actionlint
 uvx --from zizmor==1.31.1 zizmor --offline --persona=pedantic .github/workflows/*.yml
 gitleaks dir . --config .gitleaks.toml --no-banner --redact         # gitleaks 8.30.1
 
-# Everything CI runs
+# The local gate; CI also runs test:e2e, balance, lint:docs and the security job
 pnpm check                    # lint, typecheck, unit tests, production build
 
 # Playing the game without a person
 pnpm balance                  # headless bot games with balance assertions
+pnpm frames                   # luminance gate: ten seeded frames on software GL (frames.yml)
 pnpm demo                     # film seed 7 and score it: demo.mp4 (needs ffmpeg)
 ```
 
@@ -120,7 +121,7 @@ ringfall/
 │   ├── research/     # Sourced research reports
 │   ├── journey/      # Time-indexed build log and frames
 │   └── adr/          # Architecture decision records
-└── .github/workflows # ci.yml only: lint, unit, e2e, luminance, build, balance, docs, security, then Pages build and deploy
+└── .github/workflows # ci.yml: lint, unit, e2e, build, balance, docs, security, then Pages build and deploy; frames.yml: the optional luminance gate
 ```
 
 **Key Files:**

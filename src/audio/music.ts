@@ -11,11 +11,12 @@ export type MusicState = 'title' | 'calm' | 'combat' | 'silent';
 /** Seconds between beats, and between scheduler ticks: a quarter beat at 120 bpm. */
 export const TICK = 0.25;
 /**
- * How far ahead of the audio clock beats are placed. More than one timer tick, so a late tick
- * (a busy main thread, a throttled background tab) never leaves a hole in the pulse; not much
- * more, so a change of state reaches the beat within a tick or two.
+ * How far ahead of the audio clock beats are placed. Two timer ticks, so a tick a whole tick late
+ * (a busy main thread, a shader compile, a GC pause) never leaves a hole in the pulse: at 0.3 s
+ * the margin was 50 ms, and any hitch past it dropped a beat and shifted the grid. Not more, so
+ * a change of state reaches the beat within two ticks.
  */
-export const LOOKAHEAD = 0.3;
+export const LOOKAHEAD = 0.5;
 /** Seconds after a stall before the first beat, so it is never scheduled in the past. */
 const RESYNC_GAP = 0.05;
 
