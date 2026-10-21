@@ -8,8 +8,25 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Security
+
+- Content Security Policy and `no-referrer` meta tags in `index.html`; the
+  dev server relaxes only `style-src` and `connect-src` for hot reload.
+- `?seed` is parsed by `parseSeed` (decimal uint32 only) and personal bests
+  are re-validated field by field with a 1 KB cap before `JSON.parse`, so
+  hostile query strings and storage values cannot stall or corrupt the end
+  card (`src/core/rng.ts`, `src/core/records.ts`).
+- Hidden production source maps, a 24 h release cooldown and no lifecycle
+  scripts for pnpm, `engine-strict`, a `pnpm audit --prod` script, grouped
+  Dependabot updates with a seven-day cooldown, `markdownlint-cli2` 0.24.0.
+- Per-job least-privilege tokens in the Pages deploy workflow; CI runs on
+  `main` are no longer cancelled by the next push.
+- Threat model in `SECURITY.md`.
+
 ### Added
 
+- A unit test that fails if the pre-rename repository path reappears outside
+  `docs/journey/`, and a runbook note on the rename order (#70).
 - Four skimmer temperaments handed out round-robin per wave: chaser,
   ambusher (leads the player's velocity by 4 m), flanker (swings to the
   off-hand side) and skittish (holds at 10 m until a packmate is within
@@ -65,6 +82,15 @@ and this project adheres to
   colours. The particle pool gains `spark`, `smoke` and `shard` shapes with
   premultiplied blending so smoke can darken the frame (#26).
 
+### Changed
+
+- The repository no longer names the console shooter franchise it was
+  inspired by outside the cited titles and URLs under `docs/research/`
+  (ADR-0003). The research note on feel and the MLP cut dropped the name
+  from its file name (`docs/research/feel-and-mlp.md`), and
+  `tests/unit/originality.test.ts` greps the tree for the term list in
+  `tests/unit/originality.terms.ts`.
+
 ### Fixed
 
 - The bot no longer fires the launcher when cover sits inside the blast
@@ -108,4 +134,4 @@ and this project adheres to
 - GitHub Actions CI (lint, type check, unit, e2e, build) and GitHub Pages
   deployment, all actions pinned to commit SHAs.
 
-[Unreleased]: https://github.com/agh/hack/commits/main
+[Unreleased]: https://github.com/agh/ringfall/commits/main

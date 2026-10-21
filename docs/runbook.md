@@ -75,7 +75,7 @@ SHA.
 One repository setting must be made once by hand, because a workflow
 cannot make it: under Settings, Pages, Build and deployment, the Source
 must be set to GitHub Actions. Until that is done the deploy job fails at
-`configure-pages` and the site at <https://agh.github.io/hack/> does not
+`configure-pages` and the site at <https://agh.github.io/ringfall/> does not
 exist. The `github-pages` environment is created by the first successful
 run.
 
@@ -189,8 +189,11 @@ the hostname so every Pages deploy keeps it. One-time setup: a DNS `CNAME`
 record for `ringfall` pointing at `agh.github.io`, then in the repository's
 Settings, Pages, enter the custom domain and tick "Enforce HTTPS" once the
 certificate is issued (a few minutes after DNS resolves). The Vite build uses
-a relative `base`, so the same `dist/` works at the apex, under `/hack/`, or
+a relative `base`, so the same `dist/` works at the apex, under `/ringfall/`, or
 from a local preview.
+
+Repository rename order: rename on GitHub first, then `git remote set-url origin`
+on each clone, then re-check the Pages custom domain under Settings, Pages.
 
 ### The Playwright ffmpeg cannot assemble the film
 

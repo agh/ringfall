@@ -7,7 +7,7 @@ want you dead. TypeScript + three.js, zero assets.
 
 <p align="center"><sub>The banner is the game itself: seed 7 at night, t = 10 s, 3840x1600 with the post stack on. Recipe in <a href="docs/brand.md#hero-and-social">docs/brand.md</a>.</sub></p>
 
-**[Play now](https://ringfall.alexhowells.com)** (not yet live as of 2026-10-21: the Pages source is unset and the DNS record is not published; deploys from `main` once set).
+**[Play now](https://ringfall.alexhowells.com)** (deploys from `main`; `agh.github.io/ringfall` until DNS is set; neither is live as of 2026-10-21).
 
 Ringfall takes its cues from the classic console sci-fi shooter loop: a
 regenerating energy shield over fixed health, a two-second rhythm of fire,
@@ -83,7 +83,7 @@ tests in real Chromium.
 | [docs/design-doc.md](docs/design-doc.md) | Architecture and every gameplay number with its rationale |
 | [docs/brand.md](docs/brand.md) | Palette, typography, geometry language, audio identity, feel values, PR checklist |
 | [docs/test-plan.md](docs/test-plan.md) | Static, unit, playtest, balance gate, browser, visual, and recording layers |
-| [docs/research/](docs/research/) | Sourced research on classic shooter design, browser WebGL prior art, and product management practice |
+| [docs/research/](docs/research/) | Sourced research on the reference console shooter's design, on browser WebGL prior art, and on product management practice |
 | [docs/journey/](docs/journey/) | Time-indexed build log with captured frames |
 | [docs/adr/](docs/adr/) | Architecture decision records |
 | [docs/runbook.md](docs/runbook.md) | Run, build, deploy, test, film, and fix |

@@ -37,6 +37,19 @@ export interface RoundComparison {
 
 export const RECORDS_KEY = 'ringfall.records.v1';
 
+/**
+ * A well-formed record is well under 200 bytes. Anything larger is not ours (another page on the
+ * same origin, a browser extension, or a tampered profile) and is dropped before `JSON.parse`
+ * so a multi-megabyte value cannot stall the end card.
+ */
+export const MAX_RECORD_BYTES = 1024;
+
+/** Upper bound on any stored counter; keeps `Infinity` and absurd values off the end card. */
+export const MAX_STAT = 1_000_000_000;
+
+/** `bestScoreAt` must look like the ISO timestamp we wrote; anything else is dropped. */
+const ISO_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/;
+
 export const EMPTY_BESTS: PersonalBests = {
   bestScore: 0,
   bestWave: 0,
@@ -46,34 +59,61 @@ export const EMPTY_BESTS: PersonalBests = {
   bestScoreAt: null,
 };
 
-const isBests = (value: unknown): value is PersonalBests =>
-  typeof value === 'object' &&
-  value !== null &&
-  typeof (value as PersonalBests).bestScore === 'number' &&
-  typeof (value as PersonalBests).bestWave === 'number' &&
-  typeof (value as PersonalBests).bestKills === 'number' &&
-  typeof (value as PersonalBests).runs === 'number' &&
-  typeof (value as PersonalBests).wins === 'number';
+const STAT_KEYS = ['bestScore', 'bestWave', 'bestKills', 'runs', 'wins'] as const;
 
-/** Reads bests; any missing, blocked, or corrupt storage yields a clean slate rather than a throw. */
+/** A finite, non-negative integer no larger than `MAX_STAT`; everything else is rejected. */
+const isStat = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= MAX_STAT;
+
+/**
+ * Rebuilds a record from parsed JSON, copying only the known keys with valid values. Unknown
+ * keys (including `__proto__`), wrong types, negative, fractional, or oversized numbers, and a
+ * malformed timestamp all mean the stored value is not trusted; the caller starts clean.
+ */
+export const sanitizeBests = (value: unknown): PersonalBests | null => {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+  const stats: Record<string, number> = {};
+  for (const key of STAT_KEYS) {
+    const stat = record[key];
+    if (!isStat(stat)) return null;
+    stats[key] = stat;
+  }
+  const at = record.bestScoreAt;
+  const bestScoreAt = typeof at === 'string' && ISO_TIMESTAMP.test(at) ? at : null;
+  return {
+    bestScore: stats.bestScore ?? 0,
+    bestWave: stats.bestWave ?? 0,
+    bestKills: stats.bestKills ?? 0,
+    runs: stats.runs ?? 0,
+    wins: stats.wins ?? 0,
+    bestScoreAt,
+  };
+};
+
+/** Reads bests; any missing, blocked, oversized, or corrupt storage yields a clean slate rather than a throw. */
 export const loadBests = (store: RecordStore | null): PersonalBests => {
   if (!store) return EMPTY_BESTS;
   try {
     const raw = store.getItem(RECORDS_KEY);
-    if (!raw) return EMPTY_BESTS;
-    const parsed: unknown = JSON.parse(raw);
-    return isBests(parsed) ? { ...EMPTY_BESTS, ...parsed } : EMPTY_BESTS;
+    if (typeof raw !== 'string' || raw.length === 0 || raw.length > MAX_RECORD_BYTES) {
+      return EMPTY_BESTS;
+    }
+    return sanitizeBests(JSON.parse(raw)) ?? EMPTY_BESTS;
   } catch {
     return EMPTY_BESTS;
   }
 };
 
+const clampStat = (value: number): number =>
+  Number.isNaN(value) ? 0 : Math.min(MAX_STAT, Math.max(0, Math.floor(value)));
+
 export const mergeRound = (bests: PersonalBests, round: RoundResult): PersonalBests => ({
-  bestScore: Math.max(bests.bestScore, round.score),
-  bestWave: Math.max(bests.bestWave, round.wave),
-  bestKills: Math.max(bests.bestKills, round.kills),
-  runs: bests.runs + 1,
-  wins: bests.wins + (round.won ? 1 : 0),
+  bestScore: clampStat(Math.max(bests.bestScore, round.score)),
+  bestWave: clampStat(Math.max(bests.bestWave, round.wave)),
+  bestKills: clampStat(Math.max(bests.bestKills, round.kills)),
+  runs: clampStat(bests.runs + 1),
+  wins: clampStat(bests.wins + (round.won ? 1 : 0)),
   bestScoreAt: round.score > bests.bestScore ? round.at : bests.bestScoreAt,
 });
 
