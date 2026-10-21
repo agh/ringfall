@@ -21,7 +21,7 @@ body:
       label: Steps to reproduce
       description: Include the seed if the bug is in gameplay, and the command if it is in the tooling.
       placeholder: |
-        1. Open https://agh.github.io/hack/?seed=7
+        1. Open https://agh.github.io/ringfall/?seed=7
         2. Click Deploy
         3. ...
     validations:

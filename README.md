@@ -7,7 +7,7 @@ want you dead. TypeScript + three.js, zero assets.
 
 <p align="center"><sub>The banner is the game itself: seed 7 at night, t = 10 s, 3840x1600 with the post stack on. Recipe in <a href="docs/brand.md#hero-and-social">docs/brand.md</a>.</sub></p>
 
-**[Play now](https://ringfall.alexhowells.com)** (deploys from `main`; `agh.github.io/hack` until DNS is set).
+**[Play now](https://ringfall.alexhowells.com)** (deploys from `main`; `agh.github.io/ringfall` until DNS is set).
 
 Ringfall takes its cues from the classic console sci-fi shooter loop: a
 regenerating energy shield over fixed health, a two-second rhythm of fire,
@@ -82,7 +82,7 @@ tests in real Chromium.
 | [docs/design-doc.md](docs/design-doc.md) | Architecture and every gameplay number with its rationale |
 | [docs/brand.md](docs/brand.md) | Palette, typography, geometry language, audio identity, feel values, PR checklist |
 | [docs/test-plan.md](docs/test-plan.md) | Static, unit, playtest, browser, visual, and recording layers |
-| [docs/research/](docs/research/) | Sourced research on Halo's design and on browser WebGL prior art |
+| [docs/research/](docs/research/) | Sourced research on the reference console shooter's design and on browser WebGL prior art |
 | [docs/journey/](docs/journey/) | Time-indexed build log with captured frames |
 | [docs/adr/](docs/adr/) | Architecture decision records |
 

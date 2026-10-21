@@ -3,6 +3,7 @@ import {
   DEFAULT_SETTINGS,
   FOV_RANGE,
   loadSettings,
+  MAX_SETTINGS_BYTES,
   parseSettings,
   SENSITIVITY_RANGE,
   SETTINGS_KEY,
@@ -96,5 +97,13 @@ describe('settings', () => {
     };
     expect(() => saveSettings(store, DEFAULT_SETTINGS)).not.toThrow();
     expect(() => saveSettings(null, DEFAULT_SETTINGS)).not.toThrow();
+  });
+
+  it('drops an oversized value without parsing it', () => {
+    const huge = `{"fov":80,"pad":"${'x'.repeat(10 * 1024 * 1024)}"}`;
+    expect(loadSettings(memoryStore({ [SETTINGS_KEY]: huge }))).toEqual(DEFAULT_SETTINGS);
+    const padded = JSON.stringify({ fov: 80, pad: 'x'.repeat(MAX_SETTINGS_BYTES) });
+    expect(loadSettings(memoryStore({ [SETTINGS_KEY]: padded }))).toEqual(DEFAULT_SETTINGS);
+    expect(loadSettings(memoryStore({ [SETTINGS_KEY]: '{"fov":80}' })).fov).toBe(80);
   });
 });

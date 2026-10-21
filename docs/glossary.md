@@ -118,7 +118,7 @@ its inner face. Built in `src/render/environment.ts` and justified in
 [brand.md](brand.md); also the name of the palette token used to paint it.
 
 **Secret.** The one hidden switch in an arena: a glyph on the face of a
-cover slab that points away from the centre, 1 m up, worth 1000 points
+cover slab that points away from the center, 1 m up, worth 1000 points
 when shot once. Placed by `placeSecret` in `src/core/world.ts`; the glyph
 and its chime are renderer and audio work on the `secretFound` event.
 
