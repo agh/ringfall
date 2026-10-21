@@ -1,5 +1,5 @@
 ---
-type: design-doc
+type: spec
 title: "Ringfall Chapter 1: specification, Minimum Lovable Product, and what is Later"
 status: approved
 authors: ["Ringfall hackathon team"]
