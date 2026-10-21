@@ -15,10 +15,12 @@ flowchart TB
   music["audio.setMusic(combat or calm)"]
   hudr["hud.render(state)"]
   draw["renderer.render(state, now, frameDt)<br/>mirrors state, decays effects, post stack"]
-  capture["?record: the loop is suspended;<br/>window.ringfallCapture.advance(n) runs this box n times<br/>and renders once, so a recorder pulls frames at any speed"]
+  capture["window.ringfallCapture.advance(n)<br/>runs the step n times and renders once,<br/>so a recorder pulls frames at any speed"]
   raf --> dt --> hitstop
   hitstop -->|"yes"| slow --> cap
   hitstop -->|"no"| full --> cap --> loop
-  loop -->|"yes: one fixed step"| take --> bot --> step --> fan --> stop --> music --> loop
-  loop -->|"no"| hudr --> draw --> raf
-  capture -.-> step
+  again(["back to the accumulator test"])
+  next(["next requestAnimationFrame"])
+  loop -->|"yes: one fixed step"| take --> bot --> step --> fan --> stop --> music --> again
+  loop -->|"no"| hudr --> draw --> next
+  step -.-|"?record: the loop above is suspended"| capture
