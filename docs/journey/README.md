@@ -690,6 +690,42 @@ on seed 7 was still in wave 3 at 394 s on this machine's software GL, and
 the hard stop came first. Next update: set by whoever takes the balance
 pass.
 
+## 18:00 Night and weather readability (issue #31)
+
+The day frames of the reel carried soft white discs: dust motes spawned
+at size 3 within 2.5 m of the eye, which the particle size law (pixels =
+size times 300 over depth) turns into 64 px blobs even under the cap. The
+fix is geometry, not brightness: motes are now size 0.09 and spawn 3.5 to
+10 m out, so the largest one draws 11 px at 720p and most are 2 to 5 px.
+The rig in `environment.ts` sets how many a second, how long they live
+and how bright per time of day (30 a second by day, 10 at night, none in
+rain, two and a half times as many in fog), and the night brightness went
+up from 0.08 to 0.2 because a mote a tenth of the area can carry more.
+Rain streaks were at 0.18 of Ring colour and vanished against a dusk sky;
+they are 0.4 now (the most that stays under the bloom threshold at the
+sprite's bright centre), longer, with larger and brighter splashes, and
+the 160-drops-a-frame cap is a named constant. The enemy rigs own their
+materials and take a night factor from the same rig: skimmer rings go
+from 1.6 to 4.0 emissive, cores and strider lenses to about 2.8 times
+their colour, point lights to 2.2 times, so enemies read after dark on
+their own light. A side effect of per-rig materials: one strider charging
+no longer turns every strider's lens white. Frames at seed 7, 1280 by
+720, `?record&bot&seed=7&post` with the atmosphere pinned; fog kept at
+0.018, where the skimmer at 16 m in the 5 s frame keeps its silhouette
+and ring. Splashes are still faint in the rain frame; a second pass on
+them is a follow-up.
+
+![Day, 10 s, before: dust as white discs](images/1740-night-readability-before-day-10s.jpg)
+
+![Day, 10 s, after: dust as a hint](images/1800-night-readability-after-day-10s.jpg)
+
+![Night fog, 5 s, before: discs beside a dim skimmer at 16 m](images/1740-night-readability-before-fog-05s.jpg)
+
+![Night fog, 5 s, after: the ring reads, the discs are gone](images/1800-night-readability-after-fog-05s.jpg)
+
+The night and dusk-rain pairs at 5 s are filed beside them as
+`1740-night-readability-before-*.jpg` and `1800-night-readability-after-*.jpg`.
+
 ## 18:08 Flare budget, second cut
 
 Issue #71: after #61 the user watched the reel twice and said there was

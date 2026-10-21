@@ -91,6 +91,13 @@ and this project adheres to
 
 ### Changed
 
+- Night and weather readability (#31): dust motes are a hint rather than
+  white discs (size 0.09, 3.5 to 10 m out, at most 11 px at 720p) with
+  rate, life and brightness per time of day and weather; rain streaks are
+  brighter and longer with larger splashes; enemy rigs own their materials
+  and lift their emissives (skimmer ring and core, strider lens and muzzle)
+  with a night factor from the atmosphere rig, so one strider charging no
+  longer whitens every strider's lens.
 - The repository no longer names the console shooter franchise it was
   inspired by outside the cited titles and URLs under `docs/research/`
   (ADR-0003). The research note on feel and the MLP cut dropped the name
