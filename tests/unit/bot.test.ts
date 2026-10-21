@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { createBotMemory, decideBot, RECKLESS_BOT, STEADY_BOT } from '../../src/core/bot';
+import {
+  createBotMemory,
+  decideBot,
+  hasLineOfSight,
+  RECKLESS_BOT,
+  STEADY_BOT,
+} from '../../src/core/bot';
 import { createEnemy, type EnemyKind } from '../../src/core/enemy';
-import { createGame, type GameState } from '../../src/core/game';
+import { createGame, type GameState, playerEye } from '../../src/core/game';
 import { createPickup } from '../../src/core/pickups';
 import { runPlaytest, summarize } from '../../src/core/playtest';
 import { createRng } from '../../src/core/rng';
@@ -152,10 +158,47 @@ describe('playtest bot', () => {
         arena: { ...aside.arena, obstacles: [{ min: vec3(2, 0, -4), max: vec3(4, 2.5, -3) }] },
       };
       expect(decide(offLine, aimedAt(1.3, 12)).fire).toBe(true);
-      // The check is about the round's path: a hitscan weapon faces the same slab unchanged.
+      // A hitscan weapon has no round to worry about, but the same slab hides the target, so it
+      // holds for the line-of-sight reason instead (issue #93, the test below).
       const rifle = scene(createWeapon('rifle'), null, strider);
       const rifleSlab = { ...rifle, arena: { ...rifle.arena, obstacles: [slabAt(3)] } };
-      expect(decide(rifleSlab, aimedAt(1.3, 12)).fire).toBe(true);
+      expect(decide(rifleSlab, aimedAt(1.3, 12)).fire).toBe(false);
+    });
+
+    it('holds a hitscan weapon when cover hides the target, and the launcher still fires over it', () => {
+      // A slab 1 m thick, 2.5 m tall, its near face 6 m ahead: the skimmer at 12 m shows on the
+      // tracker but a ray from the eye to its centre stops at the slab (issue #93).
+      const slab = { min: vec3(-2, 0, -7), max: vec3(2, 2.5, -6) };
+      const hidden = awake(1, 'skimmer', -12);
+      const skimmer = [hidden];
+      const behindCover = (w: Weapon, holster: Weapon | null = null): GameState => {
+        const g = scene(w, holster, skimmer);
+        return { ...g, arena: { ...g.arena, obstacles: [slab] } };
+      };
+      const eye = playerEye(behindCover(createWeapon('rifle')).player);
+      expect(hasLineOfSight(eye, hidden, [slab])).toBe(false);
+      expect(hasLineOfSight(eye, hidden, [])).toBe(true);
+      for (const kind of ['rifle', 'laser', 'minigun'] as const) {
+        const open = decide(scene(createWeapon(kind), null, skimmer), aimedAt(0.6, 12));
+        const covered = decide(behindCover(createWeapon(kind)), aimedAt(0.6, 12));
+        expect(open.fire, `${kind} in the open`).toBe(true);
+        expect(covered.fire, `${kind} behind cover`).toBe(false);
+      }
+      // The scatter gun inside its range: same rule.
+      const near = { ...behindCover(createWeapon('scatter')), enemies: [awake(1, 'skimmer', -9)] };
+      expect(decide(near, aimedAt(0.6, 9)).fire).toBe(false);
+      // The beam does not start a charge it cannot use, but keeps one it already holds.
+      expect(decide(behindCover(createWeapon('beam')), aimedAt(0.6, 12)).fire).toBe(false);
+      const charged = { ...createWeapon('beam'), charge: 1 };
+      expect(decide(behindCover(charged), aimedAt(0.6, 12)).fire).toBe(true);
+      // The launcher's round bursts beside the target: it fires over cover past its own clearance,
+      // at a pack worth a round.
+      const pack = [awake(1, 'skimmer', -12), awake(2, 'skimmer', -13)];
+      const launcher = { ...behindCover(createWeapon('launcher')), enemies: pack };
+      expect(decide(launcher, aimedAt(0.6, 12)).fire).toBe(true);
+      // Rather than wait, the bot walks at a target it cannot see; a visible one at 12 m it holds.
+      expect(decide(behindCover(createWeapon('rifle')), aimedAt(0.6, 12)).forward).toBe(1);
+      expect(decide(scene(createWeapon('rifle'), null, skimmer), aimedAt(0.6, 12)).forward).toBe(0);
     });
 
     it('fires the minigun with a loose aim and the rifle with a tight one', () => {
