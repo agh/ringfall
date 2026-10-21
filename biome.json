@@ -41,5 +41,41 @@
       "quoteStyle": "single",
       "semicolons": "always"
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["src/core/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "three": "src/core/ is renderer-free: it must not import three.js."
+                },
+                "patterns": [
+                  {
+                    "group": ["three/**"],
+                    "message": "src/core/ is renderer-free: it must not import three.js."
+                  }
+                ]
+              }
+            },
+            "noRestrictedGlobals": {
+              "level": "error",
+              "options": {
+                "deniedGlobals": {
+                  "window": "src/core/ runs in Node: no window.",
+                  "document": "src/core/ runs in Node: no document.",
+                  "performance": "src/core/ never reads the clock: take dt as a parameter.",
+                  "Date": "src/core/ never reads the clock: take dt as a parameter."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

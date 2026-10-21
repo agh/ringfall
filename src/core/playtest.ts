@@ -134,3 +134,81 @@ export const summarize = (results: readonly PlaytestResult[]): BalanceSummary =>
     meanWaveClearTimes,
   };
 };
+
+/** A bot profile the gate measures; the names are the keys of a {@link BalanceReport}. */
+export type GateProfile = 'steady' | 'reckless';
+
+/** A metric of a {@link BalanceSummary} the gate can bound. */
+export type GateMetric = 'winRate' | 'meanWavesCleared' | 'accuracy' | 'slowestWaveClear';
+
+/**
+ * One bound of the balance gate. `limit` is the baseline moved by `margin` in the lenient
+ * direction, so a tuning change fails the gate only when it moves the number further than the
+ * margin from the run the thresholds were derived from.
+ */
+export interface GateThreshold {
+  readonly profile: GateProfile;
+  readonly metric: GateMetric;
+  /** `min`: the actual value must be at least `limit`; `max`: at most `limit`. */
+  readonly bound: 'min' | 'max';
+  readonly limit: number;
+  /** The value the baseline run printed for this metric. */
+  readonly baseline: number;
+  /** How `limit` was derived from `baseline`, in words. */
+  readonly margin: string;
+}
+
+export interface GateCheck extends GateThreshold {
+  readonly actual: number;
+  readonly passed: boolean;
+}
+
+export const readGateMetric = (summary: BalanceSummary, metric: GateMetric): number => {
+  switch (metric) {
+    case 'winRate':
+      return summary.winRate;
+    case 'meanWavesCleared':
+      return summary.meanWavesCleared;
+    case 'accuracy':
+      return summary.accuracy;
+    case 'slowestWaveClear':
+      return Math.max(0, ...summary.meanWaveClearTimes);
+  }
+};
+
+export const evaluateGate = (
+  summaries: Readonly<Record<GateProfile, BalanceSummary>>,
+  thresholds: readonly GateThreshold[],
+): GateCheck[] =>
+  thresholds.map((t) => {
+    const actual = readGateMetric(summaries[t.profile], t.metric);
+    const passed = t.bound === 'min' ? actual >= t.limit : actual <= t.limit;
+    return { ...t, actual, passed };
+  });
+
+/** What `pnpm balance` writes: the summaries, every game, and the gate verdict. */
+export interface BalanceReport {
+  readonly seeds: readonly number[];
+  readonly maxSeconds: number;
+  readonly summaries: Readonly<Record<GateProfile, BalanceSummary>>;
+  readonly games: Readonly<Record<GateProfile, readonly PlaytestResult[]>>;
+  readonly checks: readonly GateCheck[];
+  readonly passed: boolean;
+}
+
+export const buildBalanceReport = (
+  games: Readonly<Record<GateProfile, readonly PlaytestResult[]>>,
+  thresholds: readonly GateThreshold[],
+  options: { readonly seeds: readonly number[]; readonly maxSeconds: number },
+): BalanceReport => {
+  const summaries = { steady: summarize(games.steady), reckless: summarize(games.reckless) };
+  const checks = evaluateGate(summaries, thresholds);
+  return {
+    seeds: options.seeds,
+    maxSeconds: options.maxSeconds,
+    summaries,
+    games,
+    checks,
+    passed: checks.every((c) => c.passed),
+  };
+};
