@@ -296,14 +296,32 @@ clock in production and is fixed in tests.
   the scene's light count, and with it every compiled material, is the same
   before and after a spawn), a ring on the ground when they land and when
   they are taken, and a fade over the last three seconds of their life.
-- **Effects.** Impact sparks, recoil on the viewmodel, explosions (a flash
-  sphere at 0.55 opacity and a 140-intensity point light that is gone in a
-  quarter second, a ground shockwave ring, fire and smoke bursts), kill
-  rings, and camera shake on damage and blasts capped at 0.035 rad. A blast
-  within six metres of the camera is scaled down with distance so a
-  launcher round at the player's feet does not blind the frame. Particle
-  sprites are capped at 64 px and fade inside two metres of the eye, which
-  is what keeps a kill at night from whiting out the screen. Hit-stop of 50 ms (skimmer kill), 90 ms (strider kill) and
+- **Effects.** Impact sparks, recoil on the viewmodel, kill rings, and camera
+  shake on damage and blasts capped at 0.035 rad. An explosion is five things
+  with their own clocks, so it reads at any distance and never whites out:
+  a sprite flash (a radial-gradient sprite at 0.6 opacity, gone in 120 ms,
+  `EXPLOSION_FLASH_LIFE`) and a 140-intensity point light that decays to
+  nothing in 250 ms; a shockwave crest (a thin torus that expands to 1.3
+  blast radii in 450 ms and flattens as it goes); 32 debris sparks and 22
+  dark chips that arc under 14 to 16 m/s² of gravity for about a second; a
+  smoke column of 56 alpha-blended puffs that rises, grows and thins over
+  1.5 s, with a 30-puff skirt rolling out along the floor; and a scorch
+  decal (a black disc with a ragged alpha map) that holds on the floor for
+  4 s (`SCORCH_LIFE`) and fades over its second half. A kill borrows the
+  dead enemy's own light colour for its ring (0.3 opacity, so it is never
+  brighter than the accent it copies) and its shell colour for a short
+  burst of sparks, chips and a puff; the corpse squash-and-tilt is
+  unchanged. A blast within six metres of the camera is scaled down with
+  distance (`near`) so a launcher round at the player's feet does not blind
+  the frame. Particle sprites come in three shapes (`spark`, `smoke`,
+  `shard`); the pool blends premultiplied alpha so sparks add to the frame
+  exactly as before and smoke and chips can darken it. Sprites are capped
+  at 64 px and fade inside two metres of the eye. Measured on the seed 7
+  run as it stood before the bot's launcher clearance rule (#36) moved its
+  launcher shots, at a launcher kill 3 m away (`?record&bot&seed=7&post`,
+  then t = 47.0 s), mean frame luminance was 106 by day and 101 at night
+  (budget 150 and 110); the first kill at night (t = 10.0 s) went from 59
+  to 32. Hit-stop of 50 ms (skimmer kill), 90 ms (strider kill) and
   120 ms (shield break) slows the simulation to 5 % in `src/main.ts`.
 - **HUD.** DOM elements updated every frame: wave and enemies left, score,
   shield and health bars, ammo with a low-ammo colour, grenade pips, centre
