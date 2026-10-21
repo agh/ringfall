@@ -1,10 +1,10 @@
 ---
 type: adr
-adr: "ADR-0002"
 title: "Keep the simulation a pure function, separate from rendering"
-status: accepted
-date: 2026-10-21
-deciders: ["Ringfall hackathon team"]
+status: approved
+created: 2026-10-21
+authors:
+  - name: "Ringfall hackathon team"
 ---
 
 # ADR-0002: Keep the simulation a pure function, separate from rendering
@@ -53,7 +53,7 @@ step driven by an accumulator in `src/main.ts`.
 ### Neutral
 
 - The browser layer is verified by Playwright smoke tests rather than unit
-  tests; that is the right tool for pointer lock and WebGL initialisation.
+  tests; that is the right tool for pointer lock and WebGL initialization.
 
 ## Alternatives Considered
 

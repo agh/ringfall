@@ -2,7 +2,8 @@
 type: prfaq
 title: "Ringfall concept proposal (PR/FAQ)"
 status: draft
-authors: ["Ringfall hackathon team"]
+authors:
+  - name: "Ringfall hackathon team"
 created: 2026-10-21
 related: ["docs/spec.md", "docs/design-doc.md", "docs/adr/0003-original-ip-only.md"]
 ---
@@ -41,11 +42,11 @@ it.
 Ringfall is built around that rhythm and nothing else. Damage hits a
 100 point shield first and 100 points of health second; the shield comes
 back at 35 points per second once you have gone four seconds without being
-hit, and health never does. Skimmers close at seven metres per second and
-zap you up close; striders hold eight to sixteen metres and fire bolts slow
+hit, and health never does. Skimmers close at seven meters per second and
+zap you up close; striders hold eight to sixteen meters and fire bolts slow
 enough to strafe. Grenades bounce, so a throw around a cover block is a
 conversation, not a button press. Everything on screen is generated when
-the page loads: the sky, the six kilometre ring overhead, the terrain, the
+the page loads: the sky, the six kilometer ring overhead, the terrain, the
 enemies, and every sound, which is an oscillator or a noise burst shaped on
 demand.
 
@@ -87,7 +88,7 @@ changing the loop.
 
 **Is this a copy of a well-known console shooter?** No. It is inspired by
 the feel of that genre, which is a loop, not a property. Every name,
-shape, colour, font and note in Ringfall is original, and
+shape, color, font and note in Ringfall is original, and
 [ADR-0003](../adr/0003-original-ip-only.md) makes that a rule.
 
 **What are judges meant to look at?** The first thirty seconds, the
@@ -108,7 +109,7 @@ of which are accepted in [ADR-0001](../adr/0001-typescript-three-vite.md).
 **Why procedural everything?** It removes the asset pipeline from the
 critical path of a three hour build, keeps the bundle near the size of
 three.js itself, and makes the licensing question disappear. Every sound
-is synthesised from the same event stream the renderer reacts to, so audio
+is synthesized from the same event stream the renderer reacts to, so audio
 and picture can never disagree.
 
 **Why no franchise material at all?** Inspiration is the mechanics and the
@@ -119,7 +120,7 @@ The rule is written down in ADR-0003 and enforced by the brand checklist.
 **What is the MLP cut?** The fourteen numbered items in the
 [specification](../spec.md), each tied to a moment a first-time player
 would describe to a friend. The loop-changing items come first: the shield
-break as an event, enemy theatre, grenade dives, firing points, five named
+break as an event, enemy theater, grenade dives, firing points, five named
 waves with a tableau. Melee, a second weapon, a third enemy, mobile and
 co-op are explicitly Later.
 

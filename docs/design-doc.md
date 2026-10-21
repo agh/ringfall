@@ -2,10 +2,9 @@
 type: design-doc
 title: "Ringfall: WebGL arena shooter"
 status: draft
-authors: ["Ringfall hackathon team"]
-reviewers: []
+authors:
+  - name: "Ringfall hackathon team"
 created: 2026-10-21
-approved: 2026-10-21
 ---
 
 # Ringfall: WebGL arena shooter
@@ -86,6 +85,8 @@ the events to the renderer, HUD, and audio bank, then renders.
 `GameState` is immutable. A step creates a mutable draft, runs these stages
 in order, and freezes the result:
 
+<!-- design-check: simulation -->
+
 1. **Player movement.** Wish direction from yaw and WASD, speed 6 m/s (9 when
    sprinting forward), gravity 18 m/s², jump impulse 6 m/s. The player is a
    vertical cylinder (radius 0.4 m, height 1.8 m, eye at 1.7 m). Each axis is
@@ -99,7 +100,7 @@ in order, and freezes the result:
 3. **Grenades.** Four per life. Thrown at 14 m/s plus a 2 m/s upward boost,
    2.5 s fuse, gravity 18 m/s², 35 % restitution. Floor contact scrubs 45 %
    of horizontal speed so a throw lands near its aim point rather than
-   skating across the arena. The blast deals 150 damage at the centre
+   skating across the arena. The blast deals 150 damage at the center
    falling linearly to zero at 6 m, and half that to the thrower.
 4. **Enemies.** Each enemy is a small state machine (`spawning`, `chase`,
    `attack`, `flee`, `dead`). Spawning lasts 1 s and the enemy is invulnerable and
@@ -107,15 +108,19 @@ in order, and freezes the result:
    skimmers enter `flee`, and only when a strider dies near them.
 5. **Bolts.** Strider projectiles travel at 22 m/s for up to 3 s, stop on
    cover, the floor, and the arena edge, and hit a 0.9 m sphere around the
-   player's centre.
+   player's center.
 6. **Waves.** A 3 s countdown, an active phase until all enemies are dead, a
    2.5 s cleared pause, then the next wave. Wave 8 cleared is victory.
 7. **Vitality.** Damage hits the shield first (100), then health (100). The
    shield recharges at 35/s after 4 s without damage. Health never recharges.
 
+<!-- /design-check: simulation -->
+
 ### Enemy archetypes
 
-| Archetype | Health | Speed  | Attack                          | Behaviour                                        | Score |
+<!-- design-check: enemies -->
+
+| Archetype | Health | Speed  | Attack                          | Behavior                                        | Score |
 | --------- | ------ | ------ | ------------------------------- | ------------------------------------------------ | ----- |
 | Skimmer   | 40     | 7 m/s  | Melee zap, 12 dmg every 0.9 s   | Closes to 2 m with lateral jitter so packs fan out | 100   |
 | Strider   | 120    | 3 m/s  | Bolt, 18 dmg every 1.4 s        | Holds 8 to 16 m, backs off when crowded, aims at the current eye position with 4 % spread | 300 |
@@ -165,7 +170,11 @@ flanker and skittish setting tried between 0.3 and 0.6 of the distance and
 6 to 12 m of hold landing between 15 % and 30 %. Removing any one
 temperament does not bring it under the ceiling; only all-chaser does.
 
+<!-- /design-check: enemies -->
+
 ### Rout
+
+<!-- design-check: rout -->
 
 The first "the AI is thinking" moment: when a strider dies, every skimmer
 within 25 m of it (`FLEE_RADIUS`, XZ distance from the strider) breaks and
@@ -202,7 +211,11 @@ the issue: no more than 10 % slower for the steady profile.
 | steady   | 15 s                | 16 s               | 15 %            | 30 %           |
 | reckless | 13 s                | 14 s               | 0 %             | 10 %           |
 
+<!-- /design-check: rout -->
+
 ### Weapons
+
+<!-- design-check: weapons -->
 
 Values are `WEAPON_SPECS` in `src/core/weapon.ts`; spread is in radians,
 standing / moving. Damage falls linearly from full at the falloff start to
@@ -234,10 +247,14 @@ of its full rate (`MINIGUN_IDLE_RATE`) until it has spun up.
   until it has spun up for half a second; it is borrowed firepower that runs
   out.
 
+<!-- /design-check: weapons -->
+
 ### Wave composition
 
+<!-- design-check: waves -->
+
 Wave *n* spawns `2 + n` skimmers and `floor(n / 2)` striders on a 26 m ring
-around the arena centre, avoiding cover. Clearing a wave is worth 500. The
+around the arena center, avoiding cover. Clearing a wave is worth 500. The
 roster for the eight waves:
 
 | Wave | Skimmers | Striders |
@@ -251,7 +268,11 @@ roster for the eight waves:
 | 7    | 9        | 3        |
 | 8    | 10       | 4        |
 
+<!-- /design-check: waves -->
+
 ### Arena
+
+<!-- design-check: arena -->
 
 A 60 m square with transparent boundary walls and 16 procedurally placed
 cover blocks (2 to 6 m footprint, 1.5 to 4 m tall), none within 6 m of the
@@ -285,6 +306,11 @@ prints). Skimmer deaths leave no grave. Striders' bolts aim at the eye,
 so a crouched player presents the middle of their hit sphere rather than
 its top edge; that is the only gameplay effect.
 
+center so the spawn point is open. Layout is seeded; the seed comes from the
+clock in production and is fixed in tests.
+
+<!-- /design-check: arena -->
+
 ### Presentation
 
 - **Renderer.** three.js `WebGLRenderer` into an HDR, multisampled
@@ -292,6 +318,26 @@ its top edge; that is the only gameplay effect.
   1.0 so only emitters bloom, a custom feel pass (vignette, chromatic
   aberration that grows with damage, a hexagonal shield lattice that flares
   on hits, grain), then `OutputPass` for ACES tone mapping at exposure 0.38.
+- **Bloom.** The stock bloom prefilter passes a whole texel once it is over
+  the threshold, so the sky's sun disc (hundreds in HDR) bloomed six
+  hundred times harder than a trim at 1.0 and flooded a quarter of the
+  frame; the dust motes did the same in miniature. `src/render/post.ts`
+  replaces it with a prefilter that keeps only the excess over the
+  threshold, with a quadratic knee that starts at 1.0, capped at 1.5 per
+  pixel: strength 0.3, radius 0.35, threshold 1.3, knee 0.3, cap 1.5. The
+  values come from measured seed-7 frames (`docs/journey/README.md`,
+  17:40): looking into the dawn sun the mean luminance of a 64 by 36
+  downscale went from 136 to 106 of 255 and the saturated blob from 22% to
+  14% of the frame height; at the first kill at night from 60 to 19. The
+  budget is a mean under 150 by day and 110 at night.
+- **Sun flare.** An additive core sprite at the sun (scale 520 at 9 km,
+  about 4% of the frame height) and three ghosts on the sun-to-centre axis,
+  sized as fractions of the frame height (5%, 8%, 3.5%) at opacity 0.6, so
+  no ghost can reach the third of the frame the budget allows. Core and
+  ghosts follow `sunDisc`, which is 0 at night, and are hidden rather than
+  drawn transparent when it is. The moon is a 420-unit disc sprite whose
+  texel is under the bloom threshold, so its halo is only its own gradient:
+  a 3 px disc with a 6 px halo at 720p.
   Lighting is a sun, a hemisphere fill, and image-based lighting baked from
   the sky itself with `PMREMGenerator`, with exponential fog; the values
   come from the atmosphere rig below and blend over three seconds when the
@@ -300,8 +346,8 @@ its top edge; that is the only gameplay effect.
   wave a time of day and a weather from `ATMOSPHERE_TABLE`: 1 day, 2 night,
   3 dusk and rain, 4 night and fog, 5 dawn, 6 day and rain, 7 dusk, 8 night
   and rain, then the table repeats. `src/render/environment.ts` holds one
-  rig per time of day (sun elevation and azimuth, sun colour and intensity,
-  hemisphere colours, fog colour and density, star opacity, exposure, moon,
+  rig per time of day (sun elevation and azimuth, sun color and intensity,
+  hemisphere colors, fog color and density, star opacity, exposure, moon,
   ring glow, image-based-lighting intensity, dust) and two weather overlays:
   rain greys the sun, thickens the cloud deck and fog, and streams 1,500
   stretched drops a second through the particle pool with splashes at the
@@ -312,10 +358,10 @@ its top edge; that is the only gameplay effect.
   glow, and lifts exposure from 0.38 to 0.55. `?atmo=night` and
   `?weather=rain` pin either part for review.
 - **Environment.** A scattering sky (three.js `Sky`, turbidity 4). The ring
-  is a 6 km torus with a 360 m tube, centred 5.2 km overhead so its near
+  is a 6 km torus with a 360 m tube, centered 5.2 km overhead so its near
   side is buried and the arc rises from both horizons; its inner face is a
   procedural ocean, land, and cloud texture with a bright metal rim. Rolling
-  terrain (flat-shaded, vertex-coloured by height) with mountains from 500 m
+  terrain (flat-shaded, vertex-colored by height) with mountains from 500 m
   out. 1,600 stars that survive daylight at low opacity.
 - **Particles.** One `Points` draw call with 12,000 slots; the CPU writes
   birth state once and the vertex shader integrates position, drag, and
@@ -325,29 +371,52 @@ its top edge; that is the only gameplay effect.
   ring and a warm core that pulses when attacking; striders are
   four-legged capsule walkers with a cannon, a Rose lens that goes white
   while charging, and a walk cycle. Spawning enemies descend from six
-  metres over one second. Dead enemies squash and tilt for 1.2 s, then
+  meters over one second. Dead enemies squash and tilt for 1.2 s, then
   despawn with a kill ring and a spark burst.
 - **Weapons on screen.** `src/render/weapons.ts` builds one viewmodel rig
   per kind under the camera and draws the active one in 0.25 s
-  (`DRAW_TIME`); each has its own accent colour, muzzle flash sprite and
+  (`DRAW_TIME`); each has its own accent color, muzzle flash sprite and
   light, and tracer: a 1 px line for the laser, eight pellet traces for the
   scatter, a glowing cylinder with sparks along it for the beam, a smoking
   round and a drum that turns a notch per shot for the launcher, a spinning
   barrel cluster for the minigun. Pickups (`src/render/pickups.ts`) are an
-  emblem over a post with a kind-coloured light and a 3 m column, a ring on
-  the ground when they land and when they are taken, and a fade over the
-  last three seconds of their life.
-- **Effects.** Impact sparks, recoil on the viewmodel, explosions (a flash
-  sphere at 0.55 opacity and a 140-intensity point light that is gone in a
-  quarter second, a ground shockwave ring, fire and smoke bursts), kill
-  rings, and camera shake on damage and blasts capped at 0.035 rad. A blast
-  within six metres of the camera is scaled down with distance so a
-  launcher round at the player's feet does not blind the frame. Particle
-  sprites are capped at 64 px and fade inside two metres of the eye, which
-  is what keeps a kill at night from whiting out the screen. Hit-stop of 50 ms (skimmer kill), 90 ms (strider kill) and
+  emissive emblem over a post with a kind-colored billboard halo and a 2 m
+  column whose alpha fades to nothing at the top, no light of their own (so
+  the scene's light count, and with it every compiled material, is the same
+  before and after a spawn), a ring on the ground when they land and when
+  they are taken, and a fade over the last three seconds of their life.
+- **Effects.** Impact sparks, recoil on the viewmodel, kill rings, and camera
+  shake on damage and blasts capped at 0.035 rad. An explosion is five things
+  with their own clocks, so it reads at any distance and never whites out:
+  a sprite flash (a radial-gradient sprite at 0.6 opacity, gone in 120 ms,
+  `EXPLOSION_FLASH_LIFE`) and a 140-intensity point light that decays to
+  nothing in 250 ms; a shockwave crest (a thin torus that expands to 1.3
+  blast radii in 450 ms and flattens as it goes); 32 debris sparks and 22
+  dark chips that arc under 14 to 16 m/s² of gravity for about a second; a
+  smoke column of 56 alpha-blended puffs that rises, grows and thins over
+  1.5 s, with a 30-puff skirt rolling out along the floor; and a scorch
+  decal (a black disc with a ragged alpha map) that holds on the floor for
+  4 s (`SCORCH_LIFE`) and fades over its second half. A kill borrows the
+  dead enemy's own light color for its ring (0.3 opacity, so it is never
+  brighter than the accent it copies) and its shell color for a short
+  burst of sparks, chips and a puff; the corpse squash-and-tilt is
+  unchanged. A blast within six meters of the camera is scaled down with
+  distance (`near`) so a launcher round at the player's feet does not blind
+  the frame. Particle sprites come in three shapes (`spark`, `smoke`,
+  `shard`); the pool blends premultiplied alpha so sparks add to the frame
+  exactly as before and smoke and chips can darken it. Sprites are capped
+  at 64 px and fade inside two meters of the eye. Measured on the seed 7
+  run as it stood before the bot's launcher clearance rule (#36) moved its
+  launcher shots, at a launcher kill 3 m away (`?record&bot&seed=7&post`,
+  then t = 47.0 s), mean frame luminance was 106 by day and 101 at night
+  (budget 150 and 110); the first kill at night (t = 10.0 s) went from 59
+  to 32. Hit-stop of 50 ms (skimmer kill), 90 ms (strider kill) and
   120 ms (shield break) slows the simulation to 5 % in `src/main.ts`.
 - **HUD.** DOM elements updated every frame: the sector designation, wave and enemies left, score,
   shield and health bars, ammo with a low-ammo colour, grenade pips, centre
+
+- **HUD.** DOM elements updated every frame: wave and enemies left, score,
+  shield and health bars, ammo with a low-ammo color, grenade pips, center
   announcements, a hit marker, a damage vignette, and a pulsing border when
   the shield is down. The motion tracker is a 150 px canvas showing enemies
   and bolts within 28 m, rotated to the player's heading.
@@ -363,6 +432,18 @@ a key press between two steps is never lost. Ctrl is a browser modifier:
 Ctrl with W closes the tab in most browsers, and pointer lock does not
 intercept it, so C is the safe binding until the keyboard lock API is used. Esc releases the lock and the game returns to the
 overlay, where the run can be resumed with another click.
+
+The title overlay carries a settings panel whose values persist under the
+local-storage key `ringfall.settings.v1` (`src/core/settings.ts`). Corrupt or
+blocked storage yields the defaults, which equal the behavior before the
+panel existed.
+
+| Setting | Range | Default | Applied to |
+| ------- | ----- | ------- | ---------- |
+| Sensitivity | 0.5 to 2.0 × | 1.0 (0.0022 rad per pixel) | `InputController.setSensitivity` |
+| Field of view | 70 to 100 degrees | 78 | `SceneRenderer.setBaseFov`; sprint still adds 6 |
+| Screen shake | on / off | on | `SceneRenderer.setShakeEnabled`: off sets the shake cap to 0 rad |
+| Hit flash | on / off | on | `SceneRenderer.setFlashEnabled` (hex shield lattice) and the HUD damage flash |
 
 ## Alternatives Considered
 

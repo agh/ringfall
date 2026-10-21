@@ -2,8 +2,8 @@
 type: design-doc
 title: "How Ringfall proves intent, prevents regressions, and evolves with agents"
 status: draft
-authors: ["Ringfall hackathon team"]
-reviewers: []
+authors:
+  - name: "Ringfall hackathon team"
 created: 2026-10-21
 ---
 
@@ -11,7 +11,7 @@ created: 2026-10-21
 
 > [spec](spec.md) · [test plan](test-plan.md) · [journey](journey/README.md)
 
-This document answers four questions a sceptical engineer asks of a
+This document answers four questions a skeptical engineer asks of a
 project built largely by a coding agent in a morning: how do we know the
 implementation is the product that was designed, how is it tested, what
 stops the next change from breaking it, and how can the next change be
@@ -25,9 +25,13 @@ The design is a set of numbers and rules, not adjectives. Every gameplay
 number in [design-doc.md](design-doc.md) names the module and constant
 that holds it (`PLAYER_SPEED`, `SHIELD_RECHARGE_DELAY`, `GRENADE_FUSE`,
 `ENEMY_STATS`, `waveComposition`). A reader can diff the document against
-`src/core/` in minutes, and that diff is the first thing a review should
-do. Where the numbers drift, one of the two is wrong and the pull request
-fixes it in the same change.
+`src/core/` in minutes, and a test does that diff on every run:
+`tests/unit/design-doc.test.ts` imports the constants and parses the
+tables and sentences between `<!-- design-check: ... -->` markers in the
+document with a few lines of string handling, so a number that drifts
+fails `pnpm test` naming the table, row and column (or the sentence).
+Where the numbers drift, one of the two is wrong and the pull request
+fixes it in the same change, from the constant.
 
 The rules are proven by tests that read like the design. The shield
 absorbs before health and recharges only after the delay
@@ -40,7 +44,7 @@ The whole step is exercised end to end: moving, jumping, shooting,
 reloading, a grenade killing a strider, a swarm breaking the shield and
 killing the player, a wave clearing and the next arriving, and victory
 (`tests/unit/game.test.ts`). These are not tautologies; several of them
-failed when first written and exposed real behaviour (the grenade flew too
+failed when first written and exposed real behavior (the grenade flew too
 far; the enemy faced the wrong way by the renderer's convention; the
 rifle shot over a low enemy's head because the player must aim down).
 
@@ -107,7 +111,9 @@ thresholds chosen from a baseline, not from what passed.
   `from 'three`, `window.`, or `document.`, naming the file and line.
 - The design document, the brand checklist, and the AGENTS.md pitfalls
   give a reviewer, human or agent, a list to check the diff against rather
-  than a feeling.
+  than a feeling; the gameplay numbers in the design document are checked
+  against the constants by `tests/unit/design-doc.test.ts`, so that part
+  of the list is a test.
 - Rendering regressions are the weak point: there is no automated image
   comparison, because software GL differs from hardware. The mitigation is
   cheap and in use: the recorder makes a film of a seed, and the journey
@@ -152,9 +158,6 @@ These are the gaps, in the order they should be closed.
 
 1. A per-frame performance measurement on real hardware (issue #11), so
    the budget in the research becomes a number in this document.
-2. An audit of every number in the design document against the code,
-   automated as a test that imports the constants and compares them to a
-   table in the document's frontmatter.
-3. A visual regression check that compares a small set of deterministic
+2. A visual regression check that compares a small set of deterministic
    frames against references rendered on the same software GL, with a
    tolerance, so renderer changes get a diff a reviewer can look at.

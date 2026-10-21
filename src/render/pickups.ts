@@ -8,23 +8,31 @@ import { WEAPON_ACCENT } from './weapons';
 
 /**
  * Weapon pickups on the arena floor. Each is a kind-coloured emblem floating over a post on a
- * Beacon base ring, with a soft light and a 3 m light column so it reads from across the arena.
+ * Beacon base ring, with a billboard halo and a short column whose alpha fades to nothing by
+ * `COLUMN_HEIGHT` up, so it reads from across the arena without a light of its own. No pickup
+ * carries a `PointLight`: the scene's light count is the same before and after a spawn, so no
+ * material is recompiled when one lands.
  * `sync` mirrors `state.pickups` every frame; `handle` plays the spawn and take flourishes.
  */
 
 /** Seconds before `expiresAt` over which a pickup fades and shrinks. */
 export const PICKUP_FADE = 3;
-/** Height of the light column in metres. */
-const COLUMN_HEIGHT = 3;
-const COLUMN_OPACITY = 0.16;
-const LIGHT_INTENSITY = 4;
+/** Height of the light column in metres; its alpha is zero at the top. */
+export const COLUMN_HEIGHT = 2;
+/** Column alpha at the floor; the gradient falls off with the square of the height. */
+const COLUMN_OPACITY = 0.5;
+/** Halo sprite diameter in metres: wide enough to be a few pixels at 40 m. */
+const HALO_SIZE = 1.6;
+const HALO_OPACITY = 0.55;
+/** Emissive strength of the emblem in linear radiance; above the bloom threshold (1.25). */
+const EMBLEM_GLOW = 2.4;
 const BEACON = 0x7dd3fc;
 
 const EMBLEM_ICOSAHEDRON = new THREE.IcosahedronGeometry(0.28, 0);
 const EMBLEM_RING = new THREE.TorusGeometry(0.24, 0.07, 8, 24);
 const POST = new THREE.CylinderGeometry(0.035, 0.05, 0.55, 8);
 const BASE = new THREE.TorusGeometry(0.5, 0.03, 6, 32);
-const COLUMN = new THREE.CylinderGeometry(0.07, 0.07, COLUMN_HEIGHT, 12, 1, true);
+const COLUMN = new THREE.CylinderGeometry(0.09, 0.14, COLUMN_HEIGHT, 12, 1, true);
 const FLASH_RING = new THREE.RingGeometry(0.8, 1, 48);
 
 const postMaterial = new THREE.MeshStandardMaterial({
@@ -33,13 +41,60 @@ const postMaterial = new THREE.MeshStandardMaterial({
   metalness: 0.7,
 });
 
+/**
+ * A radial falloff in a data texture rather than a canvas, so this module never touches the DOM.
+ * Alpha is `(1 - r)^2`: soft at the rim, a small bright core, no hard disc edge.
+ */
+const makeHaloTexture = (): THREE.DataTexture => {
+  const size = 64;
+  const data = new Uint8Array(size * size * 4);
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      const dx = (x + 0.5) / size - 0.5;
+      const dy = (y + 0.5) / size - 0.5;
+      const r = Math.min(1, Math.hypot(dx, dy) * 2);
+      const a = (1 - r) * (1 - r);
+      const i = (y * size + x) * 4;
+      data[i] = 255;
+      data[i + 1] = 255;
+      data[i + 2] = 255;
+      data[i + 3] = Math.round(a * 255);
+    }
+  }
+  const texture = new THREE.DataTexture(data, size, size);
+  texture.needsUpdate = true;
+  return texture;
+};
+const HALO_TEXTURE = makeHaloTexture();
+
+/** The column's vertex shader passes the cylinder's `uv.y` (0 at the floor, 1 at the top). */
+const COLUMN_VERTEX = /* glsl */ `
+  varying float vHeight;
+  void main() {
+    vHeight = uv.y;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+/** Alpha gradient `(1 - h)^2`: half the opacity by a quarter of the height, zero at the top. */
+const COLUMN_FRAGMENT = /* glsl */ `
+  uniform vec3 uColor;
+  uniform float uOpacity;
+  varying float vHeight;
+  void main() {
+    float fade = (1.0 - vHeight) * (1.0 - vHeight);
+    gl_FragColor = vec4(uColor, uOpacity * fade);
+  }
+`;
+
 interface Entry {
   readonly group: THREE.Group;
   readonly emblem: THREE.Mesh;
   readonly emblemMaterial: THREE.MeshStandardMaterial;
-  readonly columnMaterial: THREE.MeshBasicMaterial;
+  readonly columnMaterial: THREE.ShaderMaterial;
+  /** The column's `uOpacity` uniform, held directly so `animate` never looks it up by name. */
+  readonly columnOpacity: THREE.IUniform<number>;
   readonly baseMaterial: THREE.MeshStandardMaterial;
-  readonly light: THREE.PointLight;
+  readonly haloMaterial: THREE.SpriteMaterial;
 }
 
 interface Effect {
@@ -58,7 +113,7 @@ const buildEntry = (pickup: Pickup): Entry => {
   const emblemMaterial = new THREE.MeshStandardMaterial({
     color: colour,
     emissive: colour,
-    emissiveIntensity: 1.6,
+    emissiveIntensity: EMBLEM_GLOW,
     roughness: 0.3,
     metalness: 0.5,
     flatShading: true,
@@ -85,10 +140,15 @@ const buildEntry = (pickup: Pickup): Entry => {
   base.rotation.x = Math.PI / 2;
   base.position.y = 0.04;
 
-  const columnMaterial = new THREE.MeshBasicMaterial({
-    color: colour,
+  const columnOpacity: THREE.IUniform<number> = { value: COLUMN_OPACITY };
+  const columnMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+      uColor: { value: new THREE.Color(colour) },
+      uOpacity: columnOpacity,
+    },
+    vertexShader: COLUMN_VERTEX,
+    fragmentShader: COLUMN_FRAGMENT,
     transparent: true,
-    opacity: COLUMN_OPACITY,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
     side: THREE.DoubleSide,
@@ -96,11 +156,28 @@ const buildEntry = (pickup: Pickup): Entry => {
   const column = new THREE.Mesh(COLUMN, columnMaterial);
   column.position.y = COLUMN_HEIGHT / 2;
 
-  const light = new THREE.PointLight(colour, LIGHT_INTENSITY, 6, 1.6);
-  light.position.y = 0.9;
+  const haloMaterial = new THREE.SpriteMaterial({
+    map: HALO_TEXTURE,
+    color: colour,
+    transparent: true,
+    opacity: HALO_OPACITY,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+  const halo = new THREE.Sprite(haloMaterial);
+  halo.scale.setScalar(HALO_SIZE);
+  halo.position.y = 0.95;
 
-  group.add(emblem, post, base, column, light);
-  return { group, emblem, emblemMaterial, columnMaterial, baseMaterial, light };
+  group.add(emblem, post, base, column, halo);
+  return {
+    group,
+    emblem,
+    emblemMaterial,
+    columnMaterial,
+    columnOpacity,
+    baseMaterial,
+    haloMaterial,
+  };
 };
 
 export class PickupMeshes {
@@ -148,11 +225,13 @@ export class PickupMeshes {
     entry.emblem.rotation.x = pickup.kind === 'beam' ? Math.PI / 2 : 0.35;
     const life = THREE.MathUtils.clamp((pickup.expiresAt - simTime) / PICKUP_FADE, 0, 1);
     const scale = 0.3 + 0.7 * life;
+    const pulse = 0.85 + Math.sin(now * 4 + phase) * 0.15;
     entry.emblem.scale.setScalar(scale);
     entry.emblemMaterial.opacity = life;
+    entry.emblemMaterial.emissiveIntensity = EMBLEM_GLOW * pulse;
     entry.baseMaterial.opacity = life;
-    entry.columnMaterial.opacity = COLUMN_OPACITY * life;
-    entry.light.intensity = LIGHT_INTENSITY * life * (0.85 + Math.sin(now * 4 + phase) * 0.15);
+    entry.columnOpacity.value = COLUMN_OPACITY * life * pulse;
+    entry.haloMaterial.opacity = HALO_OPACITY * life * pulse;
   }
 
   private onTaken(id: number, kind: WeaponKind, now: number): void {
@@ -160,6 +239,8 @@ export class PickupMeshes {
     if (!entry) return;
     const at: Vec3 = { x: entry.group.position.x, y: 0.9, z: entry.group.position.z };
     const colour = WEAPON_ACCENT[kind];
+    // The player is inside two metres of a pickup when it is taken, so these motes sit on the
+    // near fade; sizes under 1 keep each under the 64 px cap once they have flown clear of it.
     this.particles.burst(
       {
         at,
@@ -168,13 +249,13 @@ export class PickupMeshes {
         colorEnd: 0xffffff,
         speed: 5,
         life: 0.7,
-        size: 9,
+        size: 0.6,
         gravity: 5,
       },
       now,
     );
     this.particles.burst(
-      { at, count: 30, color: 0xffffff, colorEnd: colour, speed: 1.5, life: 0.4, size: 16 },
+      { at, count: 30, color: 0xffffff, colorEnd: colour, speed: 1.5, life: 0.4, size: 0.9 },
       now,
     );
     this.flashRing(at, colour, now, 0.45);
@@ -212,6 +293,7 @@ export class PickupMeshes {
     entry.emblemMaterial.dispose();
     entry.columnMaterial.dispose();
     entry.baseMaterial.dispose();
+    entry.haloMaterial.dispose();
     this.entries.delete(id);
   }
 
