@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <meta
+      name="description"
+      content="Ringfall: a browser-native WebGL arena shooter. Regenerating shields, waves of enemies, and a ring on the horizon."
+    />
+    <title>Ringfall</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='11' fill='none' stroke='%237dd3fc' stroke-width='4'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <canvas id="scene" aria-label="Ringfall game view"></canvas>
+
+    <div id="hud" class="hud" hidden>
+      <div class="hud__top">
+        <div class="hud__wave" id="hud-wave">WAVE 1</div>
+        <div class="hud__score" id="hud-score">0</div>
+      </div>
+      <div class="hud__radar">
+        <canvas id="radar" width="150" height="150" aria-label="Motion tracker"></canvas>
+      </div>
+      <div class="hud__crosshair" id="crosshair" aria-hidden="true"></div>
+      <div class="hud__hitmarker" id="hitmarker" aria-hidden="true"></div>
+      <div class="hud__message" id="hud-message" aria-live="polite"></div>
+      <div class="hud__bottom">
+        <div class="hud__vitals">
+          <div class="bar bar--shield"><div class="bar__fill" id="shield-fill"></div></div>
+          <div class="bar bar--health"><div class="bar__fill" id="health-fill"></div></div>
+        </div>
+        <div class="hud__ammo">
+          <div class="hud__ammo-mag" id="ammo-mag">32</div>
+          <div class="hud__ammo-reserve" id="ammo-reserve">/ 160</div>
+          <div class="hud__grenades" id="grenades" role="img" aria-label="Grenades"></div>
+        </div>
+      </div>
+      <div class="hud__damage" id="damage-flash" aria-hidden="true"></div>
+      <div class="hud__lowshield" id="low-shield" aria-hidden="true"></div>
+    </div>
+
+    <div id="overlay" class="overlay">
+      <div class="overlay__card">
+        <h1 class="overlay__title">RINGFALL</h1>
+        <p class="overlay__tagline" id="overlay-tagline">
+          Hold the arena. Survive eight waves. Your shield recharges; your health does not.
+        </p>
+        <p class="overlay__stats" id="overlay-stats" hidden></p>
+        <button id="start" class="overlay__button" type="button">Deploy</button>
+        <dl class="overlay__controls">
+          <dt>Move</dt><dd>W A S D</dd>
+          <dt>Look</dt><dd>Mouse</dd>
+          <dt>Fire</dt><dd>Left click</dd>
+          <dt>Grenade</dt><dd>G or right click</dd>
+          <dt>Reload</dt><dd>R</dd>
+          <dt>Jump / Sprint</dt><dd>Space / Shift</dd>
+        </dl>
+        <p class="overlay__footnote">Requires a WebGL 2 browser. Click to capture the mouse; Esc releases it.</p>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
