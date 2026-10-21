@@ -10,7 +10,7 @@ created: 2026-10-21
 # Ringfall brand and design system
 
 One recommendation per decision; alternatives marked "Alt". Values here are
-the source of truth for `src/style.css`, the light rig in
+the reference for `src/style.css`, the light rig in
 `src/render/scene.ts`, and the README banner. Where the code and this
 document disagree, fix the code or update this document in the same PR.
 
@@ -248,7 +248,7 @@ is tiny, short and additive.
 8. Bloom threshold stays above 1.0; tone mapping stays ACES.
 9. No external audio files; every sound is synthesized.
 10. Music changes are gain ramps, never hard cuts.
-11. Screen shake respects the cap and the accessibility toggle.
+11. Screen shake respects the cap and the Settings screen-shake switch.
 12. No franchise names, logos, glyphs, fonts or melodies anywhere.
 
 ## Sources
