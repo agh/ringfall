@@ -910,6 +910,83 @@ captures. Measured means on the 64x36 downscale: day wave 1 at 15 s 35,
 the kill at 36 s 85, night at 50 s 19, the night kill at 56 s 19. No frame
 whites out; the v3 reel peaked above 200 on the same kill.
 
+## 20:05 Stop for demos: the numbers and what an engineer should look at
+
+Work stopped at 20:15 UTC for demos. The 18:10 freeze table above is the
+four-hour build; the hour after the deadline added the stutter fixes, the
+three coherence passes and the six-block quality pass (#105). Counted on
+`main` at `8cdc731` with `git rev-list`, `find` and `wc`, the GitHub
+search API, and one run of `pnpm test`.
+
+### What is interesting to engineers
+
+- The simulation is a pure function. `stepGame(state, input, dt, rng)`
+  returns a new immutable state and a list of events; nothing under
+  `src/core` may import three.js or touch the DOM, and a lint rule plus
+  `tests/unit/purity.test.ts` enforce it. Everything below follows from it.
+- The game plays itself in CI. A scripted bot drives twenty seeded games per
+  profile headlessly in about seven seconds; the balance gate fails the
+  build when win rate, waves cleared, accuracy or wave time drift past
+  stated margins, and a balance change ships with its re-derived baseline.
+- Rendering is gated by measurement. A capture hook steps the simulation
+  deterministically in headless Chromium, so one seed gives one frame; the
+  luminance gate screenshots ten seeded moments and fails on mean
+  brightness or saturated blobs. The reel and the README hero come from the
+  same hook.
+- Zero assets. Geometry is procedural, every sound is synthesised from
+  oscillators and filtered noise, the score is rendered offline from the
+  same event log, and the fonts are the only files shipped besides code.
+- Two findings worth remembering. three.js keys every lit shader on the
+  scene's light count, so each flash or explosion light recompiled every
+  material (the stutter; a fixed pool of twelve lights fixed it, #96, #103),
+  and it deletes a program when the last material using it is disposed, so
+  every expiring tracer recompiled the next shot (#116). The particle
+  shader's size law, pixels at 300 m rather than metres, was the whiteout
+  three agents had tuned opacity against.
+- The process left evidence. Two adversarial audits, three coherence passes
+  and a six-block quality pass each posted findings as "file:line, the path
+  from a real input, fixed or left and why", with before and after numbers.
+
+### How much got built
+
+| Measure | Count |
+| ------- | ----- |
+| Commits on `main` | 235 (first 14:05 UTC, latest 20:00) |
+| Merged pull requests | 59 |
+| Issues filed | 54 |
+| Agent sessions in commit trailers | 32, plus the coordinating session |
+| Production TypeScript (core, render, audio, HUD, input, loop) | 9,415 non-blank lines in 37 files |
+| CSS | 866 lines |
+| Test code (unit, balance, browser) | 6,174 lines in 39 files |
+| Scripts (reel, frames, recorder, score, architecture) | 3,498 lines |
+| Workflows | 367 lines |
+
+### Tests
+
+| Suite | Count |
+| ----- | ----- |
+| Unit tests (Vitest) | 364 in 33 files |
+| Coverage on `src/core` | 99.3 % statements, 94.7 % branches, thresholds 97 and 90 |
+| Balance gate | 40 seeded games, six bounds |
+| Browser tests (Playwright, real WebGL) | 3 |
+| Luminance gate | 10 seeded frames against budgets |
+
+### Documentation and other assets
+
+| Kind | Count |
+| ---- | ----- |
+| Markdown documents | 37, about 64,800 words |
+| Captured frames and renders under `docs/` | 104 images |
+| Architecture diagrams (Mermaid, rendered) | 7 |
+| Architecture decision records | 3 |
+| Threat model, two audit reports, test plan, design doc, brand guide, runbook, launch checklist, product pack | one each |
+| Demo reel and walkthrough deck | 69 s MP4, 7.6 MB PPTX |
+| Shipped bundle | 4.2 MB, no source map |
+
+Open at the stop: block 2 of #105 (scene, post, particles, lights,
+environment) was still measuring; the eleven `later` issues and #3 hold
+everything deferred.
+
 ## Playtest reviews
 
 Each row is a human or agent watching the game play, not a screenshot.
