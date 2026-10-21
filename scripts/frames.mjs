@@ -13,7 +13,7 @@
  * software GL already uses every core, so parallel pages only share the same throughput. The page
  * screenshot (canvas plus DOM HUD) is decoded here, box-filtered to 64x36, and measured: mean and
  * max luminance (Rec. 709, 0..255) and the largest 4-connected blob of saturated cells as a
- * fraction of the frame. Frames land in the output directory as PNGs next to `report.json`.
+ * fraction of the frame. Frames land in the output directory as PNG files next to `report.json`.
  * Needs a production build (`pnpm build`); runs on software GL (SwiftShader), as CI does.
  */
 import { execFileSync, spawn } from 'node:child_process';

@@ -172,7 +172,7 @@ the WAV are ignored by git. Each review of a film is logged in
 
 `pnpm frames` captures the ten-frame set from `scripts/frames.mjs` (seed 7
 by day, night, dusk with rain, and night with fog) on software GL, writes the
-PNGs and `report.json` to `node_modules/.cache/ringfall-frames/`, prints a
+PNG files and `report.json` to `node_modules/.cache/ringfall-frames/`, prints a
 table, and exits 1 when a frame is over its budget. It needs a production
 build. CI runs it as the `frames` job on every pull request and uploads the
 directory as the `frames` artifact. [test-plan.md](test-plan.md) explains the
@@ -193,7 +193,7 @@ from one page in order of time, so the replay from the start is paid once per
 atmosphere; the cost is the renders, about 680 for the set, at roughly a
 second each on software GL (17 minutes for the set on this sandbox). Pages are
 not captured in parallel because SwiftShader already uses every core.
-`PLAYWRIGHT_CHROMIUM_EXECUTABLE` is honoured as for the other scripts.
+`PLAYWRIGHT_CHROMIUM_EXECUTABLE` is honored as for the other scripts.
 
 ### Custom domain
 
