@@ -1,5 +1,5 @@
 External pull requests are closed in favour of
-[issue forms](https://github.com/agh/hack/issues/new/choose), so the
+[issue forms](https://github.com/agh/ringfall/issues/new/choose), so the
 evidence and scope are settled before code is written. Dependabot pull
 requests continue. This checklist is for pull requests by the maintainer
 and the agents the maintainer runs.

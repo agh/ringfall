@@ -175,7 +175,7 @@ and ring surface are procedural canvases).
 - Calm and combat are two gain buses over one clock. The drone never stops;
   the beat only ever joins it. Crossfades are ramps, never cuts.
 
-## Developer landing (github.com/agh/hack)
+## Developer landing (github.com/agh/ringfall)
 
 - One-liner: "Ringfall: a browser-native arena shooter. One ring, one dawn,
   two kinds of thing that want you dead. TypeScript + three.js, zero
@@ -308,7 +308,7 @@ else is added to the frame.
 **Crops and exports.** The banner is the full 2.4:1 frame: `docs/banner.png`
 at 1920x800 and `docs/hero/banner-2x.webp` at 3840x1600. The raw hero frame
 without type is `docs/hero/hero-night-seed7-t10.webp`. The social card is a
-centred 2:1 crop of the same frame with the lockup re-set at 1.15x,
+centered 2:1 crop of the same frame with the lockup re-set at 1.15x,
 exported to `docs/social-card.png` at 1280x640 (GitHub's repository
 preview size). Journey copies of every candidate and the contact sheet live
 under `docs/journey/images/1740-hero-*`.
