@@ -13,7 +13,7 @@ created: 2026-10-21
 
 > [Ringfall](../../README.md) > [Architecture](README.md) > Module map
 
-Every TypeScript module under `src/` with its responsibility and what it imports, read from the import declarations by `scripts/architecture.mjs`. The tree holds 33 modules in 6 layers (`audio`, `core`, `hud`, `input`, `main`, `render`) joined by 112 internal imports. A dotted arrow in the diagrams is a type-only import, which Vite erases from the bundle; a solid arrow carries runtime code.
+Every TypeScript module under `src/` with its responsibility and what it imports, read from the import declarations by `scripts/architecture.mjs`. The tree holds 34 modules in 6 layers (`audio`, `core`, `hud`, `input`, `main`, `render`) joined by 117 internal imports. A dotted arrow in the diagrams is a type-only import, which Vite erases from the bundle; a solid arrow carries runtime code.
 
 ## Allowed dependencies
 
@@ -73,11 +73,12 @@ Source: [diagrams/render-components.mmd](diagrams/render-components.mmd).
 | `src/input/input.ts` | `input` | Keyboard, mouse, wheel and pointer lock into an `InputFrame`; one-shot actions latched between steps | `core/game`, `core/vec3` |
 | `src/main.ts` | `main` | Fixed 60 Hz accumulator loop, hit-stop, overlay and pointer-lock lifecycle, settings panel, the `?record` capture hook | `audio/audio`, `audio/offline`, `core/bot`, `core/game`, `core/records`, `core/rng`, `core/settings`, `hud/hud`, `input/input`, `render/scene` |
 | `src/render/dispose.ts` | `render` | `disposeTree`: frees geometry, materials and textures under an object before it is dropped | `three` (types) |
+| `src/render/dropship.ts` | `render` | The dropship: a Hull craft that crosses the arena on the first dropPod of a wave, and the pods that fall from it | `three`, `core/game` (types), `core/vec3` (types), `core/waves`, `core/world` |
 | `src/render/enemies.ts` | `render` | Composite enemy rigs built from primitives, with their animation | `three`, `core/enemy`, `render/watcher-rig` |
 | `src/render/environment.ts` | `render` | Sky, sun and moon, the ring, terrain, stars, the atmosphere rigs and weather overlays | `three`, `three/addons/objects/Sky.js`, `core/vec3` (types), `core/waves` (types), `render/particles` (types) |
 | `src/render/particles.ts` | `render` | GPU particle pool: one `Points` draw call, birth state written once, integrated in the vertex shader | `three`, `core/vec3` (types) |
 | `src/render/pickups.ts` | `render` | Pickup emblems, halos and the spawn and take flourishes | `three`, `core/game` (types), `core/pickups` (types), `core/vec3` (types), `core/weapon` (types), `render/particles` (types), `render/weapons` |
 | `src/render/post.ts` | `render` | HDR composer: render pass, capped bloom prefilter, feel pass, ACES output | `three`, `three/addons/postprocessing/EffectComposer.js`, `three/addons/postprocessing/OutputPass.js`, `three/addons/postprocessing/RenderPass.js`, `three/addons/postprocessing/ShaderPass.js`, `three/addons/postprocessing/UnrealBloomPass.js` |
-| `src/render/scene.ts` | `render` | `SceneRenderer`: owns the three.js scene, camera and post stack; mirrors `GameState` every frame and plays effects for events | `three`, `core/enemy` (types), `core/game`, `core/grenade`, `core/vec3` (types), `core/waves`, `core/world`, `render/dispose`, `render/enemies`, `render/environment`, `render/particles`, `render/pickups`, `render/post`, `render/watcher-rig`, `render/weapons` |
+| `src/render/scene.ts` | `render` | `SceneRenderer`: owns the three.js scene, camera and post stack; mirrors `GameState` every frame and plays effects for events | `three`, `core/enemy` (types), `core/game`, `core/grenade`, `core/vec3` (types), `core/waves`, `core/world`, `render/dispose`, `render/dropship`, `render/enemies`, `render/environment`, `render/particles`, `render/pickups`, `render/post`, `render/watcher-rig`, `render/weapons` |
 | `src/render/watcher-rig.ts` | `render` | The watcher rig: a tall tripod with a lens that brightens over the charge, and the beam layer | `three`, `core/enemy` (types), `core/game` (types), `core/vec3` (types), `core/watcher`, `render/enemies` (types) |
 | `src/render/weapons.ts` | `render` | One viewmodel rig per weapon kind: draw, recoil, muzzle flash, tracers, beam and launcher effects | `three`, `core/game` (types), `core/vec3` (types), `core/weapon`, `render/particles` (types) |
