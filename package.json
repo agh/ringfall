@@ -21,7 +21,7 @@
     "test:e2e": "playwright test",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "demo": "node scripts/record-demo.mjs --seed 7 --seconds 40 --fps 30 --out demo-silent.mp4 && node scripts/render-score.mjs --seed 7 --seconds 40 --lead-in 1 --video demo-silent.mp4 --out demo.mp4",
-    "balance": "vitest run tests/balance --coverage.enabled=false --reporter=basic"
+    "balance": "vitest run tests/balance --coverage.enabled=false --silent=false"
   },
   "dependencies": {
     "three": "0.186.1"

@@ -130,7 +130,7 @@ const TIME_PRESETS: Record<TimeOfDay, () => Rig> = {
     moonColor: color(0xa9bdd6),
     ringGlow: 0.06,
     environmentIntensity: 0.3,
-    dust: 0.8,
+    dust: 0.6,
   }),
   dusk: () => ({
     sunElevation: 6,
@@ -154,11 +154,11 @@ const TIME_PRESETS: Record<TimeOfDay, () => Rig> = {
     moonColor: color(0xa9bdd6),
     ringGlow: 0.1,
     environmentIntensity: 0.25,
-    dust: 0.5,
+    dust: 0.3,
   }),
   night: () => ({
     // The sun sits just under the horizon: the Sky shader keeps a thin twilight band there.
-    sunElevation: -1.5,
+    sunElevation: -1,
     sunAzimuth: 300,
     sunColor: color(0xffe2b8),
     sunIntensity: 0,
@@ -172,14 +172,14 @@ const TIME_PRESETS: Record<TimeOfDay, () => Rig> = {
     fogDensity: 0.0045,
     starOpacity: 0.9,
     exposure: 0.55,
-    hemisphereSky: color(0x3a5278),
-    hemisphereGround: color(0x141c28),
-    hemisphereIntensity: 0.85,
-    moonIntensity: 1.6,
-    moonColor: color(0xa9bdd6),
+    hemisphereSky: color(0x4a6a9a),
+    hemisphereGround: color(0x1e2a3a),
+    hemisphereIntensity: 1.2,
+    moonIntensity: 2.4,
+    moonColor: color(0xb4c6dc),
     ringGlow: 0.22,
-    environmentIntensity: 0.12,
-    dust: 0.25,
+    environmentIntensity: 0.18,
+    dust: 0.15,
   }),
 };
 
@@ -214,11 +214,13 @@ const applyWeather = (rig: Rig, weather: Weather): Rig => {
         turbidity: Math.max(rig.turbidity, 10),
         mieCoefficient: Math.max(rig.mieCoefficient, 0.01),
         cloudCoverage: 0.6,
-        fogColor: night ? color(0x1c2a3e) : rig.fogColor.clone().lerp(color(0xc8d2dc), 0.6),
-        fogDensity: 0.012,
+        fogColor: night ? color(0x2b3d55) : rig.fogColor.clone().lerp(color(0xc8d2dc), 0.6),
+        // Dense enough to swallow the hills and soften the far wall; a 40 m enemy keeps half
+        // its contrast and all of its emissive against the lighter bank.
+        fogDensity: 0.018,
         hemisphereIntensity: rig.hemisphereIntensity * (night ? 1.1 : 0.9),
         hemisphereSky: rig.hemisphereSky.clone().lerp(color(0xb8c6d2), 0.3),
-        exposure: night ? 0.5 : 0.5,
+        exposure: night ? 0.5 : 0.46,
         starOpacity: rig.starOpacity * 0.4,
         environmentIntensity: rig.environmentIntensity * 0.6,
       };
@@ -323,8 +325,9 @@ const RAIN_SPLASH_RATE = 24;
 const RAIN_BOX = 16;
 const RAIN_FALL_SPEED = 9;
 const RAIN_LIFE = 1.2;
-const RAIN_COLOR = new THREE.Color(0xb8d8ea).multiplyScalar(0.28);
-const SPLASH_COLOR = new THREE.Color(0xe8e4d8).multiplyScalar(0.5);
+/** Additive particles have no alpha: a dim Ring colour is a Ring streak at low alpha. */
+const RAIN_COLOR = new THREE.Color(0xb8d8ea).multiplyScalar(0.18);
+const SPLASH_COLOR = new THREE.Color(0xe8e4d8).multiplyScalar(0.3);
 
 const RING_RADIUS = 6000;
 const RING_TUBE = 360;
@@ -580,7 +583,7 @@ export const createEnvironment = (arenaHalf: number): Environment => {
     fogColor.copy(current.fogColor);
     starMaterial.opacity = current.starOpacity * (0.85 + 0.15 * Math.sin(now * 0.7));
     ringMaterial.emissiveIntensity = current.ringGlow;
-    rimMaterial.emissiveIntensity = current.ringGlow;
+    rimMaterial.emissiveIntensity = current.ringGlow * 1.8;
     moonLight.color.copy(current.moonColor);
     moonLight.intensity = current.moonIntensity;
     moonSprite.material.opacity = Math.min(1, current.moonIntensity);
@@ -615,8 +618,8 @@ export const createEnvironment = (arenaHalf: number): Environment => {
           direction: { x: 0.04, y: -1, z: 0.02 },
           spread: 0.03,
           life: RAIN_LIFE,
-          size: 0.55,
-          stretch: 7,
+          size: 0.3,
+          stretch: 8,
         },
         now,
       );
@@ -631,14 +634,14 @@ export const createEnvironment = (arenaHalf: number): Environment => {
             y: 0.06,
             z: eye.z + (Math.random() - 0.5) * 12,
           },
-          count: 5,
+          count: 4,
           color: SPLASH_COLOR,
           colorEnd: 0x1e3a5f,
           speed: 1.1,
           direction: { x: 0, y: 1, z: 0 },
           spread: 0.8,
           life: 0.3,
-          size: 2.2,
+          size: 0.25,
           gravity: 7,
         },
         now,

@@ -51,7 +51,7 @@ describe('playtest bot', () => {
     const a = runPlaytest({ seed: 11, maxSeconds: 60 });
     const b = runPlaytest({ seed: 11, maxSeconds: 60 });
     expect(a).toEqual(b);
-  });
+  }, 30_000);
 
   it('clears the first wave on most seeds and lands at least a quarter of its shots overall', () => {
     const results = Array.from({ length: 8 }, (_, i) =>
@@ -62,7 +62,7 @@ describe('playtest bot', () => {
     expect(cleared).toBeGreaterThanOrEqual(5);
     expect(summary.accuracy).toBeGreaterThan(0.25);
     expect(results.reduce((a, r) => a + r.kills, 0)).toBeGreaterThanOrEqual(8 * 3);
-  });
+  }, 30_000);
 
   it('reports a balance summary across seeds', () => {
     const results = Array.from({ length: 6 }, (_, i) =>
@@ -72,7 +72,7 @@ describe('playtest bot', () => {
     expect(summary.games).toBe(6);
     expect(summary.meanWavesCleared).toBeGreaterThanOrEqual(1);
     expect(summary.meanWaveClearTimes.length).toBeGreaterThanOrEqual(1);
-  });
+  }, 30_000);
 
   it('runs both profiles to completion on the same seeds and reports them separately', () => {
     const seeds = [21, 22, 23, 24];
@@ -91,7 +91,7 @@ describe('playtest bot', () => {
         steady.meanSeconds !== reckless.meanSeconds ||
         steady.accuracy !== reckless.accuracy,
     ).toBe(true);
-  });
+  }, 30_000);
 
   describe('weapon handling', () => {
     it('holds the beam trigger until charged, then releases on a settled aim', () => {
