@@ -21,7 +21,8 @@ every verification claim. Any unticked item is a no-go.
 
 ## The list
 
-**Pages is live and playable.** Open <https://agh.github.io/ringfall/> in a
+**Pages is live and playable.** Open <https://agh.github.io/ringfall/> (not yet
+live as of 2026-10-21) in a
 clean browser profile, click Deploy, and play into wave 2. This prevents
 tagging a release whose public link shows a blank canvas because the Pages
 source was never set to GitHub Actions or the deploy job failed quietly
@@ -29,7 +30,7 @@ after the CI jobs passed. The deploy workflow is separate from CI, so a
 green CI badge proves nothing about the site.
 
 **CI is green on the exact commit to be tagged.** The lint, unit, browser
-smoke, and build jobs in `.github/workflows/ci.yml` must all pass on the
+smoke, balance gate, and build jobs in `.github/workflows/ci.yml` must all pass on the
 head of `main`, not on an earlier commit. This prevents a tag pointing at a
 commit that was pushed after the last green run, which is how a release
 ships with a type error nobody saw.
@@ -55,11 +56,11 @@ designed to catch, as [test-plan.md](test-plan.md) says under "What is
 deliberately not tested".
 
 **The bot balance assertions are green.** Run `pnpm balance` and attach the
-output. The four tests in `tests/unit/bot.test.ts` must pass: determinism
-for a seed, first-wave clearance with accuracy above 30 percent and at
-least three kills on seed 3, a summary across six seeds with at least one
-wave cleared on average, and the reckless profile taking at least half the
-shield breaks of the steady one. This prevents a tuning change from making
+output. `tests/balance/report.test.ts` must pass: twenty seeded games per
+profile inside the thresholds in `tests/balance/gate.ts` (steady wins at
+least 10%, waves at least 4.85, accuracy at least 29%, slowest mean wave
+clear at most 50 s; reckless wins at most 10%, waves at least 3.70). This
+prevents a tuning change from making
 wave 1 unwinnable or the shield loop irrelevant without anyone noticing.
 
 **The brand checklist is ticked.** Walk the twelve items in

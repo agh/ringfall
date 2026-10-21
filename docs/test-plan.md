@@ -172,7 +172,8 @@ that do not divide 60 are refused, as the recorder refuses them.
 - Pixel-exact rendering: software GL differs from hardware; we check
   structure (no errors, expected elements) not pixels.
 - Audio output: synthesis is verified by code review and by listening; the
-  event-to-sound mapping is unit-testable and will be (#9).
+  event-to-sound mapping is unit-tested in `tests/unit/sounds.test.ts`;
+  the synthesis itself is not.
 - Human feel: the bot measures fairness, not fun. A human playtest is the
   last gate before a release tag.
 
@@ -181,7 +182,7 @@ that do not divide 60 are refused, as the recorder refuses them.
 ```bash
 pnpm check          # lint, typecheck, unit with coverage, build
 pnpm test:e2e       # Playwright against vite preview
-pnpm balance        # the balance gate; report under test-results/balance/
+pnpm balance        # the balance gate; report under test-results/balance/ (pnpm test:e2e empties test-results/, so copy it first)
 PLAYWRIGHT_CHROMIUM_EXECUTABLE=/path/to/chrome pnpm test:e2e   # sandboxed browsers
 node scripts/record-demo.mjs --seed 7 --seconds 40 --fps 30    # film a run
 pnpm frames         # luminance gate: ten seeded frames against their budgets

@@ -9,8 +9,8 @@ created: 2026-10-21
 
 # The journey
 
-A time-indexed log of how Ringfall was built in one hackathon session,
-with the frames that were captured along the way. Times are UTC on
+A time-indexed log of how Ringfall was built in four hours, 14:08 to
+18:30 UTC on 2026-10-21, with the frames that were captured along the way. Times are UTC on
 2026-10-21; the user's clock ran seven hours behind (10:12 for 17:12 UTC)
 and the hard stop was 18:30 UTC. Each entry says what was tried, what was
 seen, and what was decided, so a reader can follow the reasoning and not
@@ -63,9 +63,9 @@ Meanwhile three research agents ran in parallel and came back with sourced
 reports on the design philosophy being borrowed, the browser prior art, and
 a brand system. Their findings became the specification, the brand doc,
 and a backlog of GitHub issues, each with acceptance criteria a person can
-check; it started at seventeen and stood at thirty-three by the end.
+check; it started at seventeen and stood at thirty-three by 17:24.
 
-**Act four: the coach.** With an hour and a half left the asks came five
+**Act four: the coach.** With two and a half hours left the asks came five
 at a time (day and night, six weapons, weather, a story reel, a domain)
 and the role changed: dispatch to agents, review what comes back, land
 the code. The first round was four local streams with disjoint files; it
@@ -92,7 +92,7 @@ entries from 16:05 on are that act.
 - **Holding PR #1 as a draft until the reel landed.** The coach wanted
   the film in the tree before main took anything. The user wanted main
   unblocked first so other agents could branch from it. That was right:
-  thirteen agents were about to branch from it. Merged at 17:06 as
+  thirteen agents were about to branch from it. Merged at 17:07 as
   8566f27.
 
 ### Calls that were wrong on the evidence
@@ -110,6 +110,14 @@ Not overruled by anyone; found out by measuring.
 - **A checkpoint commit to satisfy the stop hook.** It swept an agent's
   scratch harness into the tree and broke CI lint for one run (16:35 to
   16:42). Checkpoints now go through the same gates as any commit.
+- **An ambiguous brief.** "Wave 1 unchanged" and "day: sun at 35 degrees"
+  in one brief to stream A; the agent chose the first and flagged it (16:05
+  entry).
+- **Shipping the interim reel from a stale build.** The 16:47 cut was
+  captured on a 16:11 build with the old flare (17:15 entry).
+- **Claiming a fix that was not made.** The first audit recorded a recorder
+  frame-rate guard as fixed; only the demo's frame rate changed (second
+  audit).
 
 ## 14:08 Kick-off
 
@@ -208,7 +216,7 @@ out-of-scope line.
 
 `scripts/record-demo.mjs` opens the built page with `?record&bot&seed=7`,
 steps the simulation a whole number of ticks per captured frame (the
-frame rate must divide 60; an earlier run at 24 fps rounded to three ticks
+frame rate should divide 60, which the recorder does not enforce; an earlier run at 24 fps rounded to three ticks
 and played a fifth too fast, which the audit caught), and assembles the
 frames with ffmpeg. On a software GPU the capture runs far slower than
 real time; the film still plays at the right speed because the sim is
@@ -345,7 +353,7 @@ software GL in 1.7 minutes, and the build. Issue #24 was filed for the
 one ugly moment left in the seed 7 run: the bot fires the launcher into
 cover at its own feet at 48 s.
 
-## 17:06 Merged before CI finished
+## 17:07 Merged before CI finished
 
 The user asked for main to be merged "ASAP so other agents can PR off
 main", and for more agents. PR #1 was taken out of draft and merged as
@@ -381,7 +389,7 @@ requests cannot collide, plus a gate that measures:
   are recorded from the frames at the commit they land on, not chosen
   to pass.
 
-Seven more issues went out at the same time, outside the renderer: #32
+Seven more issues were dispatched alongside them, two new (#32, #33) and five from the backlog, outside the renderer: #32
 core purity as a Biome rule instead of a grep, #33 one event-to-sound
 table so the live bank and the offline score cannot drift, #24 the bot's
 launcher, #12 the balance gate in CI with thresholds from the baseline
@@ -402,7 +410,7 @@ While the feature branch was still open, three bot PRs had been raised
 from the issues between 16:53 and 16:55: #21 (the Claude GitHub app,
 Easter eggs, #14), #22 (Copilot, the recording pipeline, #13) and #23
 (Copilot, the third enemy archetype, #17). All three stopped themselves
-with "game code not in repo", because main held nothing until 17:06.
+with "game code not in repo", because main held nothing until 17:07.
 They were closed with a note. Issue #13 was closed as already done on
 main, issue #14 was re-dispatched from main, and #17 stays in the Later
 epic.
@@ -651,6 +659,37 @@ The remaining pairs (day 10 s and 18 s, night 8.5 s and 18 s, the moon)
 are filed beside them as `1715-bloom-before-*.jpg` and
 `1740-bloom-after-*.jpg`.
 
+## 17:40 The hero is a frame, not a drawing
+
+Seven moments of seed 7 were rendered headless at 3840x1600 with the post
+stack on and the HUD hidden (new `?nohud` dev flag): night at 10 s and 18 s,
+dawn at 2 s and 95 s, day at 10 s, dusk at 45 s, rain at 18 s. About 30 s a
+frame on software GL. The night kill at 10 s won the banner: dark sky for
+the wordmark, a warm skimmer burst between the slabs, the ring overhead.
+Dawn 95 s (sun flare), night 18 s (beam) and dusk 45 s (laser) make the
+README strip. The contact sheet is `images/1740-hero-contact.jpg`; the
+recipe is the "Hero and social" section of `docs/brand.md`.
+
+![Contact sheet of the seven candidate hero frames](images/1740-hero-contact.jpg)
+
+## 17:50 The watcher, held at the gate
+
+Issue #17's third archetype went in as new files (`src/core/watcher.ts`,
+`src/render/watcher-rig.ts`) with one dispatch line in the enemy module, so
+it could land beside the agents splitting `updateEnemy`, rewriting the wave
+table and adding night emissives. The state machine, the cover-blocked
+beam, the rig's aspect ratio and the kill-time step are unit-tested. The
+balance gate is where it stopped: with one watcher from wave 5 the steady
+bot cleared 4.25 waves and won 5 % against floors of 4.85 and 10 %. Three
+bot rules (do not chase a unit that backs off, finish an engaged watcher,
+draw a precise gun and wait for the reticle) and a 3.5 s cooldown brought
+it to 4.55 to 4.80 waves and 0 to 5 % wins, still under the floor, so the
+roster entry shipped behind `WATCHERS_IN_ROSTER = false` with the tables
+in the pull request. The wave 5 frame was not captured: the record-mode bot
+on seed 7 was still in wave 3 at 394 s on this machine's software GL, and
+the hard stop came first. Next update: set by whoever takes the balance
+pass.
+
 ## 18:08 Flare budget, second cut
 
 Issue #71: after #61 the user watched the reel twice and said there was
@@ -684,18 +723,54 @@ trims and stars are still visible at night on the frames.
 The other pairs are filed beside them as `1803-flare2-before-*.jpg` and
 `1808-flare2-after-*.jpg`.
 
-## 17:40 The hero is a frame, not a drawing
+## 18:10 Freeze: what four hours built
 
-Seven moments of seed 7 were rendered headless at 3840x1600 with the post
-stack on and the HUD hidden (new `?nohud` dev flag): night at 10 s and 18 s,
-dawn at 2 s and 95 s, day at 10 s, dusk at 45 s, rain at 18 s. About 30 s a
-frame on software GL. The night kill at 10 s won the banner: dark sky for
-the wordmark, a warm skimmer burst between the slabs, the ring overhead.
-Dawn 95 s (sun flare), night 18 s (beam) and dusk 45 s (laser) make the
-README strip. The contact sheet is `images/1740-hero-contact.jpg`; the
-recipe is the "Hero and social" section of `docs/brand.md`.
+The hard stop was 18:30 UTC. At 18:10 the counts, taken from the
+repository and GitHub rather than from memory, were these. Earlier
+entries and the deck quoted smaller numbers because they were written
+while the numbers were still moving; this entry supersedes them.
 
-![Contact sheet of the seven candidate hero frames](images/1740-hero-contact.jpg)
+| Measure | Count at 18:10 |
+| ------- | -------------- |
+| Elapsed since kick-off | 4 h 2 min |
+| Commits on main | 162 |
+| Pull requests merged | 29 |
+| Issues filed | 51 (26 open, 25 closed) |
+| Cloud sessions dispatched | 30 |
+| Local subagents (research, product docs, audit, streams, journal, deck, reel) | about 15 |
+| Unit tests on main | 278, all passing |
+| CI jobs on every pull request | lint and types, unit, browser smoke, build, balance gate, frames gate, docs hygiene, security and workflow hygiene |
+
+What the second coaching round changed, in order of what a player sees:
+the bloom prefilter and a second flare cut; explosions rebuilt as flash,
+crest, debris, smoke and scorch; weapon flashes sized to the frame;
+pickups without point lights; a settings panel with shake and flash
+switches; skimmers that rout when their strider dies, with a squeal; four
+skimmer temperaments, a crouch and a hidden switch; the watcher archetype
+built and tested but shipped behind a roster flag because six variants
+failed the balance gate; the hero banner and social card rendered from
+the game; every self-reference pointed at the new repository name; the
+franchise name removed from everything but citations. Underneath: a
+purity lint rule, a design-doc numbers test, a balance gate, a luminance
+gate, Vale, typos, link checks and a frontmatter schema, actionlint,
+zizmor, gitleaks, npm audit and Stylelint, a strict Content Security
+Policy, and two adversarial reviews (software: 40 findings, 19 fixed;
+documentation: 70 findings, 56 fixed, verdict unchanged at two and a half
+of five).
+
+What did not make the stop: the five named wave beats and the dropship
+that rides on them, the design and user-experience review's fixes, the
+threat model and the architecture package, all open as pull requests or
+sessions at the freeze. Two admin items need the owner: GitHub Pages is
+not enabled, so nothing has deployed to the custom domain yet, and main
+has no branch protection.
+
+The coaching lesson of the afternoon, counted: twenty-nine merges in
+seventy minutes meant almost every pull request conflicted with the one
+before it, nearly always in the changelog, the journal and the design
+doc, because every agent was told to document in the same three files.
+Next time the brief gives each stream its own journal page and the
+changelog is assembled at the freeze.
 
 ## Playtest reviews
 
@@ -707,6 +782,12 @@ Each row is a human or agent watching the game play, not a screenshot.
 | 17:00 | 7 | A 75 s bot run by day, frames every 3 s, and the night kill at 10 s, after the weapon integration | Weapon swaps read (beam at 18 s, scatter at 45 s, launcher at 48 s), pickup columns are visible from across the arena, the night frame keeps its stars and trims. The launcher round the bot fired at its own feet at 48 s still washes the frame pink with the shield-down effect; that is the jolt it should be, but the bot should not do it (issue for the bot: no launcher inside the blast radius). |
 | 15:56 | 7 | The whole 49 s film with its offline score: title, deploy, waves 1 to 4 | Reviewed frame-by-frame at 8 s, 22 s and 46 s and watched end to end at speed: the sun flare and bloom carry the opening, the bot's first kill lands at 4.8 s, wave 2 brings the first strider and bolts, the HUD reads at 720p. Weak points: around 8 s the bot turns into the sun and the frame whites out for about two seconds (this capture predates the exposure and haze reduction and HUD v2), and the bot stands in the open while reloading. Shipped as the first reel; a second capture with the current build was started at 16:00. |
 | 15:29 | 7 | Frames 100 to 225 of the first capture (wave 1, 24 fps) | Bot kills two skimmers by 8 s, loses the third behind cover and reloads in the open; the sun behind a slab blooms hard enough to hide the reticle for a second. Readable, dramatic, slightly over-bright. Exposure left as is for the reel; a bloom radius reduction is a candidate. |
+
+![The first film at 8 s](images/1556-film-08s.jpg)
+
+![The first film at 22 s](images/1556-film-22s.jpg)
+
+![The first film at 46 s](images/1556-film-46s.jpg)
 
 ![Wave 1, the sun behind a slab](images/1535-demo-seed7-wave1-sun.jpg)
 

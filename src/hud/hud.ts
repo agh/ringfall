@@ -281,7 +281,7 @@ export class Hud {
       if (enemy.state === 'dead') continue;
       const [px, py, dist] = project(enemy.position);
       if (dist > RADAR_RANGE) continue;
-      const big = enemy.kind === 'strider';
+      const big = enemy.kind !== 'skimmer';
       const r = (big ? 5 : 3.5) * (w / 150);
       ctx.fillStyle = enemy.state === 'spawning' ? 'rgba(251, 113, 133, 0.4)' : '#fb7185';
       ctx.shadowColor = '#fb7185';

@@ -10,7 +10,7 @@ created: 2026-10-21
 # Ringfall brand and design system
 
 One recommendation per decision; alternatives marked "Alt". Values here are
-the source of truth for `src/style.css`, the light rig in
+the reference for `src/style.css`, the light rig in
 `src/render/scene.ts`, and the README banner. Where the code and this
 document disagree, fix the code or update this document in the same PR.
 
@@ -145,6 +145,10 @@ Anything smaller is decoration and must not carry gameplay meaning.
   emissive ring. Attack telegraph: core brightens.
 - Strider: vertical, tall, four legs. One Rose lens on the head; charge
   telegraph: muzzle swells and the lens goes white.
+- Watcher: a tripod mast, taller and far narrower than the strider (height
+  over width above 2.5, asserted in `tests/unit/watcher-rig.test.ts`). One
+  Rose lens on top; charge telegraph: the lens swells and goes from Rose to
+  white over 1.2 s and a thin Rose aiming line runs to the player.
 - Enemies carry no Beacon cyan anywhere; the world carries no Rose anywhere.
   Color tells you what is hostile before shape does.
 
@@ -244,7 +248,7 @@ is tiny, short and additive.
 8. Bloom threshold stays above 1.0; tone mapping stays ACES.
 9. No external audio files; every sound is synthesized.
 10. Music changes are gain ramps, never hard cuts.
-11. Screen shake respects the cap and the accessibility toggle.
+11. Screen shake respects the cap and the Settings screen-shake switch.
 12. No franchise names, logos, glyphs, fonts or melodies anywhere.
 
 ## Sources

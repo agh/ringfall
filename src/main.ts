@@ -118,6 +118,7 @@ const main = (): void => {
 
   const showOverlay = (finished: boolean): void => {
     running = false;
+    audio.silence();
     audio.setMusic('title');
     hud.hide();
     overlay.hidden = false;
@@ -144,6 +145,11 @@ const main = (): void => {
       stats.textContent = `${summarize(game)} ${describeComparison(round, comparison)}`;
       stats.hidden = false;
       startButton.textContent = won ? 'Run it back' : 'Redeploy';
+    } else {
+      // A pause, not an ending: the card must not keep the previous round's death copy.
+      tagline.textContent = 'Paused. Esc released the mouse; click to take it back.';
+      stats.hidden = true;
+      startButton.textContent = 'Resume';
     }
     if (document.pointerLockElement) document.exitPointerLock();
   };
@@ -161,6 +167,9 @@ const main = (): void => {
     else requestFullscreen();
   });
 
+  /** Seconds of hit-stop remaining; the loop runs the sim at 5% speed while it is positive. */
+  let hitStop = 0;
+
   const start = async (): Promise<void> => {
     audio.unlock();
     if (!recordMode) requestFullscreen();
@@ -171,8 +180,12 @@ const main = (): void => {
       botRng = createRng(next ^ 0x7f4a7c15);
       botMemory = createBotMemory();
       renderer.setArena(game.arena);
+      input.reset();
+    } else {
+      // Resuming after Esc: `reset()` here snapped the camera to yaw 0 on every resume.
+      input.release();
     }
-    input.reset();
+    hitStop = 0;
     overlay.hidden = true;
     if (!params.has('nohud')) hud.show(); // `?nohud`: dev flag, keeps the HUD hidden for clean hero captures.
     running = true;
@@ -192,9 +205,6 @@ const main = (): void => {
     // Esc releases the pointer; pause to the overlay so the player can recapture it.
     if (!input.locked && running && game.status === 'playing') showOverlay(false);
   });
-
-  /** Seconds of hit-stop remaining; the loop runs the sim at 5% speed while it is positive. */
-  let hitStop = 0;
 
   /** One simulation step from either the human or the bot, plus event fan-out. */
   const simulate = (now: number): void => {
@@ -261,6 +271,9 @@ const main = (): void => {
       } else {
         accumulator += frameDt;
       }
+      // Anything past the per-frame cap is dropped, not deferred: a deferred backlog would
+      // fast-forward the game at five steps a frame once the frame rate recovers.
+      accumulator = Math.min(accumulator, FIXED_DT * MAX_STEPS_PER_FRAME);
       let steps = 0;
       while (accumulator >= FIXED_DT && steps < MAX_STEPS_PER_FRAME) {
         simulate(now);

@@ -27,6 +27,13 @@ and this project adheres to
 
 - A unit test that fails if the pre-rename repository path reappears outside
   `docs/journey/`, and a runbook note on the rename order (#70).
+
+- The watcher, a third enemy archetype (#17): a tall perimeter sentinel
+  that holds 24 to 32 m, orbits the player and fires a telegraphed hitscan
+  beam that cover blocks; one from wave 5 and two from wave 7 by design,
+  behind `WATCHERS_IN_ROSTER` (off) until the balance pass. New
+  `watcherCharging` and `watcherFired` events, a tripod rig with an aiming
+  line, and bot rules that shoot a charging watcher first with a precise gun.
 - Four skimmer temperaments handed out round-robin per wave: chaser,
   ambusher (leads the player's velocity by 4 m), flanker (swings to the
   off-hand side) and skittish (holds at 10 m until a packmate is within
@@ -40,6 +47,12 @@ and this project adheres to
   New enemy state `flee` and two events for the presentation layers,
   `enemyFled { id, kind }` and `enemyBark { id, line }`, with three original
   bark lines (`src/core/enemy.ts`).
+- Core purity as a lint rule: a Biome override on `src/core/**` and
+  `tests/unit/purity.test.ts` (#34).
+- Balance gate in CI: `pnpm balance` fails on baseline-derived thresholds
+  in `tests/balance/gate.ts` and uploads a `balance-report` artifact (#39).
+- One event-to-sound table (`src/audio/sounds.ts`) shared by the live bank
+  and the offline score, with a bark squeal for routed skimmers (#42).
 - Renderer v2: scattering dawn sky, a ringworld you stand on, rolling
   terrain with mountains, image-based lighting, a GPU particle pool, an HDR
   composer with bloom and a custom feel pass (vignette, chromatic
@@ -51,7 +64,7 @@ and this project adheres to
   `src/core/playtest.ts`) with balance tests; `pnpm balance`.
 - Deterministic demo recorder (`scripts/record-demo.mjs`, `pnpm demo`) and
   the `?record&bot&seed=N` capture hook.
-- Specification, brand system, test plan, two research reports, a journey
+- Specification, brand system, test plan, three research reports, a journey
   log with captured frames, and a README banner.
 - Personal bests kept in the browser's local storage: the end card compares
   the round with the previous best score, deepest wave, runs and clears.
@@ -92,6 +105,23 @@ and this project adheres to
   sprite at two thirds of its size, and the day and dawn skies given a
   thinner, tighter mie lobe so the sun reads as a disc; facing the sun the
   saturated blob went from 13% to 3% of the frame height (#71).
+
+- Adversarial software review (#51): a death in the same step as the last
+  kill is no longer overwritten by victory; blasts spare spawning enemies
+  as shots do; the fixed-step loop drops, rather than defers, steps past
+  its per-frame cap; resuming after Esc keeps the look direction and shows a pause card; one-shot key latches are cleared on reset; the beam
+  charge hum is cut on victory and whenever the overlay returns; the
+  arena rebuild and expired explosion and death effects dispose their GPU
+  resources; a zero-height viewport no longer puts NaN in the projection;
+  the recorder refuses frame rates that do not divide 60, as the audit
+  claimed it already did; the purity test and the Biome denied-globals
+  list cover `crypto`, `globalThis`, `structuredClone`, `Intl`, timers,
+  storage and `console`; the Pages deploy waits for a green CI run; the
+  browser smoke tests fail on page errors in every test and check for a
+  WebGL 2 context; `tests/scratch/` is ignored by git, Biome and tsc.
+
+- The bot no longer fires the launcher when cover sits inside the blast
+  radius (#36).
 - The frame bloomed and flared too much: the bloom prefilter passed the
   whole HDR texel, so the sky's sun disc and the dust motes flooded the
   frame with halos. The prefilter now keeps only the excess over the
