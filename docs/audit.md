@@ -47,7 +47,7 @@ the frame rate the demo script used.
 | Medium | Design doc contradicted itself on strider aiming and misquoted effect timings | Fixed from the constants |
 | Medium | Changelog presented a release with no tag | Folded under Unreleased |
 | Medium | Two dead citations, one paraphrase shown in quotation marks, one citation that argued the opposite | Removed, reworded, corrected |
-| Medium | Three copies of the sound design across live, music, and offline modules with different gains | Open: issue to lift into one event-to-sound table |
+| Medium | Three copies of the sound design across live, music, and offline modules with different gains | Fixed (#33): `src/audio/sounds.ts` holds every voice, the charge hum, and the choir as data; the live bank and the offline score schedule from it, differing only in the live pitch jitter and the documented offline effects-bus gain; `tests/unit/sounds.test.ts` fails if a `GameEvent` type is in neither the table nor `SILENT` |
 | Medium | Complexity rule set to warn and tolerated on nine functions | Open: enforce or delete the rule |
 | Low | Unused export with `x - x`, an unused canvas hook, a no-op gain, a duplicate death check, snake_case shim, vestigial range tracking | Removed except the shim and range tracking, which are cosmetic |
 

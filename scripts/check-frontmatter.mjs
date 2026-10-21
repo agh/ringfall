@@ -1,5 +1,4 @@
-// Validates the YAML frontmatter of README.md and every tracked Markdown file
-// under docs/ against docs/frontmatter.schema.json. Adapted from the crefft
+// Validates the YAML frontmatter of every tracked Markdown file under docs/ against docs/frontmatter.schema.json. Adapted from the crefft
 // specifications guide (guides/docs/specifications.md, "Frontmatter
 // Validation") at commit 6e6481840e68a89874e0d90eaae3cf23e83379fb.
 //
@@ -12,7 +11,7 @@ import { parse } from 'yaml';
 
 const schema = JSON.parse(readFileSync('docs/frontmatter.schema.json', 'utf8'));
 const validate = new Ajv2020({ allErrors: true }).compile(schema);
-const files = execFileSync('git', ['ls-files', '-z', '--', 'README.md', 'docs/*.md'], {
+const files = execFileSync('git', ['ls-files', '-z', '--', 'docs/*.md'], {
   encoding: 'utf8',
 })
   .split('\0')

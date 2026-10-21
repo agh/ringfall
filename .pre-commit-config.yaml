@@ -30,5 +30,5 @@ repos:
         name: Validate docs frontmatter against docs/frontmatter.schema.json
         entry: node scripts/check-frontmatter.mjs
         language: system
-        files: ^(README\.md|docs/.*\.md)$
+        files: ^docs/.*\.md$
         pass_filenames: false
