@@ -419,6 +419,26 @@ on this machine's software GL; the check-in to deliver it is set for
 The reel agent's shortfall list was honest and short: night unverified,
 dust discs, and two browser deaths recovered by the resume logic.
 
+## 17:29 Brand compliance
+
+The stylesheet had thirty-odd literal colours that predated the brand doc
+(an `rgba` of Beacon here, a lime grenade pip there, a sky-blue hover
+borrowed from a utility palette). Every one is now a token or a
+`color-mix()` of a token, the shield arc gradient lost its two hex stops,
+and the brand doc gained a type scale with a 14 px floor, because at 720p
+the HUD unit is 3.24 px and "3.2 units" had quietly been a 10 px label.
+Low ammo moved from Rose to Flare (the player's own state, per the
+palette rule), and the title card and HUD got short entrance animations
+with a reduced-motion opt-out. Checking the doc against the code turned
+up the usual drift: the sun is `#ffe2b8` not `#ffc18d`, the hemisphere is
+pale and green-grounded rather than the deep blue first proposed, the
+sprint FOV approach is exponential rather than a 150 ms tween, and the
+shake toggle does not exist. The doc now says what the code does and its
+status moved from draft to approved. Frames: title and 10 s of seed 7,
+before (`1724-*`) and after (`1729-*`), at 1280 by 720.
+
+![Title card after the pass](images/1729-title-after.jpg)
+
 ## Playtest reviews
 
 Each row is a human or agent watching the game play, not a screenshot.
