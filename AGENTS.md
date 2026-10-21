@@ -48,7 +48,7 @@ Don't: "We will fix this within 24 hours. All checks pass."
 ## Overview
 
 Ringfall is a browser-native first-person arena shooter rendered with WebGL
-through three.js. The player holds an arena against eight waves of enemies
+through three.js. The player holds an arena against five named waves of enemies
 with a regenerating energy shield, a magazine-fed rifle, and a handful of
 grenades, under a ringworld arc on the horizon. It is an original work: no
 names, assets, audio, or lore from any commercial franchise are used.

@@ -51,6 +51,8 @@ export interface Sound {
 export const SILENT = [
   'pickupExpired',
   'enemyFled',
+  // The pod's fall and landing are the renderer's streak and dust for now (#56).
+  'dropPod',
   // The hidden switch's seven-note chime is a follow-up; the score tick is the only reaction here.
   'secretFound',
   // The watcher's beam reuses the strider bolt sound: game.ts emits boltFired beside watcherFired.

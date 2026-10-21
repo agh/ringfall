@@ -471,13 +471,18 @@ export class SceneRenderer {
     this.updateEffects(now);
     this.particles.update(now);
 
-    // Airborne dust around the player: a few slow motes per frame, lit by bloom at the edges.
-    if (Math.random() < 0.6) {
+    // Airborne dust around the player: a hint of drift, never a disc. The rig sets motes per
+    // second, their life and brightness per time of day and weather. The enemy rigs take the
+    // same rig's night factor here, the one place render() reads the blend each frame.
+    const atmosphere = this.environment.lighting();
+    for (const rig of this.enemies.values()) rig.setNight?.(atmosphere.night);
+    const motes = Math.floor(atmosphere.dustRate * frameDt + Math.random());
+    for (let i = 0; i < motes; i += 1) {
       const e = playerEye(state.player);
-      const dust = this.environment.lighting().dust;
-      // Never closer than 2.5 m: a size-3 mote a metre away would be a 900 px disc.
+      // Spawned 3.5 to 10 m out at size 0.09: the largest a mote can draw is 0.09 * 1.4 * 300
+      // / 3.5 = 11 px, and most are 2 to 5 px.
       const angle = Math.random() * Math.PI * 2;
-      const radius = 2.5 + Math.random() * 5;
+      const radius = 3.5 + Math.random() * 6.5;
       this.particles.burst(
         {
           at: {
@@ -486,11 +491,11 @@ export class SceneRenderer {
             z: e.z + Math.sin(angle) * radius,
           },
           count: 1,
-          color: new THREE.Color(0xe8e4d8).multiplyScalar(dust),
-          colorEnd: new THREE.Color(0xb8d8ea).multiplyScalar(dust),
+          color: new THREE.Color(0xe8e4d8).multiplyScalar(atmosphere.dust),
+          colorEnd: new THREE.Color(0xb8d8ea).multiplyScalar(atmosphere.dust),
           speed: 0.25,
-          life: 5,
-          size: 3,
+          life: atmosphere.dustLife,
+          size: 0.09,
           gravity: -0.05,
         },
         now,
