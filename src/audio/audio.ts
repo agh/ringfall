@@ -1,6 +1,13 @@
 import type { GameEvent } from '../core/game';
 import { Music, type MusicState } from './music';
-import { type ChargeHum, chargeSeconds, scheduleVoices, soundFor, startChargeHum } from './sounds';
+import {
+  type ChargeHum,
+  chargeSeconds,
+  makeLimiter,
+  scheduleVoices,
+  soundFor,
+  startChargeHum,
+} from './sounds';
 
 /** Live-only pitch jitter so a magazine does not sound like one looped sample. */
 const PITCH_JITTER = 0.03;
@@ -14,7 +21,20 @@ export class AudioBank {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
   private charge: ChargeHum | null = null;
+  /** Set by `playerDied`: the pulse stays down through the death window until the title card. */
+  private dead = false;
   readonly music = new Music();
+
+  constructor() {
+    // The score has no end of its own (A5 in #51): leaving the page stops it, and a hidden tab
+    // suspends the context so three dozen oscillators do not run under another window.
+    window.addEventListener('pagehide', () => this.dispose());
+    document.addEventListener('visibilitychange', () => {
+      if (!this.ctx) return;
+      if (document.visibilityState === 'hidden') void this.ctx.suspend();
+      else void this.ctx.resume();
+    });
+  }
 
   /** Must be called from a user gesture; browsers refuse to start audio otherwise. */
   unlock(): void {
@@ -25,17 +45,35 @@ export class AudioBank {
     const Ctor = window.AudioContext;
     if (!Ctor) return;
     this.ctx = new Ctor();
+    // Everything reaches the speakers through one limiter (sounds.ts, LIMITER).
+    const limiter = makeLimiter(this.ctx);
+    limiter.connect(this.ctx.destination);
     this.master = this.ctx.createGain();
     this.master.gain.value = 0.35;
-    this.master.connect(this.ctx.destination);
+    this.master.connect(limiter);
     const musicBus = this.ctx.createGain();
     musicBus.gain.value = 0.5;
-    musicBus.connect(this.ctx.destination);
+    musicBus.connect(limiter);
     this.music.start(this.ctx, musicBus);
   }
 
   setMusic(state: MusicState): void {
+    // The death window is the sting's: the loop keeps asking for combat while the corpse
+    // settles, and only the title card (or a new game after it) brings the score back.
+    if (state === 'title') this.dead = false;
+    else if (this.dead) return;
     this.music.setState(state);
+  }
+
+  /** Stops the score and closes the context; the bank is unusable afterwards. */
+  dispose(): void {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    this.stopCharge(ctx.currentTime);
+    this.music.stop();
+    this.ctx = null;
+    this.master = null;
+    void ctx.close();
   }
 
   /**
@@ -57,6 +95,10 @@ export class AudioBank {
       if (e.type === 'chargeStarted') {
         this.stopCharge(now);
         this.charge = startChargeHum(this.ctx, this.master, now, chargeSeconds(e.kind));
+      }
+      if (e.type === 'playerDied') {
+        this.dead = true;
+        this.music.setState('silent');
       }
       scheduleVoices(this.ctx, this.master, now, sound.voices, this.jitter());
     }

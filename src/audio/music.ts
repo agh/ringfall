@@ -8,8 +8,37 @@ import { buildChoir, CHOIR, type Choir, kick, SNARE, scheduleVoices } from './so
  */
 export type MusicState = 'title' | 'calm' | 'combat' | 'silent';
 
-/** Seconds between scheduler ticks: a quarter beat at 120 bpm. */
-const TICK = 0.25;
+/** Seconds between beats, and between scheduler ticks: a quarter beat at 120 bpm. */
+export const TICK = 0.25;
+/**
+ * How far ahead of the audio clock beats are placed. More than one timer tick, so a late tick
+ * (a busy main thread, a throttled background tab) never leaves a hole in the pulse; not much
+ * more, so a change of state reaches the beat within a tick or two.
+ */
+export const LOOKAHEAD = 0.3;
+/** Seconds after a stall before the first beat, so it is never scheduled in the past. */
+const RESYNC_GAP = 0.05;
+
+/**
+ * Beat times due between a cursor on the audio clock and `now + lookahead`, and the cursor
+ * after them. Beats sit at exact multiples of `tick` from one another, whatever the timer
+ * does; a cursor behind `now` (the context was suspended, or the tab throttled) restarts
+ * just ahead of the clock instead of catching up, so nothing piles up at one instant.
+ */
+export const beatsDue = (
+  cursor: number,
+  now: number,
+  lookahead = LOOKAHEAD,
+  tick = TICK,
+): { readonly times: readonly number[]; readonly cursor: number } => {
+  let next = cursor < now ? now + RESYNC_GAP : cursor;
+  const times: number[] = [];
+  while (next < now + lookahead) {
+    times.push(next);
+    next += tick;
+  }
+  return { times, cursor: next };
+};
 
 const makeImpulse = (ctx: BaseAudioContext, seconds: number, decay: number): AudioBuffer => {
   const rate = ctx.sampleRate;
@@ -34,6 +63,9 @@ export class Music {
   private state: MusicState = 'silent';
   private beat = 0;
   private vowelPhase = 0;
+  /** Audio-clock time of the next beat to place; 0 forces a resync. */
+  private nextBeatAt = 0;
+  private timer: number | null = null;
 
   /** Call from a user gesture. Idempotent. */
   start(ctx: AudioContext, destination: AudioNode): void {
@@ -56,7 +88,27 @@ export class Music {
     this.pulseBus.gain.value = 0;
     this.pulseBus.connect(this.master);
 
-    window.setInterval(() => this.schedule(), TICK * 1000);
+    this.timer = window.setInterval(() => this.schedule(), TICK * 1000);
+  }
+
+  /**
+   * Ends the score for good: the timer stops, every drone oscillator stops, and the buses are
+   * cut. `silent` only ramps the master to zero and keeps 36 oscillators running; this is for
+   * leaving the page.
+   */
+  stop(): void {
+    if (this.timer !== null) window.clearInterval(this.timer);
+    this.timer = null;
+    const ctx = this.ctx;
+    if (ctx) {
+      this.choir?.stop(ctx.currentTime);
+      this.master?.disconnect();
+    }
+    this.ctx = null;
+    this.master = null;
+    this.choir = null;
+    this.pulseBus = null;
+    this.state = 'silent';
   }
 
   setState(state: MusicState): void {
@@ -96,15 +148,33 @@ export class Music {
   private schedule(): void {
     const ctx = this.ctx;
     if (!ctx || !this.pulseBus || !this.choir) return;
+    // A suspended context (an iOS interruption, a hidden tab, record mode without a gesture)
+    // has a frozen clock: anything placed against it stacks at one instant and fires as a burst
+    // on resume. Nothing is placed until it runs again, and the beat cursor resyncs then.
+    if (ctx.state !== 'running') {
+      this.nextBeatAt = 0;
+      return;
+    }
+    const now = ctx.currentTime;
     // Slow vowel drift gives the drone its breath.
     this.vowelPhase += CHOIR.vowelRate * TICK;
-    this.choir.setVowel(this.vowelPhase, ctx.currentTime);
+    this.choir.setVowel(this.vowelPhase, now);
 
-    if (this.state !== 'combat' && this.state !== 'calm') return;
-    this.beat += 1;
+    if (this.state !== 'combat' && this.state !== 'calm') {
+      this.nextBeatAt = 0;
+      return;
+    }
+    // Beats ride the audio clock, not the timer: the timer only decides how many are placed.
+    const due = beatsDue(this.nextBeatAt, now);
+    this.nextBeatAt = due.cursor;
+    for (const at of due.times) {
+      this.beat += 1;
+      this.placeBeat(ctx, this.pulseBus, at);
+    }
+  }
+
+  private placeBeat(ctx: AudioContext, bus: GainNode, at: number): void {
     const quarter = this.beat % 4;
-    const at = ctx.currentTime + 0.05;
-    const bus = this.pulseBus;
     if (this.state === 'combat' && (quarter === 0 || quarter === 2)) {
       scheduleVoices(ctx, bus, at, [kick(62, 0.9)]);
     }
