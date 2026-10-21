@@ -130,6 +130,11 @@ and this project adheres to
 
 ### Fixed
 
+- Player-facing copy agrees with the code (#97, pass A): the title card says
+  five waves, not eight; the README controls table lists swap once and
+  names Esc as Pause like the card; the Play line no longer says the site
+  is not live; the frame captions date the capture to 17:40 UTC on
+  2026-10-21, since the seed-7 timeline has moved.
 - Documentation sweep of the second audit's deferred findings (#54): the
   VFX rules quoted from a live source, a login-walled course link dropped,
   the ringworld sentence restated from its sources, two journey frames
