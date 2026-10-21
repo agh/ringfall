@@ -13,6 +13,18 @@ export const FINAL_WAVE = 8;
 export const WAVE_COUNTDOWN = 3;
 export const WAVE_CLEAR_PAUSE = 2.5;
 export const WAVE_BONUS = 500;
+/** One watcher holds the perimeter from this wave, two from the later one. */
+export const WATCHER_FROM = 5;
+export const WATCHER_PAIR_FROM = 7;
+/**
+ * Off until the balance pass for #17 lands: with watchers in the roster the steady bot clears
+ * 4.5 to 4.8 waves against the gate's 4.85 floor (see the pull request for the tables).
+ */
+export const WATCHERS_IN_ROSTER = false;
+
+/** Watchers the design puts in a wave, whether or not the roster flag is on. */
+export const watcherCount = (wave: number): number =>
+  wave >= WATCHER_PAIR_FROM ? 2 : wave >= WATCHER_FROM ? 1 : 0;
 
 export const createWaveState = (now: number): WaveState => ({
   number: 1,
@@ -20,13 +32,15 @@ export const createWaveState = (now: number): WaveState => ({
   phaseEndsAt: now + WAVE_COUNTDOWN,
 });
 
-/** Enemy roster for a wave: skimmers scale linearly, striders join from wave 2. */
+/** Enemy roster for a wave: skimmers scale linearly, striders join from wave 2, watchers from 5. */
 export const waveComposition = (wave: number): readonly EnemyKind[] => {
   const skimmers = 2 + wave;
   const striders = Math.floor(wave / 2);
+  const watchers = WATCHERS_IN_ROSTER ? watcherCount(wave) : 0;
   return [
     ...Array.from({ length: skimmers }, (): EnemyKind => 'skimmer'),
     ...Array.from({ length: striders }, (): EnemyKind => 'strider'),
+    ...Array.from({ length: watchers }, (): EnemyKind => 'watcher'),
   ];
 };
 

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { ENEMY_STATS, type Enemy } from '../core/enemy';
+import { makeWatcherRig } from './watcher-rig';
 
 /** Composite enemy rigs. Emissive parts are tuned to catch bloom so enemies read at range. */
 export interface EnemyRig {
@@ -130,5 +131,7 @@ const makeStrider = (): EnemyRig => {
   };
 };
 
-export const makeEnemyRig = (enemy: Enemy): EnemyRig =>
-  enemy.kind === 'skimmer' ? makeSkimmer() : makeStrider();
+export const makeEnemyRig = (enemy: Enemy): EnemyRig => {
+  if (enemy.kind === 'watcher') return makeWatcherRig();
+  return enemy.kind === 'skimmer' ? makeSkimmer() : makeStrider();
+};

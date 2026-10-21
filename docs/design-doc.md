@@ -124,11 +124,18 @@ in order, and freezes the result:
 | --------- | ------ | ------ | ------------------------------- | ------------------------------------------------ | ----- |
 | Skimmer   | 40     | 7 m/s  | Melee zap, 12 dmg every 0.9 s   | Closes to 2 m with lateral jitter so packs fan out | 100   |
 | Strider   | 120    | 3 m/s  | Bolt, 18 dmg every 1.4 s        | Holds 8 to 16 m, backs off when crowded, aims at the current eye position with 4 % spread | 300 |
+| Watcher   | 160    | 2 m/s  | Hitscan beam, 35 dmg: 1.2 s charge, 0.15 s beam, 3.5 s cooldown | Holds 24 to 32 m and never closes, orbits the player at half speed inside the band, charges only with line of sight to the eye, stands still while charging; the beam stops at cover | 400 |
 
-The rifle kills a skimmer in two shots and a strider in six. Two skimmers in
-contact strip a full shield in about four seconds; one strider's volley is
-dodgeable by strafing because the bolt takes roughly half a second to cross
-its range.
+The rifle kills a skimmer in two shots and a strider in six. A watcher takes
+eight. Two skimmers in contact strip a full shield in about four seconds;
+one strider's volley is dodgeable by strafing because the bolt takes roughly
+half a second to cross its range. The watcher's beam cannot be dodged, only
+blocked: it fires at the eye's position at the end of a 1.2 s telegraph (the
+lens goes from Rose to white and an aiming line is drawn to the player), so
+the counter is cover or killing it while it stands still to charge. Its
+cycle is longer than the shield's recharge delay, so the shield claws back
+part of each beam; alone and unanswered it still kills a full shield and
+health. Constants are in `src/core/watcher.ts`.
 
 #### Skimmer temperaments
 
@@ -254,19 +261,24 @@ of its full rate (`MINIGUN_IDLE_RATE`) until it has spun up.
 <!-- design-check: waves -->
 
 Wave *n* spawns `2 + n` skimmers and `floor(n / 2)` striders on a 26 m ring
-around the arena center, avoiding cover. Clearing a wave is worth 500. The
-roster for the eight waves:
+around the arena center, avoiding cover, plus one watcher from wave 5
+(`WATCHER_FROM`) and two from wave 7 (`WATCHER_PAIR_FROM`) once
+`WATCHERS_IN_ROSTER` in `src/core/waves.ts` is on. It is off: with the
+watcher in the roster the steady bot clears 4.5 to 4.8 waves against the
+gate's floor of 4.85 and wins 0 to 5 % of games against its floor of 10 %,
+so the watcher column below is the design, not yet the shipped roster.
+Clearing a wave is worth 500. The roster for the eight waves:
 
-| Wave | Skimmers | Striders |
-| ---- | -------- | -------- |
-| 1    | 3        | 0        |
-| 2    | 4        | 1        |
-| 3    | 5        | 1        |
-| 4    | 6        | 2        |
-| 5    | 7        | 2        |
-| 6    | 8        | 3        |
-| 7    | 9        | 3        |
-| 8    | 10       | 4        |
+| Wave | Skimmers | Striders | Watchers |
+| ---- | -------- | -------- | -------- |
+| 1    | 3        | 0        | 0        |
+| 2    | 4        | 1        | 0        |
+| 3    | 5        | 1        | 0        |
+| 4    | 6        | 2        | 0        |
+| 5    | 7        | 2        | 1        |
+| 6    | 8        | 3        | 1        |
+| 7    | 9        | 3        | 2        |
+| 8    | 10       | 4        | 2        |
 
 <!-- /design-check: waves -->
 
@@ -324,15 +336,15 @@ clock in production and is fixed in tests.
   frame; the dust motes did the same in miniature. `src/render/post.ts`
   replaces it with a prefilter that keeps only the excess over the
   threshold, with a quadratic knee that starts at 1.0, capped at 1.5 per
-  pixel: strength 0.3, radius 0.35, threshold 1.3, knee 0.3, cap 1.5. The
+  pixel: strength 0.15, radius 0.25, threshold 1.3, knee 0.3, cap 1.5 (issue #71 halved the strength and radius again from 0.3 and 0.35). The
   values come from measured seed-7 frames (`docs/journey/README.md`,
   17:40): looking into the dawn sun the mean luminance of a 64 by 36
   downscale went from 136 to 106 of 255 and the saturated blob from 22% to
   14% of the frame height; at the first kill at night from 60 to 19. The
   budget is a mean under 150 by day and 110 at night.
-- **Sun flare.** An additive core sprite at the sun (scale 520 at 9 km,
-  about 4% of the frame height) and three ghosts on the sun-to-center axis,
-  sized as fractions of the frame height (5%, 8%, 3.5%) at opacity 0.6, so
+- **Sun flare.** An additive core sprite at the sun (scale 347 at 9 km,
+  about 2.7% of the frame height) and three ghosts on the sun-to-center axis,
+  sized as fractions of the frame height (5%, 8%, 3.5%) at opacity 0.3, so
   no ghost can reach the third of the frame the budget allows. Core and
   ghosts follow `sunDisc`, which is 0 at night, and are hidden rather than
   drawn transparent when it is. The moon is a 420-unit disc sprite whose
