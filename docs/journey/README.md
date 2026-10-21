@@ -947,6 +947,46 @@ search API, and one run of `pnpm test`.
   and a six-block quality pass each posted findings as "file:line, the path
   from a real input, fixed or left and why", with before and after numbers.
 
+### No corners cut: specification-driven development
+
+Speed did not come from skipping the paperwork; it came from writing the
+paperwork first and making the code answer to it. The chain, every link
+of which is in the tree:
+
+1. A product pack under `docs/product/`: a concept proposal in PR/FAQ form
+   (the press release and the questions a sceptic asks), product
+   requirements with a traceability table from each requirement to the
+   test or document that proves it, a text storyboard with the reel's cut
+   list, and an art direction brief.
+2. The Chapter 1 specification (`docs/spec.md`) splits every feature into
+   Minimum Lovable Product versus Later with the reason, and the two
+   epics (#2, #3) mirror it on the issue tracker; a feature ships against
+   a row or it does not ship.
+3. Three architecture decision records (TypeScript with three.js and
+   Vite, the pure simulation core, original intellectual property only)
+   and a decision index (`docs/decisions.md`) that names the commit behind
+   each call.
+4. The design document carries every gameplay number with its rationale,
+   and `tests/unit/design-doc.test.ts` fails the build if a constant in
+   `src/core` drifts from the number the document quotes.
+5. The brand guide (`docs/brand.md`) is a twelve-item checklist that the
+   pull request template demands be ticked when visuals change; the
+   template also demands a changelog entry, the design-doc update, a
+   journey entry for any captured frame, clean-profile screenshots and the
+   originality rule.
+6. The test plan names eight layers and which command and CI job gates
+   each; the balance gate's thresholds are derived from a printed baseline
+   with a stated margin, and a tuning change ships with the new baseline.
+7. A threat model with trust boundaries and STRIDE tables, two adversarial
+   audits (`docs/audit.md`) that graded the tree on a slop scale and listed
+   every finding with its outcome, and three coherence passes that checked
+   every present-tense claim against the code, each finding recorded as
+   "said X, does Y, changed Z".
+8. The architecture package (C4 context, containers and generated
+   components, the module map and event catalogue) is generated from the
+   code by `scripts/architecture.mjs`, and a unit test fails when it is
+   out of date.
+
 ### How much got built
 
 | Measure | Count |
