@@ -8,18 +8,45 @@ import {
 } from './enemy';
 import {
   blastDamage,
-  GRENADE_BLAST_RADIUS,
+  blastRadiusOf,
   type Grenade,
+  launchRound,
+  maxDamageOf,
   stepGrenade,
   throwGrenade,
 } from './grenade';
+import {
+  chooseKind,
+  createPickup,
+  expirePickups,
+  heldKinds,
+  type Pickup,
+  pickupInReach,
+  rewardPosition,
+  rollDrop,
+  type SlotIndex,
+  takeWeapon,
+  WAVE_REWARD_FROM,
+  type WeaponSlots,
+} from './pickups';
 import { type Bolt, createBolt, stepBolt } from './projectile';
-import { hitscan } from './raycast';
+import { hitscan, type SphereTarget } from './raycast';
 import { createRng, type Rng } from './rng';
 import { add, clamp, directionFromAngles, distance, scale, type Vec3, vec3 } from './vec3';
 import { applyDamage, createVitality, tickVitality, type Vitality } from './vitality';
 import { createWaveState, tickWave, WAVE_BONUS, type WaveState, waveComposition } from './waves';
-import { createRifle, startReload, tickWeapon, tryFire, type Weapon } from './weapon';
+import {
+  beamHits,
+  createRifle,
+  pelletDamage,
+  startReload,
+  stepTrigger,
+  tickWeapon,
+  tryFire,
+  type Weapon,
+  type WeaponKind,
+  weaponSpec,
+} from './weapon';
 import {
   type Arena,
   findSpawnPoint,
@@ -47,7 +74,11 @@ export interface Player {
   readonly yaw: number;
   readonly pitch: number;
   readonly vitality: Vitality;
+  /** The active weapon. Always equal to `weapons[activeSlot]`; both are updated every step. */
   readonly weapon: Weapon;
+  /** Two-slot inventory: the rifle starts in slot 0 and pickups fill or replace slots. */
+  readonly weapons: WeaponSlots;
+  readonly activeSlot: SlotIndex;
   readonly grenades: number;
 }
 
@@ -61,6 +92,8 @@ export interface InputFrame {
   readonly fire: boolean;
   readonly reload: boolean;
   readonly throwGrenade: boolean;
+  /** Edge-triggered: swap to the other weapon slot this step. */
+  readonly swapWeapon: boolean;
   /** Absolute look angles in radians. */
   readonly yaw: number;
   readonly pitch: number;
@@ -74,15 +107,41 @@ export const IDLE_INPUT: InputFrame = {
   fire: false,
   reload: false,
   throwGrenade: false,
+  swapWeapon: false,
   yaw: 0,
   pitch: 0,
 };
 
 export type GameEvent =
-  | { readonly type: 'shot'; readonly from: Vec3; readonly to: Vec3; readonly hitEnemy: boolean }
+  | {
+      readonly type: 'shot';
+      readonly from: Vec3;
+      readonly to: Vec3;
+      readonly hitEnemy: boolean;
+      readonly kind: WeaponKind;
+      readonly pellets: number;
+    }
   | { readonly type: 'empty' }
   | { readonly type: 'reload' }
   | { readonly type: 'grenadeThrown'; readonly id: number }
+  | { readonly type: 'launcherFired'; readonly id: number }
+  | { readonly type: 'weaponSwapped'; readonly kind: WeaponKind; readonly slot: SlotIndex }
+  | { readonly type: 'chargeStarted'; readonly kind: WeaponKind }
+  | { readonly type: 'chargeReleased'; readonly kind: WeaponKind; readonly charge: number }
+  | { readonly type: 'beamFired'; readonly from: Vec3; readonly to: Vec3; readonly hits: number }
+  | {
+      readonly type: 'pickupSpawned';
+      readonly id: number;
+      readonly kind: WeaponKind;
+      readonly at: Vec3;
+    }
+  | {
+      readonly type: 'pickupTaken';
+      readonly id: number;
+      readonly kind: WeaponKind;
+      readonly slot: SlotIndex;
+    }
+  | { readonly type: 'pickupExpired'; readonly id: number }
   | { readonly type: 'explosion'; readonly at: Vec3 }
   | { readonly type: 'enemyKilled'; readonly id: number; readonly at: Vec3; readonly score: number }
   | { readonly type: 'playerDamaged'; readonly amount: number; readonly from: Vec3 | null }
@@ -103,6 +162,7 @@ export interface GameState {
   readonly enemies: readonly Enemy[];
   readonly bolts: readonly Bolt[];
   readonly grenades: readonly Grenade[];
+  readonly pickups: readonly Pickup[];
   readonly wave: WaveState;
   readonly score: number;
   readonly kills: number;
@@ -116,6 +176,7 @@ export interface GameConfig {
 
 export const createGame = (config: GameConfig = { seed: 1 }): GameState => {
   const rng = createRng(config.seed);
+  const rifle = createRifle();
   return {
     time: 0,
     status: 'playing',
@@ -127,12 +188,15 @@ export const createGame = (config: GameConfig = { seed: 1 }): GameState => {
       yaw: 0,
       pitch: 0,
       vitality: createVitality(),
-      weapon: createRifle(),
+      weapon: rifle,
+      weapons: [rifle, null],
+      activeSlot: 0,
       grenades: STARTING_GRENADES,
     },
     enemies: [],
     bolts: [],
     grenades: [],
+    pickups: [],
     wave: createWaveState(0),
     score: 0,
     kills: 0,
@@ -154,6 +218,7 @@ interface Draft {
   enemies: Enemy[];
   bolts: Bolt[];
   grenades: Grenade[];
+  pickups: Pickup[];
   wave: WaveState;
   score: number;
   kills: number;
@@ -161,6 +226,25 @@ interface Draft {
   events: GameEvent[];
   rng: Rng;
 }
+
+const withSlot = (slots: WeaponSlots, slot: SlotIndex, w: Weapon): WeaponSlots =>
+  slot === 0 ? [w, slots[1]] : [slots[0], w];
+
+/** Writes `weapon` into the player as the active weapon and into its slot. */
+const holdWeapon = (p: Player, weapon: Weapon, slots: WeaponSlots, slot: SlotIndex): Player => ({
+  ...p,
+  weapon,
+  weapons: withSlot(slots, slot, weapon),
+  activeSlot: slot,
+});
+
+const spawnPickup = (d: Draft, kind: WeaponKind, at: Vec3): void => {
+  const id = d.nextId;
+  d.nextId += 1;
+  const pickup = createPickup(id, kind, at, d.time);
+  d.pickups.push(pickup);
+  d.events.push({ type: 'pickupSpawned', id, kind, at: pickup.position });
+};
 
 const hurtPlayer = (d: Draft, amount: number, from: Vec3 | null): void => {
   if (d.status !== 'playing') return;
@@ -184,6 +268,8 @@ const hurtEnemy = (d: Draft, index: number, amount: number): void => {
     d.score += score;
     d.kills += 1;
     d.events.push({ type: 'enemyKilled', id: enemy.id, at: enemyCenter(enemy), score });
+    const drop = rollDrop(enemy.kind, heldKinds(d.player.weapons), d.rng);
+    if (drop !== null) spawnPickup(d, drop, enemy.position);
   }
 };
 
@@ -219,38 +305,133 @@ const stepPlayerMovement = (d: Draft, input: InputFrame, dt: number): void => {
   d.player = { ...p, position, verticalVelocity: vy, onGround, yaw, pitch };
 };
 
-const stepWeapon = (d: Draft, input: InputFrame): void => {
-  d.player = { ...d.player, weapon: tickWeapon(d.player.weapon, d.time) };
+const liveTargets = (d: Draft): SphereTarget[] =>
+  d.enemies
+    .filter((e) => e.state !== 'dead' && e.state !== 'spawning')
+    .map((e) => ({ id: e.id, center: enemyCenter(e), radius: ENEMY_STATS[e.kind].radius }));
+
+const hurtEnemyById = (d: Draft, id: number, amount: number): void => {
+  hurtEnemy(
+    d,
+    d.enemies.findIndex((e) => e.id === id),
+    amount,
+  );
+};
+
+/** One trigger pull of the active weapon: rays for hitscan kinds, a round for the launcher. */
+const fireWeapon = (d: Draft, w: Weapon, input: InputFrame): void => {
+  const spec = weaponSpec(w);
+  const origin = playerEye(d.player);
+  const moving = input.forward !== 0 || input.strafe !== 0;
+  const spread = moving ? spec.spreadMoving : spec.spreadStanding;
+  const aim = (): Vec3 =>
+    directionFromAngles(
+      d.player.yaw + d.rng.range(-spread, spread),
+      d.player.pitch + d.rng.range(-spread, spread),
+    );
+
+  if (spec.projectile) {
+    const id = d.nextId;
+    d.nextId += 1;
+    const dir = aim();
+    d.grenades.push(launchRound(id, add(origin, scale(dir, 0.6)), dir, d.time));
+    d.events.push({ type: 'launcherFired', id });
+    return;
+  }
+
+  const targets = liveTargets(d);
+  if (spec.chargeTime > 0) {
+    const dir = aim();
+    const beam = beamHits(origin, dir, targets, d.arena.obstacles, spec.range);
+    const to = add(origin, scale(dir, beam.distance));
+    for (const id of beam.targetIds) hurtEnemyById(d, id, spec.damage);
+    d.events.push({
+      type: 'shot',
+      from: origin,
+      to,
+      hitEnemy: beam.targetIds.length > 0,
+      kind: w.kind,
+      pellets: 1,
+    });
+    d.events.push({ type: 'beamFired', from: origin, to, hits: beam.targetIds.length });
+    return;
+  }
+
+  let hitAny = false;
+  let to = origin;
+  for (let i = 0; i < spec.pellets; i += 1) {
+    const dir = aim();
+    const hit = hitscan(origin, dir, targets, d.arena.obstacles, spec.range);
+    if (i === 0) to = add(origin, scale(dir, hit.distance));
+    if (hit.targetId === null) continue;
+    hitAny = true;
+    hurtEnemyById(d, hit.targetId, pelletDamage(spec, hit.distance));
+  }
+  d.events.push({
+    type: 'shot',
+    from: origin,
+    to,
+    hitEnemy: hitAny,
+    kind: w.kind,
+    pellets: spec.pellets,
+  });
+};
+
+/** Parks the active weapon (charge and spin drop) and draws the other slot. */
+const swapSlots = (d: Draft, input: InputFrame): void => {
+  const p = d.player;
+  if (!input.swapWeapon || p.weapons[1] === null) return;
+  const parked: Weapon = { ...p.weapon, charge: 0, spin: 0, lastFire: false };
+  const slots = withSlot(p.weapons, p.activeSlot, parked);
+  const slot: SlotIndex = p.activeSlot === 0 ? 1 : 0;
+  const drawn: Weapon = { ...(slots[slot] ?? slots[0]), lastFire: input.fire };
+  d.player = holdWeapon(p, drawn, slots, slot);
+  d.events.push({ type: 'weaponSwapped', kind: drawn.kind, slot });
+};
+
+const stepWeapon = (d: Draft, input: InputFrame, dt: number): void => {
+  // `player.weapon` is the field existing code edits, so it wins over the slot on entry.
+  d.player = holdWeapon(d.player, d.player.weapon, d.player.weapons, d.player.activeSlot);
+  swapSlots(d, input);
+  const slots = d.player.weapons;
+  const slot = d.player.activeSlot;
+  let w = tickWeapon(d.player.weapon, d.time);
   if (input.reload) {
-    const reloaded = startReload(d.player.weapon, d.time);
-    if (reloaded !== d.player.weapon) {
-      d.player = { ...d.player, weapon: reloaded };
+    const reloaded = startReload(w, d.time);
+    if (reloaded !== w) {
+      w = reloaded;
       d.events.push({ type: 'reload' });
     }
   }
-  if (!input.fire) return;
-  const result = tryFire(d.player.weapon, d.time);
-  d.player = { ...d.player, weapon: result.weapon };
-  if (result.kind === 'empty') d.events.push({ type: 'empty' });
-  if (result.kind !== 'fired') return;
-
-  const origin = playerEye(d.player);
-  const moving = input.forward !== 0 || input.strafe !== 0;
-  const spread = moving ? 0.012 : 0.004;
-  const dir = directionFromAngles(
-    d.player.yaw + d.rng.range(-spread, spread),
-    d.player.pitch + d.rng.range(-spread, spread),
-  );
-  const targets = d.enemies
-    .filter((e) => e.state !== 'dead' && e.state !== 'spawning')
-    .map((e) => ({ id: e.id, center: enemyCenter(e), radius: ENEMY_STATS[e.kind].radius }));
-  const hit = hitscan(origin, dir, targets, d.arena.obstacles, d.player.weapon.range);
-  const to = add(origin, scale(dir, hit.distance));
-  d.events.push({ type: 'shot', from: origin, to, hitEnemy: hit.targetId !== null });
-  if (hit.targetId !== null) {
-    const index = d.enemies.findIndex((e) => e.id === hit.targetId);
-    hurtEnemy(d, index, d.player.weapon.damage);
+  const trigger = stepTrigger(w, input.fire, dt, d.time);
+  w = trigger.weapon;
+  if (trigger.chargeStarted) d.events.push({ type: 'chargeStarted', kind: w.kind });
+  if (trigger.released && weaponSpec(w).chargeTime > 0)
+    d.events.push({ type: 'chargeReleased', kind: w.kind, charge: trigger.charge });
+  if (trigger.pull) {
+    const result = tryFire(w, d.time);
+    w = result.weapon;
+    if (result.kind === 'empty') d.events.push({ type: 'empty' });
+    if (result.kind === 'fired') {
+      d.player = holdWeapon(d.player, w, slots, slot);
+      fireWeapon(d, w, input);
+    }
   }
+  d.player = holdWeapon(d.player, w, slots, slot);
+};
+
+const stepPickups = (d: Draft): void => {
+  const { kept, expired } = expirePickups(d.pickups, d.time);
+  for (const p of expired) d.events.push({ type: 'pickupExpired', id: p.id });
+  d.pickups = [...kept];
+  const reach = pickupInReach(d.pickups, d.player.position);
+  if (reach === null) return;
+  const slots = withSlot(d.player.weapons, d.player.activeSlot, d.player.weapon);
+  const taken = takeWeapon(slots, d.player.activeSlot, reach.kind);
+  const drawn = taken.slots[taken.activeSlot] ?? taken.slots[0];
+  d.player = holdWeapon(d.player, drawn, taken.slots, taken.activeSlot);
+  d.pickups = d.pickups.filter((p) => p.id !== reach.id);
+  d.events.push({ type: 'pickupTaken', id: reach.id, kind: reach.kind, slot: taken.slot });
 };
 
 const stepGrenades = (d: Draft, input: InputFrame, dt: number): void => {
@@ -269,14 +450,16 @@ const stepGrenades = (d: Draft, input: InputFrame, dt: number): void => {
       continue;
     }
     d.events.push({ type: 'explosion', at: g.position });
+    const radius = blastRadiusOf(g);
+    const maxDamage = maxDamageOf(g);
     d.enemies.forEach((e, i) => {
       if (e.state === 'dead') return;
-      const dmg = blastDamage(distance(enemyCenter(e), g.position));
+      const dmg = blastDamage(distance(enemyCenter(e), g.position), radius, maxDamage);
       if (dmg > 0) hurtEnemy(d, i, dmg);
     });
     const selfDistance = distance(playerCenter(d.player), g.position);
-    if (selfDistance < GRENADE_BLAST_RADIUS)
-      hurtPlayer(d, blastDamage(selfDistance) * 0.5, g.position);
+    if (selfDistance < radius)
+      hurtPlayer(d, blastDamage(selfDistance, radius, maxDamage) * 0.5, g.position);
   }
   d.grenades = remaining;
 };
@@ -320,6 +503,11 @@ const spawnWave = (d: Draft, wave: number): void => {
     );
   }
   d.events.push({ type: 'waveStarted', number: wave });
+  if (wave >= WAVE_REWARD_FROM) {
+    const kind = chooseKind(heldKinds(d.player.weapons), d.rng);
+    if (kind !== null)
+      spawnPickup(d, kind, rewardPosition(d.arena, d.player.position, d.player.yaw));
+  }
 };
 
 const stepWaves = (d: Draft): void => {
@@ -350,12 +538,14 @@ export const stepGame = (state: GameState, input: InputFrame, dt: number, rng: R
     enemies: [...state.enemies],
     bolts: [...state.bolts],
     grenades: [...state.grenades],
+    pickups: [...state.pickups],
     events: [],
     rng,
   };
   d.time += dt;
   stepPlayerMovement(d, input, dt);
-  stepWeapon(d, input);
+  stepPickups(d);
+  stepWeapon(d, input, dt);
   stepGrenades(d, input, dt);
   stepEnemies(d, dt);
   stepBolts(d, dt);

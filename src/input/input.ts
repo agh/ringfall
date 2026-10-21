@@ -5,7 +5,7 @@ const MAX_PITCH = Math.PI / 2 - 0.02;
 
 /**
  * Collects keyboard and mouse state between simulation steps. Held actions (move, fire, jump)
- * are read live; one-shot actions (reload, grenade) are latched until the next `take()`.
+ * are read live; one-shot actions (reload, grenade, swap) are latched until the next `take()`.
  */
 export class InputController {
   private readonly keys = new Set<string>();
@@ -14,6 +14,7 @@ export class InputController {
   private firing = false;
   private reloadLatched = false;
   private grenadeLatched = false;
+  private swapLatched = false;
   private sensitivity = 0.0022;
   private readonly target: HTMLElement;
 
@@ -25,6 +26,7 @@ export class InputController {
     document.addEventListener('mousemove', this.onMouseMove);
     document.addEventListener('mousedown', this.onMouseDown);
     document.addEventListener('mouseup', this.onMouseUp);
+    document.addEventListener('wheel', this.onWheel, { passive: true });
     document.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
@@ -60,11 +62,13 @@ export class InputController {
       fire: this.firing,
       reload: this.reloadLatched,
       throwGrenade: this.grenadeLatched,
+      swapWeapon: this.swapLatched,
       yaw: this.yaw,
       pitch: this.pitch,
     };
     this.reloadLatched = false;
     this.grenadeLatched = false;
+    this.swapLatched = false;
     return frame;
   }
 
@@ -77,6 +81,7 @@ export class InputController {
     this.keys.add(e.code);
     if (e.code === 'KeyR') this.reloadLatched = true;
     if (e.code === 'KeyG') this.grenadeLatched = true;
+    if (e.code === 'KeyQ') this.swapLatched = true;
     if (e.code === 'Space' || e.code === 'Tab') e.preventDefault();
   };
 
@@ -98,6 +103,11 @@ export class InputController {
 
   private readonly onMouseUp = (e: MouseEvent): void => {
     if (e.button === 0) this.firing = false;
+  };
+
+  private readonly onWheel = (e: WheelEvent): void => {
+    if (!this.locked || e.deltaY === 0) return;
+    this.swapLatched = true;
   };
 
   private readonly releaseAll = (): void => {

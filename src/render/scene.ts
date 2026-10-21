@@ -3,6 +3,7 @@ import type { Enemy } from '../core/enemy';
 import { CORPSE_LINGER, type GameEvent, type GameState, playerEye } from '../core/game';
 import { GRENADE_BLAST_RADIUS } from '../core/grenade';
 import type { Vec3 } from '../core/vec3';
+import { WAVE_COUNTDOWN, waveAtmosphere } from '../core/waves';
 import { ARENA_HALF_SIZE, type Arena } from '../core/world';
 import { type EnemyRig, makeEnemyRig } from './enemies';
 import { createEnvironment, type Environment } from './environment';
@@ -95,6 +96,11 @@ export class SceneRenderer {
   private readonly viewSway = new THREE.Group();
   private readonly muzzleLight: THREE.PointLight;
   private readonly muzzleFlash: THREE.Sprite;
+  private sunLight: THREE.DirectionalLight | null = null;
+  private hemisphere: THREE.HemisphereLight | null = null;
+  private flareCore: THREE.Sprite | null = null;
+  /** Wave whose atmosphere the environment was last told to blend towards. */
+  private lastAtmosphereWave = 0;
   private readonly particles = new ParticleSystem();
   private readonly environment: Environment;
   private readonly enemies = new Map<number, EnemyRig>();
@@ -145,6 +151,7 @@ export class SceneRenderer {
 
     this.environment = createEnvironment(ARENA_HALF_SIZE);
     this.scene.add(this.environment.group, this.world, this.dynamic, this.particles.points);
+    this.scene.add(this.environment.moonLight, this.environment.moonLight.target);
     this.scene.fog = new THREE.FogExp2(this.environment.fogColor, FOG_DENSITY);
     this.scene.background = null;
 
@@ -375,7 +382,9 @@ export class SceneRenderer {
 
   render(state: GameState, now: number, frameDt: number): void {
     this.setArena(state.arena);
-    this.environment.update(now);
+    this.syncAtmosphere(state.wave.number);
+    this.environment.update(now, { particles: this.particles, eye: playerEye(state.player) });
+    this.applyLighting();
     this.syncEnemies(state.enemies, state.time);
     this.syncBolts(state, now);
     this.syncGrenades(state, now);
@@ -385,6 +394,7 @@ export class SceneRenderer {
     // Airborne dust around the player: a few slow motes per frame, lit by bloom at the edges.
     if (Math.random() < 0.6) {
       const e = playerEye(state.player);
+      const dust = this.environment.lighting().dust;
       this.particles.burst(
         {
           at: {
@@ -393,8 +403,8 @@ export class SceneRenderer {
             z: e.z + (Math.random() - 0.5) * 14,
           },
           count: 1,
-          color: 0xe8e4d8,
-          colorEnd: 0xb8d8ea,
+          color: new THREE.Color(0xe8e4d8).multiplyScalar(dust),
+          colorEnd: new THREE.Color(0xb8d8ea).multiplyScalar(dust),
           speed: 0.25,
           life: 5,
           size: 3,
@@ -534,6 +544,7 @@ export class SceneRenderer {
     const core = sprite(make(256, 'rgba(255,245,220,0.9)', 'rgba(255,200,120,0.18)'), 520);
     core.position.copy(this.environment.sunDirection).multiplyScalar(9000);
     this.scene.add(core);
+    this.flareCore = core;
     this.flareGhosts = [
       [sprite(make(128, 'rgba(125,211,252,0.5)', 'rgba(125,211,252,0.05)'), 0.16), 0.35],
       [sprite(make(128, 'rgba(246,178,107,0.45)', 'rgba(246,178,107,0.04)'), 0.26), 0.6],
@@ -555,13 +566,50 @@ export class SceneRenderer {
       const h = Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2)) * depth;
       ghost.position.set(sunNdc.x * f * h * this.camera.aspect, sunNdc.y * f * h, -depth);
       const fade = 1 - Math.min(1, Math.hypot(sunNdc.x, sunNdc.y) / 1.5);
-      ghost.material.opacity = 0.9 * fade;
+      ghost.material.opacity = 0.9 * fade * this.environment.lighting().sunDisc;
+    }
+  }
+
+  /**
+   * Each wave turns the ring a little further: a new time of day and weather, blended in over
+   * the countdown so the sky never snaps.
+   */
+  private syncAtmosphere(wave: number): void {
+    if (wave === this.lastAtmosphereWave) return;
+    this.lastAtmosphereWave = wave;
+    this.environment.setAtmosphere(waveAtmosphere(wave), WAVE_COUNTDOWN);
+  }
+
+  /** Copies the environment's blended rig onto the lights, fog, exposure and sun flare. */
+  private applyLighting(): void {
+    const l = this.environment.lighting();
+    if (this.sunLight) {
+      this.sunLight.color.copy(l.sunColor);
+      this.sunLight.intensity = l.sunIntensity;
+      this.sunLight.position.copy(this.environment.sunDirection).multiplyScalar(120);
+    }
+    if (this.hemisphere) {
+      this.hemisphere.color.copy(l.hemisphereSky);
+      this.hemisphere.groundColor.copy(l.hemisphereGround);
+      this.hemisphere.intensity = l.hemisphereIntensity;
+    }
+    if (this.scene.fog instanceof THREE.FogExp2) {
+      this.scene.fog.color.copy(this.environment.fogColor);
+      this.scene.fog.density = l.fogDensity;
+    }
+    this.scene.environmentIntensity = l.environmentIntensity;
+    this.renderer.toneMappingExposure = l.exposure;
+    if (this.flareCore) {
+      this.flareCore.position.copy(this.environment.sunDirection).multiplyScalar(9000);
+      this.flareCore.material.opacity = l.sunDisc;
     }
   }
 
   private buildLights(): void {
-    this.scene.add(new THREE.HemisphereLight(0xbfd8f5, 0x3b4a3a, 0.55));
+    this.hemisphere = new THREE.HemisphereLight(0xbfd8f5, 0x3b4a3a, 0.55);
+    this.scene.add(this.hemisphere);
     const sun = new THREE.DirectionalLight(this.environment.sunColor, 2.4);
+    this.sunLight = sun;
     sun.position.copy(this.environment.sunDirection).multiplyScalar(120);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);

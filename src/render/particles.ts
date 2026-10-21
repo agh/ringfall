@@ -18,6 +18,11 @@ export interface ParticleBurst {
   readonly size: number;
   readonly gravity?: number;
   readonly drag?: number;
+  /**
+   * Horizontal squash of the sprite, so a point renders as a vertical streak `stretch` times
+   * taller than it is wide (rain). Stretched particles keep their size over their life.
+   */
+  readonly stretch?: number;
 }
 
 const VERTEX = /* glsl */ `
@@ -27,9 +32,11 @@ const VERTEX = /* glsl */ `
   attribute vec3 aColorEnd;
   attribute vec4 aParams; // birth, life, size, gravity
   attribute float aDrag;
+  attribute float aStretch;
   uniform float uTime;
   varying vec3 vColor;
   varying float vAlpha;
+  varying float vStretch;
   void main() {
     float age = uTime - aParams.x;
     float t = clamp(age / aParams.y, 0.0, 1.0);
@@ -38,8 +45,10 @@ const VERTEX = /* glsl */ `
       + vec3(0.0, -0.5 * aParams.w * age * age, 0.0);
     vColor = mix(aColor, aColorEnd, t);
     vAlpha = (1.0 - t) * (1.0 - t) * step(0.0, age) * (1.0 - step(1.0, t));
+    vStretch = aStretch;
+    float shrink = aStretch > 0.0 ? 1.0 : 1.0 - 0.6 * t;
     vec4 mv = modelViewMatrix * vec4(pos, 1.0);
-    gl_PointSize = aParams.z * (1.0 - 0.6 * t) * (300.0 / -mv.z);
+    gl_PointSize = aParams.z * shrink * (300.0 / -mv.z);
     gl_Position = projectionMatrix * mv;
   }
 `;
@@ -47,8 +56,10 @@ const VERTEX = /* glsl */ `
 const FRAGMENT = /* glsl */ `
   varying vec3 vColor;
   varying float vAlpha;
+  varying float vStretch;
   void main() {
     vec2 uv = gl_PointCoord - 0.5;
+    uv.x *= max(1.0, vStretch);
     float d = length(uv) * 2.0;
     float soft = smoothstep(1.0, 0.2, d);
     gl_FragColor = vec4(vColor * (1.0 + 2.0 * soft), soft * vAlpha);
@@ -65,6 +76,7 @@ export class ParticleSystem {
   private readonly colorEnd: Float32Array;
   private readonly params: Float32Array;
   private readonly drag: Float32Array;
+  private readonly stretch: Float32Array;
   private readonly geometry = new THREE.BufferGeometry();
   private readonly material: THREE.ShaderMaterial;
   private dirtyLo = Number.POSITIVE_INFINITY;
@@ -78,6 +90,7 @@ export class ParticleSystem {
     this.colorEnd = new Float32Array(capacity * 3);
     this.params = new Float32Array(capacity * 4);
     this.drag = new Float32Array(capacity);
+    this.stretch = new Float32Array(capacity);
     // Birth far in the past so untouched slots are invisible.
     for (let i = 0; i < capacity; i += 1) this.params[i * 4] = -1e9;
     const attr = (array: Float32Array, size: number): THREE.BufferAttribute => {
@@ -92,6 +105,7 @@ export class ParticleSystem {
     this.geometry.setAttribute('aColorEnd', attr(this.colorEnd, 3));
     this.geometry.setAttribute('aParams', attr(this.params, 4));
     this.geometry.setAttribute('aDrag', attr(this.drag, 1));
+    this.geometry.setAttribute('aStretch', attr(this.stretch, 1));
     this.material = new THREE.ShaderMaterial({
       vertexShader: VERTEX,
       fragmentShader: FRAGMENT,
@@ -136,6 +150,7 @@ export class ParticleSystem {
         i * 4,
       );
       this.drag[i] = b.drag ?? 0;
+      this.stretch[i] = b.stretch ?? 0;
       this.dirtyLo = Math.min(this.dirtyLo, i);
       this.dirtyHi = Math.max(this.dirtyHi, i);
     }
@@ -154,6 +169,7 @@ export class ParticleSystem {
         'aColorEnd',
         'aParams',
         'aDrag',
+        'aStretch',
       ]) {
         const attribute = this.geometry.getAttribute(name);
         if (attribute instanceof THREE.BufferAttribute) attribute.needsUpdate = true;

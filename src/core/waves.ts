@@ -60,3 +60,29 @@ export const tickWave = (w: WaveState, aliveEnemies: number, now: number): WaveT
       return { wave: w, transition: null };
   }
 };
+
+export type TimeOfDay = 'dawn' | 'day' | 'dusk' | 'night';
+export type Weather = 'clear' | 'rain' | 'fog';
+
+/** Sky and weather for a wave: the ring turns under the player as the night draws in. */
+export interface Atmosphere {
+  readonly timeOfDay: TimeOfDay;
+  readonly weather: Weather;
+}
+
+/** One entry per wave; waves beyond the table cycle through it again. */
+export const ATMOSPHERE_TABLE: readonly Atmosphere[] = [
+  { timeOfDay: 'day', weather: 'clear' },
+  { timeOfDay: 'night', weather: 'clear' },
+  { timeOfDay: 'dusk', weather: 'rain' },
+  { timeOfDay: 'night', weather: 'fog' },
+  { timeOfDay: 'dawn', weather: 'clear' },
+  { timeOfDay: 'day', weather: 'rain' },
+  { timeOfDay: 'dusk', weather: 'clear' },
+  { timeOfDay: 'night', weather: 'rain' },
+];
+
+export const waveAtmosphere = (wave: number): Atmosphere => {
+  const index = (Math.max(1, Math.floor(wave)) - 1) % ATMOSPHERE_TABLE.length;
+  return ATMOSPHERE_TABLE[index] ?? { timeOfDay: 'day', weather: 'clear' };
+};

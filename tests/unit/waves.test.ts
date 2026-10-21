@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ATMOSPHERE_TABLE,
   createWaveState,
   FINAL_WAVE,
   tickWave,
   WAVE_CLEAR_PAUSE,
   WAVE_COUNTDOWN,
+  waveAtmosphere,
   waveComposition,
 } from '../../src/core/waves';
 
@@ -38,5 +40,31 @@ describe('waves', () => {
     expect(won.transition).toBe('won');
     expect(won.wave.phase).toBe('won');
     expect(tickWave(won.wave, 0, 101).transition).toBeNull();
+  });
+});
+
+describe('waveAtmosphere', () => {
+  const times = ['dawn', 'day', 'dusk', 'night'];
+  const weathers = ['clear', 'rain', 'fog'];
+
+  it('opens in daylight and brings the night for wave two', () => {
+    expect(waveAtmosphere(1)).toEqual({ timeOfDay: 'day', weather: 'clear' });
+    expect(waveAtmosphere(2)).toEqual({ timeOfDay: 'night', weather: 'clear' });
+  });
+
+  it('returns a valid pair for every wave, including odd inputs', () => {
+    for (const wave of [0, -3, 1, 2, 3, 4, 5, 6, 7, 8, 9, 20, 2.7, 1000]) {
+      const atmosphere = waveAtmosphere(wave);
+      expect(times).toContain(atmosphere.timeOfDay);
+      expect(weathers).toContain(atmosphere.weather);
+    }
+  });
+
+  it('cycles through the table beyond the final wave', () => {
+    const length = ATMOSPHERE_TABLE.length;
+    expect(waveAtmosphere(length + 1)).toEqual(waveAtmosphere(1));
+    expect(waveAtmosphere(length + 2)).toEqual(waveAtmosphere(2));
+    expect(waveAtmosphere(2 * length)).toEqual(waveAtmosphere(length));
+    expect(waveAtmosphere(FINAL_WAVE)).toEqual(ATMOSPHERE_TABLE[FINAL_WAVE - 1]);
   });
 });

@@ -1,8 +1,10 @@
 import { ENEMY_STATS, type Enemy, enemyCenter } from './enemy';
 import { type GameState, IDLE_INPUT, type InputFrame, playerEye } from './game';
+import type { Pickup } from './pickups';
 import { hitscan } from './raycast';
 import type { Rng } from './rng';
 import { distanceXZ, normalize, sub, type Vec3 } from './vec3';
+import { totalAmmo, type Weapon, weaponSpec } from './weapon';
 
 /**
  * A scripted player. It reads the same immutable state a human sees on the HUD (enemy positions,
@@ -12,6 +14,16 @@ import { distanceXZ, normalize, sub, type Vec3 } from './vec3';
  */
 /** Matches the HUD tracker range in src/hud/hud.ts. */
 const TRACKER_RANGE = 28;
+/** The bot walks to a pickup it can see within this many metres when nothing is shooting at it. */
+const PICKUP_SEEK_RANGE = 14;
+/** Seconds between weapon swaps, so an empty pair of guns does not flip every step. */
+const SWAP_COOLDOWN = 0.5;
+/** The scatter gun is only worth firing inside this range. */
+const SCATTER_RANGE = 10;
+/** Launcher rounds are fired at striders and clusters inside this band; closer risks self-damage. */
+const LAUNCHER_MIN = 8;
+const LAUNCHER_MAX = 20;
+const MINIGUN_TOLERANCE = 0.08;
 
 export interface BotProfile {
   /** Degrees per second the bot can turn; low values feel human. */
@@ -48,6 +60,7 @@ export interface BotMemory {
   readonly strafeSign: number;
   readonly strafeUntil: number;
   readonly lastGrenadeAt: number;
+  readonly lastSwapAt: number;
 }
 
 export const createBotMemory = (): BotMemory => ({
@@ -56,6 +69,7 @@ export const createBotMemory = (): BotMemory => ({
   strafeSign: 1,
   strafeUntil: 0,
   lastGrenadeAt: -10,
+  lastSwapAt: -10,
 });
 
 const wrapAngle = (a: number): number => Math.atan2(Math.sin(a), Math.cos(a));
@@ -91,6 +105,67 @@ const pickTarget = (state: GameState): Enemy | null => {
     if (score < bestScore) {
       bestScore = score;
       best = enemy;
+    }
+  }
+  return best;
+};
+
+/**
+ * Trigger logic per weapon kind. The beam is held until charged and released when the aim
+ * settles; the scatter gun waits for close range; the launcher wants striders or clusters at a
+ * safe distance; the minigun is forgiving of aim because its spread is wide anyway.
+ */
+const decideFire = (
+  weapon: Weapon,
+  target: Enemy | null,
+  aimError: number,
+  dist: number,
+  cluster: number,
+  profile: BotProfile,
+): boolean => {
+  if (!target || weapon.magazine === 0) return false;
+  const spec = weaponSpec(weapon);
+  if (spec.chargeTime > 0) return weapon.charge < 1 || aimError >= profile.fireTolerance;
+  if (spec.projectile) {
+    const worth = target.kind === 'strider' || cluster >= 2;
+    return (
+      worth && dist >= LAUNCHER_MIN && dist <= LAUNCHER_MAX && aimError < profile.fireTolerance
+    );
+  }
+  if (spec.pellets > 1) return dist <= SCATTER_RANGE && aimError < profile.fireTolerance * 2;
+  if (spec.spinUp > 0) return aimError < MINIGUN_TOLERANCE;
+  return aimError < profile.fireTolerance;
+};
+
+/**
+ * Swap when the active weapon is dry and the other has ammo, when a strider shows up and the
+ * holster holds something heavy, or when a heavy weapon faces a skimmer too close to use it.
+ */
+const decideSwap = (
+  player: GameState['player'],
+  target: Enemy | null,
+  dist: number,
+  sinceSwap: number,
+): boolean => {
+  const weapon = player.weapon;
+  const offHand = player.weapons[player.activeSlot === 0 ? 1 : 0];
+  if (!offHand || totalAmmo(offHand) === 0 || sinceSwap <= SWAP_COOLDOWN) return false;
+  const isHeavy = (w: Weapon): boolean => w.kind === 'beam' || w.kind === 'launcher';
+  const striderInSight = target?.kind === 'strider';
+  if (totalAmmo(weapon) === 0) return true;
+  if (weapon.kind === 'rifle' && striderInSight && isHeavy(offHand)) return true;
+  return isHeavy(weapon) && target?.kind === 'skimmer' && dist < LAUNCHER_MIN;
+};
+
+const nearestPickup = (state: GameState): Pickup | null => {
+  const feet = state.player.position;
+  let best: Pickup | null = null;
+  let bestDist = PICKUP_SEEK_RANGE;
+  for (const p of state.pickups) {
+    const d = distanceXZ(p.position, feet);
+    if (d < bestDist) {
+      best = p;
+      bestDist = d;
     }
   }
   return best;
@@ -152,23 +227,39 @@ export const decideBot = (
     if (retreating) strafe = strafeSign;
   }
 
+  const dist = target ? distanceXZ(eye, target.position) : Number.POSITIVE_INFINITY;
+  const cluster = target
+    ? state.enemies.filter((e) => e.state !== 'dead' && distanceXZ(e.position, target.position) < 5)
+        .length
+    : 0;
+
   // Grenade: lob at a cluster or a strider at a comfortable range.
   let throwGrenade = false;
   let lastGrenadeAt = memory.lastGrenadeAt;
   if (target && player.grenades > 0 && state.time - lastGrenadeAt > 3) {
-    const dist = distanceXZ(eye, target.position);
-    const cluster = state.enemies.filter(
-      (e) => e.state !== 'dead' && distanceXZ(e.position, target.position) < 5,
-    ).length;
     if (dist > 8 && dist < 22 && (cluster >= profile.grenadeCluster || target.kind === 'strider')) {
       throwGrenade = true;
       lastGrenadeAt = state.time;
     }
   }
 
-  const magazine = player.weapon.magazine;
-  const reload = magazine === 0 || (magazine < 8 && !target);
-  const fire = target !== null && aimError < profile.fireTolerance && magazine > 0;
+  const weapon = player.weapon;
+  const magazine = weapon.magazine;
+  const reload = magazine === 0 || (magazine < weapon.magazineSize / 4 && !target);
+  if (target && weapon.kind === 'scatter' && dist > SCATTER_RANGE && forward === 0) forward = 1;
+  const fire = decideFire(weapon, target, aimError, dist, cluster, profile);
+
+  const swapWeapon = decideSwap(player, target, dist, state.time - memory.lastSwapAt);
+  const lastSwapAt = swapWeapon ? state.time : memory.lastSwapAt;
+
+  // With nothing to shoot, walk to a nearby pickup; a new gun is worth more than a sweep.
+  const pickup = target ? null : nearestPickup(state);
+  if (pickup) {
+    const want = anglesTo(player.position, pickup.position);
+    yaw += Math.max(-maxTurn, Math.min(maxTurn, wrapAngle(want.yaw - yaw)));
+    forward = 1;
+    strafe = 0;
+  }
 
   return {
     input: {
@@ -179,10 +270,11 @@ export const decideBot = (
       fire,
       reload,
       throwGrenade,
+      swapWeapon,
       jump: false,
       yaw,
       pitch: throwGrenade ? pitch + 0.18 : pitch,
     },
-    memory: { yaw, pitch, strafeSign, strafeUntil, lastGrenadeAt },
+    memory: { yaw, pitch, strafeSign, strafeUntil, lastGrenadeAt, lastSwapAt },
   };
 };

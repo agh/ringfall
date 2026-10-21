@@ -12,9 +12,11 @@ import {
   STARTING_GRENADES,
   stepGame,
 } from '../../src/core/game';
+import { createPickup, PICKUP_KINDS, WAVE_REWARD_DISTANCE } from '../../src/core/pickups';
 import { createRng } from '../../src/core/rng';
-import { vec3 } from '../../src/core/vec3';
+import { distanceXZ, vec3 } from '../../src/core/vec3';
 import { WAVE_COUNTDOWN } from '../../src/core/waves';
+import { createWeapon, type WeaponKind } from '../../src/core/weapon';
 
 const DT = 1 / 60;
 
@@ -40,12 +42,36 @@ const openGame = (): GameState => {
   return { ...g, arena: { ...g.arena, obstacles: [] } };
 };
 
+/** An open, active game with the player holding `kind` and the given enemies already awake. */
+const armedWith = (kind: WeaponKind, enemies: GameState['enemies']): GameState => {
+  const base = openGame();
+  const weapon = createWeapon(kind);
+  return {
+    ...base,
+    enemies,
+    wave: { ...base.wave, phase: 'active' },
+    player: { ...base.player, weapon, weapons: [weapon, null] },
+  };
+};
+
+const awake = (id: number, kind: 'skimmer' | 'strider', at: ReturnType<typeof vec3>) => ({
+  ...createEnemy(id, kind, at, 0),
+  state: (kind === 'skimmer' ? 'chase' : 'attack') as 'chase' | 'attack',
+});
+
+/** Pitch that puts the reticle on an enemy centre `dist` metres ahead at height `y`. */
+const pitchTo = (y: number, dist: number): number => Math.atan2(y - 1.7, dist);
+
 describe('game', () => {
   it('starts in a countdown with a full loadout', () => {
     const g = createGame({ seed: 3 });
     expect(g.status).toBe('playing');
     expect(g.wave.phase).toBe('countdown');
     expect(g.player.grenades).toBe(STARTING_GRENADES);
+    expect(g.player.weapon.kind).toBe('rifle');
+    expect(g.player.weapons).toEqual([g.player.weapon, null]);
+    expect(g.player.activeSlot).toBe(0);
+    expect(g.pickups).toEqual([]);
     expect(g.player.vitality.shield).toBe(100);
     expect(playerEye(g.player).y).toBeCloseTo(1.7);
     expect(lookDirection(g.player).z).toBeCloseTo(-1);
@@ -91,6 +117,198 @@ describe('game', () => {
     expect(state.kills).toBe(1);
     expect(state.score).toBeGreaterThan(0);
     expect(state.player.weapon.magazine).toBeLessThan(32);
+    expect(shots.every((e) => e.type === 'shot' && e.kind === 'rifle' && e.pellets === 1)).toBe(
+      true,
+    );
+    // The slot mirrors the active weapon after every step.
+    expect(state.player.weapons[state.player.activeSlot]).toBe(state.player.weapon);
+  });
+
+  it('swaps between two slots on an edge-triggered input and ignores an empty holster', () => {
+    const base = openGame();
+    const rifle = base.player.weapon;
+    const laser = createWeapon('laser');
+    const rng = createRng(1);
+    const alone = stepGame(base, { ...IDLE_INPUT, swapWeapon: true }, DT, rng);
+    expect(alone.player.activeSlot).toBe(0);
+    expect(alone.events.some((e) => e.type === 'weaponSwapped')).toBe(false);
+
+    const two: GameState = {
+      ...base,
+      player: { ...base.player, weapons: [rifle, laser], weapon: { ...rifle, spin: 0.5 } },
+    };
+    const swapped = stepGame(two, { ...IDLE_INPUT, swapWeapon: true }, DT, rng);
+    expect(swapped.player.activeSlot).toBe(1);
+    expect(swapped.player.weapon.kind).toBe('laser');
+    expect(swapped.player.weapons[1]).toBe(swapped.player.weapon);
+    expect(swapped.player.weapons[0]).toMatchObject({ kind: 'rifle', spin: 0 });
+    expect(swapped.events).toContainEqual({ type: 'weaponSwapped', kind: 'laser', slot: 1 });
+    // Holding swap does not keep flipping: the input is one event per press.
+    const back = stepGame(swapped, { ...IDLE_INPUT, swapWeapon: true }, DT, rng);
+    expect(back.player.activeSlot).toBe(0);
+    expect(back.player.weapon.kind).toBe('rifle');
+    const held = stepGame(back, IDLE_INPUT, DT, rng);
+    expect(held.player.activeSlot).toBe(0);
+  });
+
+  it('laser: a single pinpoint ray that drops a skimmer in one shot', () => {
+    const armed = armedWith('laser', [awake(1, 'skimmer', vec3(0, 0, -40))]);
+    const pitch = pitchTo(0.6, 40);
+    const { state, events } = run(armed, { ...IDLE_INPUT, fire: true, pitch }, 0.05);
+    const shots = events.filter((e) => e.type === 'shot');
+    expect(shots).toHaveLength(1);
+    expect(shots[0]).toMatchObject({ kind: 'laser', pellets: 1, hitEnemy: true });
+    expect(events.some((e) => e.type === 'enemyKilled')).toBe(true);
+    expect(state.player.weapon.magazine).toBe(11);
+  });
+
+  it('scatter: eight pellets per pull that shred up close and tickle at range', () => {
+    const close = armedWith('scatter', [awake(1, 'skimmer', vec3(0, 0, -4))]);
+    const near = run(close, { ...IDLE_INPUT, fire: true, pitch: pitchTo(0.6, 4) }, 0.05);
+    const shot = near.events.find((e) => e.type === 'shot');
+    expect(shot).toMatchObject({ kind: 'scatter', pellets: 8, hitEnemy: true });
+    expect(near.events.some((e) => e.type === 'enemyKilled')).toBe(true);
+    expect(near.state.player.weapon.magazine).toBe(5);
+
+    const far = armedWith('scatter', [awake(2, 'strider', vec3(0, 0, -13))]);
+    const long = run(far, { ...IDLE_INPUT, fire: true, pitch: pitchTo(1.3, 13) }, 0.05);
+    const strider = long.state.enemies.find((e) => e.id === 2);
+    expect(strider).toBeDefined();
+    // At 13 m each pellet carries well under its 14 damage, so eight cannot do 112.
+    expect(strider?.health).toBeGreaterThan(120 - 8 * 14 * 0.5);
+    expect(strider?.health).toBeLessThan(120);
+  });
+
+  it('beam: holds a charge, fires on release, and cuts through every enemy on the line', () => {
+    const armed = armedWith('beam', [
+      awake(1, 'strider', vec3(0, 0, -8)),
+      awake(2, 'strider', vec3(0, 0, -14)),
+    ]);
+    const pitch = pitchTo(1.3, 8);
+    const held = run(armed, { ...IDLE_INPUT, fire: true, pitch }, 1);
+    expect(held.events.filter((e) => e.type === 'chargeStarted')).toEqual([
+      { type: 'chargeStarted', kind: 'beam' },
+    ]);
+    expect(held.state.player.weapon.charge).toBe(1);
+    expect(held.events.some((e) => e.type === 'shot')).toBe(false);
+    expect(held.state.player.weapon.magazine).toBe(4);
+
+    const released = run(held.state, { ...IDLE_INPUT, pitch }, 0.05);
+    expect(released.events).toContainEqual({ type: 'chargeReleased', kind: 'beam', charge: 1 });
+    const beam = released.events.find((e) => e.type === 'beamFired');
+    expect(beam).toMatchObject({ hits: 2 });
+    expect(released.events.find((e) => e.type === 'shot')).toMatchObject({
+      kind: 'beam',
+      pellets: 1,
+      hitEnemy: true,
+    });
+    expect(released.events.filter((e) => e.type === 'enemyKilled')).toHaveLength(2);
+    expect(released.state.player.weapon.magazine).toBe(3);
+    expect(released.state.player.weapon.charge).toBe(0);
+
+    // Letting go early wastes nothing and fires nothing.
+    const early = run(armedWith('beam', []), { ...IDLE_INPUT, fire: true }, 0.3);
+    const dropped = run(early.state, IDLE_INPUT, DT);
+    expect(dropped.events.some((e) => e.type === 'beamFired')).toBe(false);
+    expect(dropped.events.find((e) => e.type === 'chargeReleased')).toMatchObject({
+      charge: expect.closeTo(0.3 / 0.8, 1),
+    });
+  });
+
+  it('minigun: fires slowly until it spins up, then at full rate, and cannot reload', () => {
+    const armed = armedWith('minigun', []);
+    const first = run(armed, { ...IDLE_INPUT, fire: true }, 0.5);
+    const slow = first.events.filter((e) => e.type === 'shot').length;
+    const second = run(first.state, { ...IDLE_INPUT, fire: true }, 0.5);
+    const fast = second.events.filter((e) => e.type === 'shot').length;
+    expect(first.state.player.weapon.spin).toBeCloseTo(1);
+    expect(fast).toBeGreaterThan(slow * 1.5);
+    expect(fast).toBeGreaterThanOrEqual(10);
+    expect(second.state.player.weapon.magazine).toBe(120 - slow - fast);
+    const reload = run(second.state, { ...IDLE_INPUT, reload: true }, DT);
+    expect(reload.events.some((e) => e.type === 'reload')).toBe(false);
+  });
+
+  it('launcher: lobs a round that bursts on the floor and hurts a strider nearby', () => {
+    const armed = armedWith('launcher', [awake(1, 'strider', vec3(0, 0, -12))]);
+    const rng = createRng(1);
+    let s = stepGame(armed, { ...IDLE_INPUT, fire: true }, DT, rng);
+    expect(s.events.some((e) => e.type === 'launcherFired')).toBe(true);
+    expect(s.events.some((e) => e.type === 'shot')).toBe(false);
+    expect(s.grenades).toHaveLength(1);
+    expect(s.grenades[0]?.kind).toBe('round');
+    expect(s.player.weapon.magazine).toBe(2);
+    const events: GameEvent[] = [];
+    for (let i = 0; i < 60; i += 1) {
+      s = stepGame(s, IDLE_INPUT, DT, rng);
+      events.push(...s.events);
+    }
+    const blast = events.find((e) => e.type === 'explosion');
+    expect(blast).toBeDefined();
+    if (blast?.type === 'explosion') {
+      expect(blast.at.y).toBe(0);
+      expect(blast.at.z).toBeLessThan(-9);
+    }
+    expect(s.grenades).toHaveLength(0);
+    const strider = s.enemies.find((e) => e.id === 1);
+    expect(strider === undefined || strider.health < 120).toBe(true);
+  });
+
+  it('takes a pickup by walking over it: an empty slot fills, a full one is replaced', () => {
+    const base = openGame();
+    const start: GameState = {
+      ...base,
+      pickups: [createPickup(50, 'laser', vec3(0, 0, -2), 0)],
+    };
+    const first = run(start, { ...IDLE_INPUT, forward: 1 }, 0.4);
+    expect(first.events).toContainEqual({ type: 'pickupTaken', id: 50, kind: 'laser', slot: 1 });
+    expect(first.state.pickups).toHaveLength(0);
+    expect(first.state.player.activeSlot).toBe(1);
+    expect(first.state.player.weapon.kind).toBe('laser');
+    expect(first.state.player.weapons[0]?.kind).toBe('rifle');
+
+    const again: GameState = {
+      ...first.state,
+      pickups: [createPickup(51, 'beam', first.state.player.position, first.state.time)],
+    };
+    const second = run(again, IDLE_INPUT, DT);
+    expect(second.events).toContainEqual({ type: 'pickupTaken', id: 51, kind: 'beam', slot: 1 });
+    expect(second.state.player.weapons.map((w) => w?.kind)).toEqual(['rifle', 'beam']);
+    expect(second.state.player.weapon.kind).toBe('beam');
+    expect(second.state.pickups).toHaveLength(0);
+  });
+
+  it('expires pickups that nobody collects', () => {
+    const base = openGame();
+    const start: GameState = {
+      ...base,
+      pickups: [createPickup(60, 'scatter', vec3(10, 0, 10), -19.5)],
+    };
+    const { state, events } = run(start, IDLE_INPUT, 1);
+    expect(events).toContainEqual({ type: 'pickupExpired', id: 60 });
+    expect(state.pickups).toHaveLength(0);
+  });
+
+  it('drops weapons from kills with the seeded rng', () => {
+    const striders = Array.from({ length: 6 }, (_, i) =>
+      awake(20 + i, 'strider', vec3(0, 0, -6 - i * 2)),
+    );
+    const armed = armedWith('beam', striders);
+    const pitch = pitchTo(1.3, 6);
+    const held = run(armed, { ...IDLE_INPUT, fire: true, pitch }, 1);
+    const { state, events } = run(held.state, { ...IDLE_INPUT, pitch }, DT);
+    const kills = events.filter((e) => e.type === 'enemyKilled').length;
+    expect(kills).toBeGreaterThanOrEqual(4);
+    const drops = events.filter((e) => e.type === 'pickupSpawned');
+    expect(drops.length).toBeGreaterThanOrEqual(1);
+    expect(drops.length).toBeLessThanOrEqual(kills);
+    for (const d of drops) {
+      if (d.type !== 'pickupSpawned') continue;
+      expect(d.kind).not.toBe('beam');
+      expect(d.kind).not.toBe('rifle');
+      expect(PICKUP_KINDS).toContain(d.kind);
+      expect(state.pickups.find((p) => p.id === d.id)?.position).toEqual(d.at);
+    }
   });
 
   it('reports an empty magazine and reloads on request', () => {
@@ -172,6 +390,20 @@ describe('game', () => {
     expect(state.wave.number).toBe(2);
     expect(state.score).toBeGreaterThanOrEqual(500);
     expect(state.enemies.length).toBeGreaterThan(0);
+    // Wave 2 onwards starts with a reward pickup six metres ahead of the player.
+    const reward = events.find((e) => e.type === 'pickupSpawned');
+    expect(reward).toBeDefined();
+    if (reward?.type === 'pickupSpawned') {
+      expect(PICKUP_KINDS).toContain(reward.kind);
+      expect(distanceXZ(reward.at, state.player.position)).toBeCloseTo(WAVE_REWARD_DISTANCE);
+      expect(reward.at.z).toBeCloseTo(-WAVE_REWARD_DISTANCE);
+    }
+    expect(state.pickups).toHaveLength(1);
+  });
+
+  it('places no reward on the first wave', () => {
+    const { events } = run(createGame({ seed: 2 }), IDLE_INPUT, WAVE_COUNTDOWN + 0.1);
+    expect(events.some((e) => e.type === 'pickupSpawned')).toBe(false);
   });
 
   it('declares victory when the final wave is cleared', () => {

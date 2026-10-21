@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
   blastDamage,
+  blastRadiusOf,
   GRENADE_BLAST_RADIUS,
   GRENADE_FUSE,
   GRENADE_MAX_DAMAGE,
+  grenadeKind,
+  launchRound,
+  maxDamageOf,
+  ROUND_BLAST_RADIUS,
+  ROUND_FUSE,
+  ROUND_MAX_DAMAGE,
   stepGrenade,
   throwGrenade,
 } from '../../src/core/grenade';
@@ -47,5 +54,42 @@ describe('grenade', () => {
     expect(blastDamage(GRENADE_BLAST_RADIUS / 2)).toBeCloseTo(GRENADE_MAX_DAMAGE / 2);
     expect(blastDamage(GRENADE_BLAST_RADIUS)).toBe(0);
     expect(blastDamage(100)).toBe(0);
+  });
+
+  it('a launcher round carries its own fuse and blast, and bursts on the floor', () => {
+    const r = launchRound(2, vec3(0, 1.7, 0), vec3(0, 0, -1), 3);
+    expect(grenadeKind(r)).toBe('round');
+    expect(r.explodeAt).toBe(3 + ROUND_FUSE);
+    expect(blastRadiusOf(r)).toBe(ROUND_BLAST_RADIUS);
+    expect(maxDamageOf(r)).toBe(ROUND_MAX_DAMAGE);
+    const g = throwGrenade(1, vec3(0, 1.7, 0), vec3(0, 0, -1), 0);
+    expect(grenadeKind(g)).toBe('grenade');
+    expect(blastRadiusOf(g)).toBe(GRENADE_BLAST_RADIUS);
+    expect(maxDamageOf(g)).toBe(GRENADE_MAX_DAMAGE);
+
+    let round = r;
+    let steps = 0;
+    while (round.explodeAt > 0 && steps < 120) {
+      round = stepGrenade(round, arena, 1 / 60);
+      steps += 1;
+    }
+    expect(round.explodeAt).toBe(0);
+    expect(round.position.y).toBe(0);
+    expect(round.velocity).toEqual(vec3());
+    expect(round.position.z).toBeLessThan(-10);
+    // Once stopped it stays put instead of bouncing on.
+    expect(stepGrenade(round, arena, 1 / 60).position).toEqual(round.position);
+  });
+
+  it('a launcher round bursts against cover instead of bouncing off it', () => {
+    let round = launchRound(3, vec3(0, 1, 0), vec3(0, 0, 1), 0);
+    let steps = 0;
+    while (round.explodeAt > 0 && steps < 120) {
+      round = stepGrenade(round, arena, 1 / 60);
+      steps += 1;
+    }
+    expect(round.explodeAt).toBe(0);
+    expect(round.position.z).toBeLessThan(5.1);
+    expect(round.position.z).toBeGreaterThan(4);
   });
 });

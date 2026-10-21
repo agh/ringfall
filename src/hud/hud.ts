@@ -2,7 +2,10 @@ import { ENEMY_STATS } from '../core/enemy';
 import type { GameEvent, GameState } from '../core/game';
 import type { Vec3 } from '../core/vec3';
 import { FINAL_WAVE } from '../core/waves';
-import { isReloading } from '../core/weapon';
+import { isReloading, WEAPON_SPECS, type Weapon, weaponSpec } from '../core/weapon';
+
+/** More pips than this and the magazine reads as a bar. */
+const MAX_PIPS = 40;
 
 const RADAR_RANGE = 28;
 
@@ -48,7 +51,11 @@ export class Hud {
   private readonly shieldLabel = byId<HTMLSpanElement>('shield-label');
   private readonly ammoMag = byId<HTMLDivElement>('ammo-mag');
   private readonly ammoReserve = byId<HTMLDivElement>('ammo-reserve');
+  private readonly ammoName = byId<HTMLDivElement>('ammo-name');
+  private readonly charge = byId<HTMLDivElement>('charge');
   private readonly magazine = byId<HTMLDivElement>('magazine');
+  private readonly offhand = byId<HTMLDivElement>('offhand');
+  private magazineLayout = '';
   private readonly grenades = byId<HTMLDivElement>('grenades');
   private readonly message = byId<HTMLDivElement>('hud-message');
   private readonly reticle = byId<HTMLDivElement>('reticle');
@@ -99,6 +106,9 @@ export class Hud {
         case 'shieldBroken':
           this.announce('Shield down', 900);
           break;
+        case 'pickupTaken':
+          this.announce(WEAPON_SPECS[e.kind].name, 900);
+          break;
         case 'victory':
           this.announce('Chapter 1 complete', 4000);
           break;
@@ -133,19 +143,7 @@ export class Hud {
     this.lastShield = v.shield;
     this.lowShield.classList.toggle('is-active', down);
 
-    const w = player.weapon;
-    this.ammoMag.textContent = isReloading(w) ? '--' : w.magazine.toString();
-    this.ammoMag.classList.toggle('is-low', w.magazine <= 6 && !isReloading(w));
-    this.ammoReserve.textContent = `/ ${w.reserve}`;
-    if (this.magazine.childElementCount !== w.magazineSize) {
-      this.magazine.replaceChildren(
-        ...Array.from({ length: w.magazineSize }, () => document.createElement('i')),
-      );
-    }
-    const pips = this.magazine.children;
-    for (let i = 0; i < pips.length; i += 1) {
-      pips[i]?.classList.toggle('is-spent', i >= w.magazine);
-    }
+    this.renderWeapon(player.weapon, player.weapons[player.activeSlot === 0 ? 1 : 0]);
     if (this.grenades.childElementCount !== player.grenades) {
       this.grenades.replaceChildren(
         ...Array.from({ length: player.grenades }, () => document.createElement('i')),
@@ -155,6 +153,45 @@ export class Hud {
     this.flushDamageIndicators(state);
     this.drawRadar(state);
     this.drawCompass(state);
+  }
+
+  private renderWeapon(w: Weapon, offhand: Weapon | null): void {
+    const spec = weaponSpec(w);
+    this.ammoName.textContent = spec.name;
+    this.ammoMag.textContent = isReloading(w) ? '--' : w.magazine.toString();
+    const lowAt = Math.max(1, Math.round(w.magazineSize * 0.2));
+    this.ammoMag.classList.toggle('is-low', w.magazine <= lowAt && !isReloading(w));
+    this.ammoReserve.textContent = `/ ${w.reserve}`;
+
+    // Charge (beam) and spin (minigun) share one bar; it only shows while something is building.
+    const level = spec.chargeTime > 0 ? w.charge : spec.spinUp > 0 ? w.spin : 0;
+    this.charge.classList.toggle('is-active', level > 0);
+    this.charge.classList.toggle('is-ready', level >= 1);
+    this.charge.style.setProperty('--charge', level.toFixed(3));
+    this.charge.setAttribute('aria-valuenow', level.toFixed(2));
+
+    const bar = w.magazineSize > MAX_PIPS;
+    const layout = bar ? 'bar' : `pips:${w.magazineSize}`;
+    if (this.magazineLayout !== layout) {
+      this.magazineLayout = layout;
+      this.magazine.classList.toggle('is-bar', bar);
+      this.magazine.replaceChildren(
+        ...Array.from({ length: bar ? 1 : w.magazineSize }, () => document.createElement('i')),
+      );
+    }
+    if (bar) {
+      this.magazine.style.setProperty('--fill', (w.magazine / w.magazineSize).toFixed(3));
+    } else {
+      const pips = this.magazine.children;
+      for (let i = 0; i < pips.length; i += 1) {
+        pips[i]?.classList.toggle('is-spent', i >= w.magazine);
+      }
+    }
+
+    this.offhand.classList.toggle('is-empty', offhand === null);
+    this.offhand.textContent = offhand
+      ? `${WEAPON_SPECS[offhand.kind].name} ${offhand.magazine} / ${offhand.reserve}`
+      : 'No sidearm';
   }
 
   private flushDamageIndicators(state: GameState): void {

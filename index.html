@@ -76,15 +76,17 @@
         </div>
       </div>
 
-      <div class="hud__weapon">
+      <div class="hud__weapon" id="weapon">
         <div class="hud__ammo">
           <div class="hud__ammo-mag" id="ammo-mag">32</div>
           <div class="hud__ammo-side">
             <div class="hud__ammo-reserve" id="ammo-reserve">/ 160</div>
-            <div class="hud__ammo-name">Rifle</div>
+            <div class="hud__ammo-name" id="ammo-name">Rifle</div>
           </div>
         </div>
+        <div class="hud__charge" id="charge" role="progressbar" aria-label="Charge" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0"><i></i></div>
         <div class="hud__magazine" id="magazine" role="img" aria-label="Rounds in magazine"></div>
+        <div class="hud__offhand" id="offhand"></div>
         <div class="hud__grenades" id="grenades" role="img" aria-label="Grenades"></div>
       </div>
 

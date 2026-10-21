@@ -463,6 +463,33 @@ body {
   color: var(--slate);
 }
 
+/* Charge (beam) or spin (minigun): a thin bar under the ammo count, hidden at rest. */
+.hud__charge {
+  width: calc(var(--u) * 36);
+  height: calc(var(--u) * 0.8);
+  margin: calc(var(--u) * 1.2) 0 0 auto;
+  background: rgba(138, 160, 184, 0.22);
+  opacity: 0;
+  transition: opacity 120ms ease-out;
+}
+
+.hud__charge.is-active {
+  opacity: 1;
+}
+
+.hud__charge.is-ready {
+  --charge-color: var(--flare);
+  --charge-glow: rgba(251, 191, 36, 0.9);
+}
+
+.hud__charge i {
+  display: block;
+  height: 100%;
+  width: calc(var(--charge, 0) * 100%);
+  background: var(--charge-color, var(--beacon));
+  box-shadow: 0 0 calc(var(--u) * 1.5) var(--charge-glow, rgba(125, 211, 252, 0.8));
+}
+
 .hud__magazine {
   display: flex;
   justify-content: flex-end;
@@ -470,9 +497,18 @@ body {
   margin-top: calc(var(--u) * 1.5);
 }
 
+/* The minigun's 120 rounds are one bar rather than pips: the same element, sized by --fill. */
+.hud__magazine.is-bar {
+  --pip-width: calc(var(--fill, 1) * 100%);
+  --pip-height: calc(var(--u) * 1.6);
+  width: calc(var(--u) * 36);
+  margin-left: auto;
+  background: rgba(138, 160, 184, 0.22);
+}
+
 .hud__magazine i {
-  width: calc(var(--u) * 1.1);
-  height: calc(var(--u) * 3.2);
+  width: var(--pip-width, calc(var(--u) * 1.1));
+  height: var(--pip-height, calc(var(--u) * 3.2));
   background: var(--beacon);
   opacity: 0.9;
   box-shadow: 0 0 calc(var(--u) * 1.2) rgba(125, 211, 252, 0.7);
@@ -482,6 +518,21 @@ body {
   background: var(--slate);
   opacity: 0.25;
   box-shadow: none;
+}
+
+/* The holstered weapon and its ammo, one small line. */
+.hud__offhand {
+  margin-top: calc(var(--u) * 1.2);
+  font-family: var(--font-display);
+  font-size: calc(var(--u) * 2.8);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--slate);
+  min-height: calc(var(--u) * 3.4);
+}
+
+.hud__offhand.is-empty {
+  opacity: 0.45;
 }
 
 .hud__grenades {
