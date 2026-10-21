@@ -1,8 +1,9 @@
 ---
 type: research
 title: "What a product manager would produce for Ringfall, and what docs/ must hold"
-status: reference
-authors: ["Ringfall research agent (Claude), reviewed by the hackathon team"]
+status: approved
+authors:
+  - name: "Ringfall research agent (Claude), reviewed by the hackathon team"
 created: 2026-10-21
 ---
 
@@ -45,7 +46,7 @@ Applied: `docs/product/concept-proposal.md` in the crefft PR/FAQ form.
 
 ## Requirements specification
 
-Lenny Rachitsky's template roundup favours Square's PRD for its Non-Goals
+Lenny Rachitsky's template roundup favors Square's PRD for its Non-Goals
 and Steve Morin's one-pager for success criteria ([Lenny][lenny]). Google
 design docs cover context, goals and non-goals, design, alternatives, and
 cross-cutting concerns ([Ubl][google]). Pillars are "for settling
@@ -81,7 +82,7 @@ thumbnail size, a semantic palette, and a VFX language
 ([makko survey][makko]). Valve's TF2 paper is the primary source for
 silhouette rules: "Even when viewed only in silhouette with no internal
 shading at all, the characters are readily identifiable"
-([Valve][tf2]). Riot's VFX style guide sets the effects rules: emphasise
+([Valve][tf2]). Riot's VFX style guide sets the effects rules: emphasize
 focus, scale matches importance, anticipation then payoff
 ([Riot][riot]). Overwatch's pillars include big bold silhouettes that skins
 must not change ([Game Developer][overwatch]). With procedural art and no
@@ -102,7 +103,7 @@ Applied: `docs/product/art-direction.md` complementing `docs/brand.md`.
 | ADRs | Permanent why-records | Future team | Superseded, never edited | `docs/adr/` |
 | Decision index | One line per decision, where recorded | Everyone | Append on every merge | `docs/decisions.md` |
 | Test plan | Layers and gates | Engineers, CI | When a gate changes | `docs/test-plan.md` |
-| Evolution | How intent is proven and the product evolves safely | Sceptical engineers, agents | When a gate or practice changes | `docs/evolution.md` |
+| Evolution | How intent is proven and the product evolves safely | Skeptical engineers, agents | When a gate or practice changes | `docs/evolution.md` |
 | Release notes | Per-version changes | Players, maintainers | Every release | `CHANGELOG.md` |
 | Runbook | How to run, deploy, film, and fix known faults | Whoever runs the demo | When a procedure changes | `docs/runbook.md` |
 | Launch checklist | Go or no-go before a tag | Release owner | Per release | `docs/launch-checklist.md` |

@@ -2,10 +2,9 @@
 type: spec
 title: "Ringfall Chapter 1: specification, Minimum Lovable Product, and what is Later"
 status: draft
-authors: ["Ringfall hackathon team"]
-reviewers: []
+authors:
+  - name: "Ringfall hackathon team"
 created: 2026-10-21
-approved: 2026-10-21
 ---
 
 # Ringfall Chapter 1: specification
@@ -88,7 +87,7 @@ the whole HUD's reason to exist. See [brand.md](brand.md).
 
 ## Easter eggs (proposed)
 
-Subtle, non-infringing, recognisable to people who know games:
+Subtle, non-infringing, recognizable to people who know games:
 
 - Four skimmer temperaments (chaser, ambusher, flanker, skittish), the
   four-ghost idea applied to a shooter, and it also improves the AI.
