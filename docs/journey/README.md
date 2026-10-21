@@ -9,8 +9,8 @@ created: 2026-10-21
 
 # The journey
 
-A time-indexed log of how Ringfall was built in one hackathon session,
-with the frames that were captured along the way. Times are UTC on
+A time-indexed log of how Ringfall was built in four hours, 14:08 to
+18:30 UTC on 2026-10-21, with the frames that were captured along the way. Times are UTC on
 2026-10-21; the user's clock ran seven hours behind (10:12 for 17:12 UTC)
 and the hard stop was 18:30 UTC. Each entry says what was tried, what was
 seen, and what was decided, so a reader can follow the reasoning and not
@@ -659,6 +659,37 @@ The remaining pairs (day 10 s and 18 s, night 8.5 s and 18 s, the moon)
 are filed beside them as `1715-bloom-before-*.jpg` and
 `1740-bloom-after-*.jpg`.
 
+## 17:40 The hero is a frame, not a drawing
+
+Seven moments of seed 7 were rendered headless at 3840x1600 with the post
+stack on and the HUD hidden (new `?nohud` dev flag): night at 10 s and 18 s,
+dawn at 2 s and 95 s, day at 10 s, dusk at 45 s, rain at 18 s. About 30 s a
+frame on software GL. The night kill at 10 s won the banner: dark sky for
+the wordmark, a warm skimmer burst between the slabs, the ring overhead.
+Dawn 95 s (sun flare), night 18 s (beam) and dusk 45 s (laser) make the
+README strip. The contact sheet is `images/1740-hero-contact.jpg`; the
+recipe is the "Hero and social" section of `docs/brand.md`.
+
+![Contact sheet of the seven candidate hero frames](images/1740-hero-contact.jpg)
+
+## 17:50 The watcher, held at the gate
+
+Issue #17's third archetype went in as new files (`src/core/watcher.ts`,
+`src/render/watcher-rig.ts`) with one dispatch line in the enemy module, so
+it could land beside the agents splitting `updateEnemy`, rewriting the wave
+table and adding night emissives. The state machine, the cover-blocked
+beam, the rig's aspect ratio and the kill-time step are unit-tested. The
+balance gate is where it stopped: with one watcher from wave 5 the steady
+bot cleared 4.25 waves and won 5 % against floors of 4.85 and 10 %. Three
+bot rules (do not chase a unit that backs off, finish an engaged watcher,
+draw a precise gun and wait for the reticle) and a 3.5 s cooldown brought
+it to 4.55 to 4.80 waves and 0 to 5 % wins, still under the floor, so the
+roster entry shipped behind `WATCHERS_IN_ROSTER = false` with the tables
+in the pull request. The wave 5 frame was not captured: the record-mode bot
+on seed 7 was still in wave 3 at 394 s on this machine's software GL, and
+the hard stop came first. Next update: set by whoever takes the balance
+pass.
+
 ## 18:08 Flare budget, second cut
 
 Issue #71: after #61 the user watched the reel twice and said there was
@@ -692,36 +723,54 @@ trims and stars are still visible at night on the frames.
 The other pairs are filed beside them as `1803-flare2-before-*.jpg` and
 `1808-flare2-after-*.jpg`.
 
-## 17:40 The hero is a frame, not a drawing
+## 18:10 Freeze: what four hours built
 
-Seven moments of seed 7 were rendered headless at 3840x1600 with the post
-stack on and the HUD hidden (new `?nohud` dev flag): night at 10 s and 18 s,
-dawn at 2 s and 95 s, day at 10 s, dusk at 45 s, rain at 18 s. About 30 s a
-frame on software GL. The night kill at 10 s won the banner: dark sky for
-the wordmark, a warm skimmer burst between the slabs, the ring overhead.
-Dawn 95 s (sun flare), night 18 s (beam) and dusk 45 s (laser) make the
-README strip. The contact sheet is `images/1740-hero-contact.jpg`; the
-recipe is the "Hero and social" section of `docs/brand.md`.
+The hard stop was 18:30 UTC. At 18:10 the counts, taken from the
+repository and GitHub rather than from memory, were these. Earlier
+entries and the deck quoted smaller numbers because they were written
+while the numbers were still moving; this entry supersedes them.
 
-![Contact sheet of the seven candidate hero frames](images/1740-hero-contact.jpg)
+| Measure | Count at 18:10 |
+| ------- | -------------- |
+| Elapsed since kick-off | 4 h 2 min |
+| Commits on main | 162 |
+| Pull requests merged | 29 |
+| Issues filed | 51 (26 open, 25 closed) |
+| Cloud sessions dispatched | 30 |
+| Local subagents (research, product docs, audit, streams, journal, deck, reel) | about 15 |
+| Unit tests on main | 278, all passing |
+| CI jobs on every pull request | lint and types, unit, browser smoke, build, balance gate, frames gate, docs hygiene, security and workflow hygiene |
 
-## 17:50 The watcher, held at the gate
+What the second coaching round changed, in order of what a player sees:
+the bloom prefilter and a second flare cut; explosions rebuilt as flash,
+crest, debris, smoke and scorch; weapon flashes sized to the frame;
+pickups without point lights; a settings panel with shake and flash
+switches; skimmers that rout when their strider dies, with a squeal; four
+skimmer temperaments, a crouch and a hidden switch; the watcher archetype
+built and tested but shipped behind a roster flag because six variants
+failed the balance gate; the hero banner and social card rendered from
+the game; every self-reference pointed at the new repository name; the
+franchise name removed from everything but citations. Underneath: a
+purity lint rule, a design-doc numbers test, a balance gate, a luminance
+gate, Vale, typos, link checks and a frontmatter schema, actionlint,
+zizmor, gitleaks, npm audit and Stylelint, a strict Content Security
+Policy, and two adversarial reviews (software: 40 findings, 19 fixed;
+documentation: 70 findings, 56 fixed, verdict unchanged at two and a half
+of five).
 
-Issue #17's third archetype went in as new files (`src/core/watcher.ts`,
-`src/render/watcher-rig.ts`) with one dispatch line in the enemy module, so
-it could land beside the agents splitting `updateEnemy`, rewriting the wave
-table and adding night emissives. The state machine, the cover-blocked
-beam, the rig's aspect ratio and the kill-time step are unit-tested. The
-balance gate is where it stopped: with one watcher from wave 5 the steady
-bot cleared 4.25 waves and won 5 % against floors of 4.85 and 10 %. Three
-bot rules (do not chase a unit that backs off, finish an engaged watcher,
-draw a precise gun and wait for the reticle) and a 3.5 s cooldown brought
-it to 4.55 to 4.80 waves and 0 to 5 % wins, still under the floor, so the
-roster entry shipped behind `WATCHERS_IN_ROSTER = false` with the tables
-in the pull request. The wave 5 frame was not captured: the record-mode bot
-on seed 7 was still in wave 3 at 394 s on this machine's software GL, and
-the hard stop came first. Next update: set by whoever takes the balance
-pass.
+What did not make the stop: the five named wave beats and the dropship
+that rides on them, the design and user-experience review's fixes, the
+threat model and the architecture package, all open as pull requests or
+sessions at the freeze. Two admin items need the owner: GitHub Pages is
+not enabled, so nothing has deployed to the custom domain yet, and main
+has no branch protection.
+
+The coaching lesson of the afternoon, counted: twenty-nine merges in
+seventy minutes meant almost every pull request conflicted with the one
+before it, nearly always in the changelog, the journal and the design
+doc, because every agent was told to document in the same three files.
+Next time the brief gives each stream its own journal page and the
+changelog is assembled at the freeze.
 
 ## Playtest reviews
 
