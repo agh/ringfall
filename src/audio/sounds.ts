@@ -266,8 +266,9 @@ export const vowelFormants = (phase: number): readonly [number, number] => {
 
 /**
  * One noise buffer per length per context, filled on first use. Filling is synchronous main-thread
- * work: 2.2 ms for the drop pod's 1.2 s, and a wave start lands up to nine pods in one step, so
- * building a fresh buffer per voice cost about 20 ms and 2 MB at the moment the wave began.
+ * work (0.1 ms for a minigun round, 1.4 ms for an explosion, 2.2 ms for the drop pod's 1.2 s) and
+ * a fresh buffer per voice allocated about 8 MB over a five-wave run, all of it inside the event
+ * handler of a simulation step.
  */
 const noiseBuffers = new WeakMap<BaseAudioContext, Map<number, AudioBuffer>>();
 

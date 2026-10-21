@@ -225,7 +225,7 @@ describe('sound table', () => {
     const bus = ctx.createGain();
     const pods = Array.from({ length: 9 }, () => SOUNDS.dropPod.voices).flat();
     scheduleVoices(ctx, bus, 0, pods);
-    // Nine pods in one step (a wave start) share one buffer; nine fills cost about 20 ms.
+    // Nine pod voices in one step share one buffer; nine fills would cost about 20 ms.
     expect(built()).toBe(1);
     scheduleVoices(ctx, bus, 1, SOUNDS.explosion.voices);
     expect(built()).toBe(2);
