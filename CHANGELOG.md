@@ -25,6 +25,8 @@ and this project adheres to
 
 ### Added
 
+- A unit test that fails if the pre-rename repository path reappears outside
+  `docs/journey/`, and a runbook note on the rename order (#70).
 - Four skimmer temperaments handed out round-robin per wave: chaser,
   ambusher (leads the player's velocity by 4 m), flanker (swings to the
   off-hand side) and skittish (holds at 10 m until a packmate is within
@@ -74,7 +76,22 @@ and this project adheres to
   colours. The particle pool gains `spark`, `smoke` and `shard` shapes with
   premultiplied blending so smoke can darken the frame (#26).
 
+### Changed
+
+- The repository no longer names the console shooter franchise it was
+  inspired by outside the cited titles and URLs under `docs/research/`
+  (ADR-0003). The research note on feel and the MLP cut dropped the name
+  from its file name (`docs/research/feel-and-mlp.md`), and
+  `tests/unit/originality.test.ts` greps the tree for the term list in
+  `tests/unit/originality.terms.ts`.
+
 ### Fixed
+
+- Still too much flare after the bloom prefilter: bloom strength and radius
+  halved again (0.15, 0.25), the flare ghosts at 0.3 opacity and the core
+  sprite at two thirds of its size, and the day and dawn skies given a
+  thinner, tighter mie lobe so the sun reads as a disc; facing the sun the
+  saturated blob went from 13% to 3% of the frame height (#71).
 
 - Adversarial software review (#51): a death in the same step as the last
   kill is no longer overwritten by victory; blasts spare spawning enemies
@@ -128,4 +145,4 @@ and this project adheres to
 - GitHub Actions CI (lint, type check, unit, e2e, build) and GitHub Pages
   deployment, all actions pinned to commit SHAs.
 
-[Unreleased]: https://github.com/agh/hack/commits/main
+[Unreleased]: https://github.com/agh/ringfall/commits/main

@@ -17,14 +17,14 @@ const FOG_DENSITY = 0.0032;
 /** Hard cap on camera shake in radians (docs/brand.md). */
 const SHAKE_CAP = 0.035;
 const BASE_FOV = 78;
-/** Sun flare core sprite scale at 9 km: about 4% of the frame height at the base FOV. */
-const FLARE_CORE_SIZE = 520;
+/** Sun flare core sprite scale at 9 km: about 2.7% of the frame height at the base FOV. */
+const FLARE_CORE_SIZE = 347;
 /**
  * Flare ghosts as fractions of the frame height, largest first along the axis. The largest
  * stays well under the third of the frame that issue #25 allows.
  */
 const FLARE_GHOST_HEIGHTS = [0.05, 0.08, 0.035] as const;
-const FLARE_GHOST_OPACITY = 0.6;
+const FLARE_GHOST_OPACITY = 0.3;
 
 interface Effect {
   readonly object: THREE.Object3D;

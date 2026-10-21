@@ -86,8 +86,10 @@ sun and recolour the rig per wave, and rain and fog weathers grey it.
 - Bloom: `UnrealBloomPass` threshold 1.3 in HDR so ordinary lit albedo
   never blooms; only emissive trims and effects cross it, and only their
   excess over the threshold, capped at 1.5 per pixel, so the sun and a near
-  sprite bloom like emitters rather than floodlights. Tone mapping ACES
-  Filmic, exposure 0.38 by day.
+  sprite bloom like emitters rather than floodlights; strength 0.15, radius
+  0.25. The day and dawn skies keep a thin, tight mie lobe (coefficient
+  0.0008 and 0.002, g 0.93 and 0.92) so the sun is a disc, not an aureole.
+  Tone mapping ACES Filmic, exposure 0.38 by day.
 
 ## Typography
 
@@ -175,7 +177,7 @@ and ring surface are procedural canvases).
 - Calm and combat are two gain buses over one clock. The drone never stops;
   the beat only ever joins it. Crossfades are ramps, never cuts.
 
-## Developer landing (github.com/agh/hack)
+## Developer landing (github.com/agh/ringfall)
 
 - One-liner: "Ringfall: a browser-native arena shooter. One ring, one dawn,
   two kinds of thing that want you dead. TypeScript + three.js, zero

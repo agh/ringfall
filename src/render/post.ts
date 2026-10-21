@@ -11,8 +11,8 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
  * never crosses it, and no pixel contributes more than the cap: the sky's sun disc is in the
  * hundreds in HDR and would otherwise flood the frame through the blur chain.
  */
-export const BLOOM_STRENGTH = 0.3;
-export const BLOOM_RADIUS = 0.35;
+export const BLOOM_STRENGTH = 0.15;
+export const BLOOM_RADIUS = 0.25;
 export const BLOOM_THRESHOLD = 1.3;
 export const BLOOM_KNEE = 0.3;
 export const BLOOM_CAP = 1.5;

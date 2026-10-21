@@ -21,7 +21,7 @@ every verification claim. Any unticked item is a no-go.
 
 ## The list
 
-**Pages is live and playable.** Open <https://agh.github.io/hack/> in a
+**Pages is live and playable.** Open <https://agh.github.io/ringfall/> in a
 clean browser profile, click Deploy, and play into wave 2. This prevents
 tagging a release whose public link shows a blank canvas because the Pages
 source was never set to GitHub Actions or the deploy job failed quietly
@@ -33,6 +33,16 @@ smoke, and build jobs in `.github/workflows/ci.yml` must all pass on the
 head of `main`, not on an earlier commit. This prevents a tag pointing at a
 commit that was pushed after the last green run, which is how a release
 ships with a type error nobody saw.
+
+**No secret and no known high-severity advisory ships.** The
+`Security and workflow hygiene` job in `.github/workflows/ci.yml` must be
+green on the same commit: `pnpm audit --audit-level=high` with every ignore
+under `pnpm.auditConfig` in `package.json` re-read and still justified,
+gitleaks over the working tree and the pushed history with
+`.gitleaks.toml`, and actionlint and zizmor over the workflows. This
+prevents tagging a release whose history carries a token or whose
+toolchain carries a published high-severity advisory, which a green build
+job says nothing about.
 
 **A person has played through to the final wave.** Someone plays the
 deployed page from the title card to the victory tableau on wave 8 with a

@@ -22,7 +22,7 @@ and the renderer backlog.
 | webgl-quake3 (Brandon Jones, 2010) | [demo][q3-live] / [source][q3-src] | hand-written WebGL | Q3 shader scripts compiled to GLSL, lightmap atlas, one VBO | BSP parsed in a Web Worker; no culling because JS-side PVS was slower than brute GPU draw ([blog][q3-blog]) | none |
 | QuakeJS (inolen) | [site][quakejs] / [source][quakejs-src] (MIT) | ioquake3 via Emscripten | ioq3 renderer as-is | WebSocket netcode; asset repack | none |
 | Dwasm (PrBoom+ to wasm) | [demo][dwasm] / [source][dwasm-src] (GPL-2.0) | Emscripten + SDL2 | software renderer | about 1 MB gzip excluding resources; OPL2 synth keeps it small | none |
-| Halo CE decomp in browser | [demo][halo-mobile] / [source][halo-mobile-src] (CC0) | Emscripten, WebGL 2 | Blam renderer | OffscreenCanvas in a worker, OPFS saves, COOP/COEP service worker | none |
+| 2001 console shooter decomp in browser | [demo][ce-mobile] / [source][ce-mobile-src] (CC0) | Emscripten, WebGL 2 | the original engine renderer | OffscreenCanvas in a worker, OPFS saves, COOP/COEP service worker | none |
 | HexGL (Despoulain, 2012) | [site][hexgl] / [source][hexgl-src] (MIT) | three.js | bloom, hex vignette, quality tiers | 2D collision map sampled from a canvas image instead of a physics engine ([slides][hexgl-slides]) | none |
 | Bruno Simon folio-2019 | [site][bruno] / [source][bruno-src] (MIT) | three.js, cannon, howler | baked-texture look | `Application`, `World`, `Resources`, `Camera` split; physics separated from visuals | none |
 | instagib-arena (2025) | [site][instagib] / [source][instagib-src] (AGPL-3.0) | three.js, React HUD, Node ws | not described | 64 Hz sim; `src/game/*` modules do not depend on three.js; snapshots carry only numbers; sounds synthesized with Web Audio | typecheck, lint, netcode load tests |
@@ -32,8 +32,8 @@ and the renderer backlog.
 
 Also examined: the Google Pac-Man doodle (zero-friction onboarding: auto-start
 after ten seconds, [Wikipedia][pacman]); Infinitown (three.js, reportedly
-86 KB of code, [site][infinitown]); the Halo CE wasm port needing the
-user's own XISO ([Notebookcheck][halo-wasm]).
+86 KB of code, [site][infinitown]); the same console shooter wasm port needing the
+user's own XISO ([Notebookcheck][ce-wasm]).
 
 ## Architecture lessons for a pure core and reactive shell
 
@@ -142,8 +142,8 @@ cap `devicePixelRatio`.
 [quakejs-src]: https://github.com/inolen/quakejs
 [dwasm]: https://gmh-code.github.io/dwasm/
 [dwasm-src]: https://github.com/GMH-Code/Dwasm
-[halo-mobile]: http://halo.omgithub.com/
-[halo-mobile-src]: https://github.com/OMG-Guest/Halo-Mobile
+[ce-mobile]: http://halo.omgithub.com/
+[ce-mobile-src]: https://github.com/OMG-Guest/Halo-Mobile
 [hexgl]: https://hexgl.bkcore.com/
 [hexgl-src]: https://github.com/BKcore/HexGL
 [hexgl-slides]: https://www.slideshare.net/slideshow/html5-game-dev-with-threejs-hexgl/14357478
@@ -156,7 +156,7 @@ cap `devicePixelRatio`.
 [atf-blog]: https://blog.playcanvas.com/mozilla-launches-webgl-2-with-playcanvas/
 [pacman]: https://en.wikipedia.org/wiki/Pac-Man_Google_Doodle
 [infinitown]: https://littleworkshop.fr/projects/infinitown/
-[halo-wasm]: https://www.notebookcheck.net/Halo-Combat-Evolved-now-playable-with-web-browser-for-free.1412338.0.html
+[ce-wasm]: https://www.notebookcheck.net/Halo-Combat-Evolved-now-playable-with-web-browser-for-free.1412338.0.html
 [gaffer]: https://gafferongames.com/post/fix_your_timestep/
 [roomenv]: https://threejs.org/docs/pages/RoomEnvironment.html
 [sky]: https://github.com/mrdoob/three.js/blob/dev/examples/jsm/objects/Sky.js
