@@ -65,6 +65,11 @@ check.
 - **One squashed commit for act two.** Everything from the renderer to the
   docs landed in a single commit because the clock mattered more than
   history. Later changes went back to one concern per commit.
+- **Holding PR #1 as a draft until the reel landed.** The coach wanted
+  the film in the tree before main took anything. The user wanted main
+  unblocked first so other agents could branch from it. That was right:
+  thirteen agents were about to branch from it. Merged at 17:06 as
+  8566f27.
 
 ## 14:08 Kick-off
 
@@ -263,6 +268,115 @@ gun with a pickup column beside it, from the deterministic run at seed 7:
 ![Wave 2 at night with the beam](images/1656-wave2-night-beam.jpg)
 
 ![Wave 3, the scatter gun and a pickup](images/1656-wave3-scatter-pickup.jpg)
+
+## 17:03 Three streams land
+
+A note on clocks, so the journal can be lined up with the user's
+messages: the user's own clock reads 10:12 when it is 17:12 UTC, and the
+hackathon must be finished by 18:30 UTC, which is 11:30 on theirs.
+
+The three agent streams were landed by the coach in five commits on the
+feature branch. b3ab847 `fix(render)` tamed the explosion and death flare
+per the user's complaint: light 600 to 140, flash opacity 1.0 to 0.55,
+bursts halved. 03c3f0f `feat(reel)` added the story-reel pipeline with
+cards and day and night captures, cached and resumable. 0192cbb
+`feat(weapons-render)` integrated stream B2's weapon viewmodels, tracers
+and pickup emblems into the scene from the agent's own integration
+snippet, and carried the real whiteout fix: the 64 px particle cap, the
+near fade, dust kept 2.5 m from the eye, blasts scaled by distance.
+d86c910 was docs for the atmosphere and weapon presentation, the
+changelog and the journey. 627c55d renamed the journey frames to the
+minute they were captured; the coach had first filed them under guessed
+times, so the audit's warning about timestamps applied to the coach too.
+
+Gates on the final tree: Biome and markdownlint clean, strict tsc clean,
+90 unit tests with coverage thresholds, both Playwright smoke tests on
+software GL in 1.7 minutes, and the build. Issue #24 was filed for the
+one ugly moment left in the seed 7 run: the bot fires the launcher into
+cover at its own feet at 48 s.
+
+## 17:06 Merged before CI finished
+
+The user asked for main to be merged "ASAP so other agents can PR off
+main", and for more agents. PR #1 was taken out of draft and merged as
+8566f27 with a merge commit, thirty commits kept, including two wip
+checkpoints the stop hook had demanded. CI on the branch head was still
+in progress at the time. The local gates on that exact tree had all
+passed, and the push run on main is the check. The subscription to #1
+was dropped.
+
+The coach had been holding the PR as a draft until the reel landed. The
+user wanted main unblocked first, and that was right, because thirteen
+agents were about to branch from it. It is recorded in the overruled
+list above.
+
+## 17:08 The bloom problem, divided
+
+The user's words after the reel were "lots of blooming and flare
+issues". Two rounds of tuning lights had missed, because nobody had
+measured a frame and the cause was the particle size law. So the work
+was split by emitter, each issue owning its own file so the pull
+requests cannot collide, plus a gate that measures:
+
+- #25 the bloom pass and the sun flare (`post.ts`, the flare and
+  lighting lines of `scene.ts`).
+- #26 explosions and deaths (the spawn functions in `scene.ts`).
+- #28 weapon flashes, beam and laser (`weapons.ts`).
+- #29 pickup glow without per-pickup point lights (`pickups.ts`).
+- #31 night, dust, rain, fog and enemy emissives after dark
+  (`environment.ts`, the dust block, `enemies.ts`).
+- #30 a luminance gate in CI: ten deterministic frames at seed 7 by day,
+  night, dusk with rain and night with fog, with mean-luminance budgets
+  (day 150, night 110 of 255) and a saturated-blob limit. The budgets
+  are recorded from the frames at the commit they land on, not chosen
+  to pass.
+
+Seven more issues went out at the same time, outside the renderer: #32
+core purity as a Biome rule instead of a grep, #33 one event-to-sound
+table so the live bank and the offline score cannot drift, #24 the bot's
+launcher, #12 the balance gate in CI with thresholds from the baseline
+and a stated margin, #14 Easter eggs, #8 named wave beats, and #5
+skimmers flee when a strider dies.
+
+Thirteen cloud sessions were dispatched between 17:10 and 17:12, one per
+issue. Each was briefed with the files it owns, the capture hook
+(`?record&bot&seed=7` and `window.ringfallCapture`), the gates to run,
+the PR template, and an instruction to message the coach's session with
+the PR link and the measured numbers. The coach reviews and merges in
+gate-first order: #32, #30 and #12 first, then the renderer PRs, then
+core, merging main into each branch where `scene.ts` regions touch.
+
+## 17:13 Three pull requests against an empty main
+
+While the feature branch was still open, three bot PRs had been raised
+from the issues between 16:53 and 16:55: #21 (the Claude GitHub app,
+Easter eggs, #14), #22 (Copilot, the recording pipeline, #13) and #23
+(Copilot, the third enemy archetype, #17). All three stopped themselves
+with "game code not in repo", because main held nothing until 17:06.
+They were closed with a note. Issue #13 was closed as already done on
+main, issue #14 was re-dispatched from main, and #17 stays in the Later
+epic.
+
+Dependabot opened #27 (actions/upload-artifact 7.0.1 to 7.0.2,
+SHA-pinned) at 17:08; it merges when its CI is green.
+
+The lesson: an issue assigned to a repository bot runs against whatever
+main holds at that minute. File the backlog before the merge, assign it
+after.
+
+## 17:15 The reel, twice
+
+The day-only interim cut (56.5 s, cards plus wave 1) was sent to the user
+at 16:47 from a 16:11 build, so it still carried the old flare and the
+dust discs. The night capture that was in flight was on the same old
+build, so it was stopped at 17:04 and the full day-and-night cut was
+restarted on the fixed build: cards cached, wave 1 and wave 2 recaptured,
+score re-rendered, then the stitch. Capture runs at 1.6 to 2.5 s a frame
+on this machine's software GL; the check-in to deliver it is set for
+17:36.
+
+The reel agent's shortfall list was honest and short: night unverified,
+dust discs, and two browser deaths recovered by the resume logic.
 
 ## Playtest reviews
 
