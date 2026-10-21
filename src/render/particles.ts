@@ -65,6 +65,13 @@ const VERTEX = /* glsl */ `
       ? (1.0 - t) * (1.0 - t)
       : (aShape < 1.5 ? smoothstep(0.0, 0.1, t) * (1.0 - t) * 0.6 : 1.0 - smoothstep(0.66, 1.0, t));
     vAlpha = fade * alive;
+    // A dead slot keeps its last size until the ring overwrites it (a smoke puff is the 64 px
+    // cap); with alpha 0 it changed no pixel but still rasterised. Clip it instead.
+    if (alive <= 0.0) {
+      gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+      gl_PointSize = 0.0;
+      return;
+    }
     vStretch = aStretch;
     vShape = aShape;
     vSeed = fract(aParams.y * 13.37 + aParams.x * 0.173);

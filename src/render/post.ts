@@ -129,13 +129,18 @@ const RingfallShader = {
 };
 
 export class PostStack {
+  private readonly renderer: THREE.WebGLRenderer;
   private readonly composer: EffectComposer;
+  /** The pixel ratio the composer's targets were last sized for. */
+  private pixelRatio: number;
   private readonly bloom: UnrealBloomPass;
   private readonly feel: ShaderPass;
   private shieldHit = 0;
   private damage = 0;
 
   constructor(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera) {
+    this.renderer = renderer;
+    this.pixelRatio = renderer.getPixelRatio();
     const size = renderer.getSize(new THREE.Vector2());
     // HDR + MSAA target: bloom thresholds on linear radiance, OutputPass tone-maps at the end.
     const target = new THREE.WebGLRenderTarget(size.x, size.y, {
@@ -166,6 +171,14 @@ export class PostStack {
   }
 
   setSize(width: number, height: number): void {
+    // The composer copies the renderer's pixel ratio once, when it is built; the dynamic
+    // resolution scaler changes it afterwards, so without this the scene pass, the HDR target
+    // and the feel pass stayed at the page's native ratio whatever the scaler chose.
+    const pixelRatio = this.renderer.getPixelRatio();
+    if (pixelRatio !== this.pixelRatio) {
+      this.pixelRatio = pixelRatio;
+      this.composer.setPixelRatio(pixelRatio);
+    }
     this.composer.setSize(width, height);
     this.bloom.setSize(width, height);
     this.setUniform('uAspect', width / height);

@@ -178,6 +178,17 @@ and this project adheres to
 
 ### Fixed
 
+- Render block of the quality pass (#105): the explosion flash, crest and
+  scorch, the kill ring, a bolt and a grenade draw once on the first frame
+  from a hidden warm-up set whose materials are never disposed, so their
+  shaders are compiled before Deploy and are not deleted and compiled again
+  when the last effect using one fades (three.js frees a program with its
+  last material); the post-processing composer follows the dynamic
+  resolution scaler's pixel ratio instead of the page's native one, and the
+  scaler is off under `?record`, where a frame's delta is simulation time;
+  a dead particle slot is clipped in the vertex shader instead of
+  rasterising a zero-alpha sprite up to the 64 px cap until the ring
+  overwrites it (NUMBERS).
 - The HUD no longer forces a synchronous layout and style recalc on every
   playing frame: text is written only when it changes and the tracker and
   compass canvas sizes come from a `ResizeObserver` instead of a per-frame
