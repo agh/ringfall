@@ -9,7 +9,9 @@ created: 2026-10-21
 
 # How Ringfall proves intent, prevents regressions, and evolves with agents
 
-> [spec](spec.md) · [test plan](test-plan.md) · [journey](journey/README.md)
+> [Ringfall](../README.md) > [Specification](spec.md) > Evolution
+
+See also the [test plan](test-plan.md) and the [journey](journey/README.md).
 
 This document answers four questions a skeptical engineer asks of a
 project built largely by a coding agent in a morning: how do we know the

@@ -762,19 +762,21 @@ The other pairs are filed beside them as `1803-flare2-before-*.jpg` and
 ## 18:10 Freeze: what four hours built
 
 The hard stop was 18:30 UTC. At 18:10 the counts, taken from the
-repository and GitHub rather than from memory, were these. Earlier
-entries and the deck quoted smaller numbers because they were written
-while the numbers were still moving; this entry supersedes them.
+repository and GitHub rather than from memory, were these; the 18:10
+figures were taken while merges were still landing, so the rows that
+moved were re-read against GitHub and the repository as of 18:22 UTC.
+Earlier entries and the deck quoted smaller numbers because they were
+written while the numbers were still moving; this entry supersedes them.
 
-| Measure | Count at 18:10 |
-| ------- | -------------- |
-| Elapsed since kick-off | 4 h 2 min |
-| Commits on main | 162 |
-| Pull requests merged | 29 |
-| Issues filed | 51 (26 open, 25 closed) |
-| Cloud sessions dispatched | 30 |
-| Local subagents (research, product docs, audit, streams, journal, deck, reel) | about 15 |
-| Unit tests on main | 278, all passing |
+| Measure | Count as of 18:22 UTC |
+| ------- | --------------------- |
+| Elapsed since kick-off | 4 h 14 min |
+| Commits on main | 191 |
+| Pull requests merged | 36 |
+| Issues filed | 52 (25 open, 27 closed) |
+| Cloud sessions dispatched | 33 |
+| Local subagents (research, product docs, audit, streams, journal, deck, reel) | 13 |
+| Unit tests on main | 292, all passing |
 | CI jobs on every pull request | lint and types, unit, browser smoke, build, balance gate, frames gate, docs hygiene, security and workflow hygiene |
 
 What the second coaching round changed, in order of what a player sees:
@@ -850,6 +852,6 @@ Each row is a human or agent watching the game play, not a screenshot.
 
 ![Final reel, wave 2 at night at 50 s](images/1814-reel-final-night.jpg)
 
-![Wave 1, the sun behind a slab](images/1535-demo-seed7-wave1-sun.jpg)
+![Wave 1, the sun behind a slab](images/1529-demo-seed7-wave1-sun.jpg)
 
-![Wave 1, holding cover with one left](images/1535-demo-seed7-wave1-cover.jpg)
+![Wave 1, holding cover with one left](images/1529-demo-seed7-wave1-cover.jpg)
