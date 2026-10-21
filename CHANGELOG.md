@@ -139,6 +139,16 @@ and this project adheres to
   collision probe takes coordinates instead of a fresh vector. About a
   quarter off `stepGame` on 184,758 recorded steps; same output, same
   `pnpm balance` summaries.
+- Browser smoke tests run at 640x360 and the movement test under `?nopost`:
+  on software GL a post-stack frame at 1280x720 costs about a second and the
+  first simulation step is five frames away, so each test took 90 s on the
+  runner (#105, block 6). The Pages build drops the hidden source map (3.4 MB
+  of a 4.2 MB `dist/`) that no browser requests. `scripts/frames.mjs` and
+  `scripts/reel.mjs` use the shared preview starter, which now refuses a port
+  that already answers, and every capture script launches the browser before
+  the preview server so a failed launch leaves no `vite preview` behind.
+  The chunk size warning limit follows the measured 706 kB bundle, and the
+  shadowed `audit` script (`pnpm audit` runs the built-in) is removed.
 - The luminance gate is its own optional workflow (`.github/workflows/frames.yml`)
   on pull requests that touch the renderer and by hand; the smoke job is
   capped at twelve minutes (#104).

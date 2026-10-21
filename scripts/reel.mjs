@@ -16,12 +16,13 @@
  * Needs a production build (`pnpm build`) and a full ffmpeg (`FFMPEG=/path/to/ffmpeg`); the
  * Playwright-bundled one has no H.264, JPEG or AAC. See docs/runbook.md.
  */
-import { spawn, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from '@playwright/test';
 import { parseArgs, requireSeed } from './lib/args.mjs';
+import { startPreview } from './lib/preview.mjs';
 
 const args = parseArgs(process.argv.slice(2));
 const seed = requireSeed(args.seed);
@@ -89,38 +90,6 @@ const launch = () =>
       '--ignore-gpu-blocklist',
     ],
   });
-
-/** Serves the production build on its own port so a concurrent recorder is not disturbed. */
-const startPreview = async () => {
-  const server = spawn(
-    'pnpm',
-    [
-      'exec',
-      'vite',
-      'preview',
-      '--host',
-      '127.0.0.1',
-      '--port',
-      String(port),
-      '--strictPort',
-      '--outDir',
-      dist,
-    ],
-    { stdio: 'ignore' },
-  );
-  const url = `http://127.0.0.1:${port}/`;
-  for (let attempt = 0; attempt < 40; attempt += 1) {
-    await new Promise((r) => setTimeout(r, 500));
-    try {
-      const res = await fetch(url);
-      if (res.ok) return server;
-    } catch {
-      // Not up yet.
-    }
-  }
-  server.kill();
-  throw new Error(`vite preview did not come up on ${url}`);
-};
 
 const gameUrl = (flags) => `http://127.0.0.1:${port}/?record&bot&seed=${seed}${flags}`;
 
@@ -387,8 +356,9 @@ const stitch = () => {
 // Main -------------------------------------------------------------------------------------------
 
 const needsGame = ['wave1', 'wave2', 'score'].some((s) => steps.has(s));
-const server = needsGame ? await startPreview() : null;
+// Browser first: Playwright reaps it when the process dies, nothing reaps the preview server.
 const browser = await launch();
+const server = needsGame ? await startPreview(port, { outDir: dist }) : null;
 try {
   if (steps.has('cards')) {
     for (const s of cut) if (s.kind === 'card' && !done(s.id)) await renderCard(browser, s);
