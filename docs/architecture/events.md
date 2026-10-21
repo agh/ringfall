@@ -53,7 +53,7 @@ Events declared but never pushed by `stepGame`: `shot`, `beamFired`.
 
 ## Notes from the source
 
-- `enemyFled`: An enemy broke and ran: it is now in state `flee`. Fired for every skimmer within `FLEE_RADIUS` of a strider when it dies, after that strider's `enemyKilled` in the same step, and again for a skimmer whose rout is refreshed by a second death. The enemy's `fleeUntil` says when it ends; posture and sound layers key on `id` and `kind`.
+- `enemyFled`: An enemy broke and ran: it is now in state `flee`. Fired for every skimmer within `FLEE_RADIUS` of a strider when it dies, after that strider's `enemyKilled` in the same step, and again for a skimmer whose rout is refreshed by a second death, but not for one already leaving for good after the final leader fell. The enemy's `fleeUntil` says when it ends; posture and sound layers key on `id` and `kind`.
 - `enemyBark`: A fleeing enemy shouts `line`, one of `BARK_LINES`. Exactly one follows each `enemyFled`, so a strider death with any skimmer in range barks at least once; the first bark of a rout is always the first line. The label and the sound belong to the layers that consume this.
 - `dropPod`: A pod is inbound: the enemy with this `id` lands at `at` and goes active at `activeAt`.
 - `victory`: The final leader has fallen; the tableau begins. The status turns `won` when it ends.

@@ -5,8 +5,8 @@ import {
   chargeSeconds,
   makeLimiter,
   scheduleVoices,
-  soundFor,
   startChargeHum,
+  stepSounds,
   warmNoise,
 } from './sounds';
 
@@ -90,8 +90,9 @@ export class AudioBank {
 
   handle(events: readonly GameEvent[]): void {
     if (!this.ctx || !this.master) return;
+    const soundOf = stepSounds();
     for (const e of events) {
-      const sound = soundFor(e);
+      const sound = soundOf(e);
       if (!sound) continue;
       const now = this.ctx.currentTime;
       if (sound.cutsCharge) this.stopCharge(now);

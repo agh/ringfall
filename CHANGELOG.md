@@ -166,6 +166,16 @@ and this project adheres to
   longer spends about 20 ms filling them in one step; the combat pulse
   looks two ticks ahead, so a timer tick a whole tick late no longer drops
   a beat and shifts the grid.
+- Merge seams between features that landed from different branches (#97,
+  pass C), each pinned by a deterministic test that runs both in one go:
+  a skimmer already leaving after the final leader fell is no longer
+  downgraded to a timed rout by a strider a late blast kills, so it keeps
+  leaving and the tableau ends with an empty arena; an exiting watcher
+  flees instead of holding the perimeter and charging through the
+  tableau; the loop applies the core's `timeScaleOf`, so the tableau opens
+  in slow motion as the design doc says; the `dropPod` sound plays once per
+  launch step in the live bank and the offline score, one engine sweep for
+  the one craft the renderer draws, instead of once per pod.
 - The dropship and its pods borrow their lights from the pool too (#103).
 - Weapon muzzle flashes, tracers and the beam re-tuned under the HDR
   composer so they read without blooming out (#28).
