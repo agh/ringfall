@@ -59,27 +59,15 @@ cheap to build and easy to test, so it is the product.
 
 ### System Architecture
 
-```text
-┌──────────────┐   InputFrame    ┌──────────────────────────┐
-│  src/input   │───────────────▶ │  src/core  (pure)        │
-│ keyboard,    │                 │  stepGame(state, input,  │
-│ mouse, lock  │                 │           dt, rng)       │
-└──────────────┘                 │  → GameState + events    │
-                                 └─────┬──────────┬─────────┘
-                                       │ state    │ events
-                     ┌─────────────────┼──────────┼──────────────────┐
-                     ▼                 ▼          ▼                  ▼
-              ┌────────────┐   ┌────────────┐  ┌────────────┐  ┌────────────┐
-              │ src/render │   │  src/hud   │  │ src/audio  │  │  tests/    │
-              │ three.js   │   │ DOM + 2D   │  │ WebAudio   │  │ unit + e2e │
-              └────────────┘   └────────────┘  └────────────┘  └────────────┘
-```
-
-`src/main.ts` owns the loop. Each animation frame it adds the elapsed wall
-time to an accumulator and calls `stepGame` with a fixed `dt` of 1/60 s
-while at least that much time is banked, capped at five steps per frame so a
-backgrounded tab does not fast-forward on return. After stepping it hands
-the events to the renderer, HUD, and audio bank, then renders.
+The simulation is a pure function, `stepGame(state, input, dt, rng)`, and
+everything else reacts to the state and events it returns. `src/main.ts`
+steps it on a fixed 1/60 s accumulator, capped at five steps per frame so
+a backgrounded tab does not fast-forward, then hands the events to the
+renderer, HUD and audio bank. The C4 diagrams, the module map and the event
+catalogue generated from the code, the frame and tick data flows, the build
+view, the decision index and the invariants live in
+[architecture/README.md](architecture/README.md), which is the one source
+for the structure of the system.
 
 ### Simulation model
 

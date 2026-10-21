@@ -25,6 +25,14 @@ and this project adheres to
 
 ### Added
 
+- The dropship moment (#58): when a wave's first pod launches, a dark
+  Hull craft with a Rose underlight crosses the arena in 4 s, in over the
+  wall behind that pod, over the centre and out the far side. Each
+  `dropPod` falls as a capsule from the craft's altitude to its landing
+  point over the 1.5 s lead and raises a Slate dust ring on touchdown.
+  New `src/render/dropship.ts`, one hook in `scene.ts`, and a low pass-by
+  sweep for `dropPod` in the sound table. Presentation only: spawn times
+  and positions per seed are unchanged.
 - Five named wave beats (Scouts, The Leader, Fallback, The Push, Last
   Stand) replace the eight-wave formula; `waveStarted` carries the name and
   the HUD announces it. Enemies arrive by drop pod (`dropPod` event 1.5 s
@@ -33,6 +41,13 @@ and this project adheres to
   kills and shield breaks, the survivors flee off the arena, and the state
   holds a 5 s tableau before the run is won. `scripts/wave-table.mjs`
   generates the design doc's composition table from the constants.
+
+- An architecture package under `docs/architecture/`: C4 context and
+  container diagrams, component diagrams and a module map generated from the
+  import graph, an event catalogue generated from the `GameEvent` union and
+  its consumers, the frame and tick data flows, the build and delivery view,
+  a decision index and the invariants, with `pnpm docs:architecture` to
+  regenerate and render and a unit test that fails on drift (#79).
 - A unit test that fails if the pre-rename repository path reappears outside
   `docs/journey/`, and a runbook note on the rename order (#70).
 
@@ -114,6 +129,12 @@ and this project adheres to
   `tests/unit/originality.terms.ts`.
 
 ### Fixed
+
+- Documentation sweep of the second audit's deferred findings (#54): the
+  VFX rules quoted from a live source, a login-walled course link dropped,
+  the ringworld sentence restated from its sources, two journey frames
+  renamed to the minute captured, and the freeze counts re-read after the
+  last merges.
 
 - The bot no longer fires a hitscan weapon at a target it cannot see (#93).
   On the reel seed, 94 of its 210 shots in the first 60 s went into cover

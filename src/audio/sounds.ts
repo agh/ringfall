@@ -51,8 +51,6 @@ export interface Sound {
 export const SILENT = [
   'pickupExpired',
   'enemyFled',
-  // The pod's fall and landing are the renderer's streak and dust for now (#56).
-  'dropPod',
   // The hidden switch's seven-note chime is a follow-up; the score tick is the only reaction here.
   'secretFound',
   // The watcher's beam reuses the strider bolt sound: game.ts emits boltFired beside watcherFired.
@@ -168,6 +166,10 @@ export const SOUNDS: Readonly<Record<SoundKey, Sound>> = {
   // A routed skimmer's squeal: a rising chirp that answers the strider's death. The flee itself
   // (`enemyFled`) is silent; the bark carries the sound so a pack of three squeals three times.
   enemyBark: { voices: [tone('sine', 900, 1500, 0.14, 0.18, { jitter: true })] },
+  /** The dropship passing over: a low engine sweep that falls as it recedes, under a rumble. */
+  dropPod: {
+    voices: [tone('sawtooth', 110, 38, 1.8, 0.22), noise(1.2, 0.28, 220, { q: 1.4 })],
+  },
 };
 
 /** The table entry for an event, or null for an event in `SILENT`. */
