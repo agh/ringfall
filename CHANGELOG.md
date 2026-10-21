@@ -56,7 +56,7 @@ and this project adheres to
 - Adversarial software review (#51): a death in the same step as the last
   kill is no longer overwritten by victory; blasts spare spawning enemies
   as shots do; the fixed-step loop drops, rather than defers, steps past
-  its per-frame cap; resuming after Esc keeps the look direction; the beam
+  its per-frame cap; resuming after Esc keeps the look direction and shows a pause card; one-shot key latches are cleared on reset; the beam
   charge hum is cut on victory and whenever the overlay returns; the
   arena rebuild and expired explosion and death effects dispose their GPU
   resources; a zero-height viewport no longer puts NaN in the projection;
