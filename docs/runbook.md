@@ -65,8 +65,8 @@ pnpm check          # lint, typecheck, unit tests with coverage, build
 
 The `Pages build` and `Pages deploy` jobs at the end of
 `.github/workflows/ci.yml` run on every push to `main`, after every other
-CI job on that push except the luminance gate and the browser smoke tests
-has passed (`needs`, #100), so a red run never ships. The
+CI job on that push except the browser smoke tests has passed (`needs`
+since #100 and #104), so a red run never ships. The
 build job installs with the frozen lockfile, runs `pnpm build`, calls
 `actions/configure-pages`, and uploads `dist/` with
 `actions/upload-pages-artifact`. The deploy job publishes that artifact

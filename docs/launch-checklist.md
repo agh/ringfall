@@ -31,7 +31,7 @@ a push to `main`, so a green badge on a pull request proves nothing about
 the site.
 
 **CI is green on the exact commit to be tagged.** The lint, unit, browser
-smoke, luminance gate, build, balance gate, docs hygiene, and security jobs in `.github/workflows/ci.yml` must all pass on the
+smoke, build, balance gate, docs hygiene, and security jobs in `.github/workflows/ci.yml` must all pass on the
 head of `main`, not on an earlier commit. This prevents a tag pointing at a
 commit that was pushed after the last green run, which is how a release
 ships with a type error nobody saw.

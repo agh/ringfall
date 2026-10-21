@@ -132,9 +132,12 @@ and this project adheres to
 
 ### Changed
 
+- The luminance gate is its own optional workflow (`.github/workflows/frames.yml`)
+  on pull requests that touch the renderer and by hand; the smoke job is
+  capped at twelve minutes (#104).
 - The Pages build waits on the lint, unit, build, balance, docs and
-  security jobs only; the luminance gate and the browser smoke tests still
-  fail the run but no longer hold the deploy. The smoke tests wait up to
+  security jobs only; the browser smoke tests (and, until #104, the
+  luminance gate) still fail the run but no longer hold the deploy. The smoke tests wait up to
   four minutes for the first simulation step and the e2e job uploads the
   Playwright traces, and since #96 the HTML report, as `playwright-report`
   on failure (#100).

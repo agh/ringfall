@@ -94,7 +94,7 @@ Source: [diagrams/containers.mmd](diagrams/containers.mmd).
 | Luminance gate | Playwright Chromium on software GL | Ten seeded frames measured against budgets | `scripts/frames.mjs` |
 | Recorder and score | Playwright Chromium, ffmpeg, `OfflineAudioContext` | A seeded film and its soundtrack | `scripts/record-demo.mjs`, `scripts/render-score.mjs` |
 | Reel | Playwright Chromium, ffmpeg | Title cards, two waves, stitched cut | `scripts/reel.mjs` |
-| CI | GitHub Actions, every action pinned to a commit SHA | Eight gate jobs, then the Pages build and deploy on `main` | `.github/workflows/` |
+| CI | GitHub Actions, every action pinned to a commit SHA | Seven gate jobs, then the Pages build and deploy on `main`; the luminance gate is a separate optional workflow | `.github/workflows/` |
 
 ## Level 3: components
 
@@ -195,12 +195,11 @@ runs the same scripts.
 | `pnpm balance` | The balance gate; writes `test-results/balance/` |
 | `pnpm demo` | Films seed 7 and scores it into `demo.mp4` |
 
-The one workflow, `.github/workflows/ci.yml`, runs eight independent gate
+The CI workflow, `.github/workflows/ci.yml`, runs seven independent gate
 jobs on every pull request and every push to `main`; a pull request push cancels a
 superseded run, a push to `main` always runs to completion. Two more jobs,
 Pages build and Pages deploy, run only on a push to `main` and only after
-every gate except the luminance gate and the browser smoke tests has
-passed (#100), so a merge never
+every gate except the browser smoke tests has passed (#100, #104), so a merge never
 publishes a build that failed a gate. Every action is pinned to a commit
 SHA and checkouts do not persist credentials; the deploy job is the only
 one with write permission.
@@ -210,7 +209,7 @@ one with write permission.
 | Lint and type check | Biome, markdownlint, strict TypeScript | none |
 | Unit tests | Every core rule and the coverage thresholds in `vitest.config.ts` | `coverage` |
 | Browser smoke tests | The built page loads, starts, advances, moves on keys, no page errors | `playwright-report` (the HTML report and the traces) on failure |
-| Luminance gate | Ten seeded frames within the mean and blob budgets in `scripts/frames.mjs` | `frames` |
+| Luminance gate (`frames.yml`, pull requests that touch the renderer, or by hand) | Ten seeded frames within the mean and blob budgets in `scripts/frames.mjs` | `frames` |
 | Production build | `vite build` succeeds | `dist` |
 | Balance gate | Twenty seeded games per profile within `tests/balance/gate.ts` | `balance-report`, also appended to the job summary |
 | Docs hygiene | Frontmatter, typos, Vale, internal links; external links advisory | none |
@@ -218,7 +217,7 @@ one with write permission.
 | Pages build | `main` only, after the fast gates: `pnpm build` and `upload-pages-artifact` | `github-pages` |
 | Pages deploy | `main` only, after Pages build: `deploy-pages` with `pages: write` and an OIDC token | the live site |
 
-![Build and delivery: the eight gate jobs, the two Pages jobs behind them, and the local recorder, reel and documentation pipelines](render/build.png)
+![Build and delivery: the seven gate jobs, the two Pages jobs behind them, and the local recorder, reel and documentation pipelines](render/build.png)
 
 Source: [diagrams/build.mmd](diagrams/build.mmd).
 
@@ -260,7 +259,7 @@ enforces it, so a reader can find the gate before changing the behavior.
 | Determinism from a seed | Arena layout, AI jitter and the bot derive from `createRng(seed)`; the clock seeds production only | `src/core/rng.ts`; the determinism assertions in `tests/unit/bot.test.ts`; `parseSeed` in `src/core/rng.ts` for `?seed=` |
 | Frame budget | The simulation steps at exactly 1/60 s, at most five steps per frame, and the frame delta is clamped to between 0 and 0.1 s | `FIXED_DT`, `MAX_STEPS_PER_FRAME` and the `frameDt` clamp in `src/main.ts` |
 | Particle cap | One `Points` draw call with a fixed pool, sprites capped at 64 px and faded inside two meters of the eye | The pool capacity and the vertex shader in `src/render/particles.ts` |
-| Luminance budget | Ten seeded frames keep a mean under the day and night budgets with no saturated blob over the limit | `BUDGET` and `FRAME_SET` in `scripts/frames.mjs`; the CI `Luminance gate` job |
+| Luminance budget | Ten seeded frames keep a mean under the day and night budgets with no saturated blob over the limit | `BUDGET` and `FRAME_SET` in `scripts/frames.mjs`; the `Luminance gate` workflow (`frames.yml`) |
 | Balance | Twenty seeded games per bot profile stay within baseline-derived bounds | `GATE_THRESHOLDS` in `tests/balance/gate.ts`; the CI `Balance gate` job |
 | Coverage | `src/core/` is covered to the thresholds | `coverage.thresholds` in `vitest.config.ts` |
 | Design numbers | Every gameplay number quoted in the design document equals the constant that owns it | `tests/unit/design-doc.test.ts` |
