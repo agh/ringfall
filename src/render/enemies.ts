@@ -7,7 +7,13 @@ import { makeWatcherRig } from './watcher-rig';
  * Composite enemy rigs. Emissive parts are tuned to catch bloom so enemies read at range, and
  * each rig owns its materials so one strider charging does not whiten every strider's lens.
  * Each rig borrows its point light from the scene's pool, so the light count never changes,
- * and frees what it owns in `dispose`; geometry and the shells are shared by every rig of a kind.
+ * and returns it in `dispose`; geometry and the shells are shared by every rig of a kind.
+ * A rig's own materials are kept when it goes, not disposed: they own no texture, and
+ * disposing the last material on a shader program deletes the program, so the last kill of a
+ * wave had the next wave's first spawn compile it again (see `Effect` in `weapons.ts`).
+ * A rig that found the light pool empty (a wave start, when the pods hold most of it) asks
+ * again every frame until a light is free, so a long-lived enemy is not dark for its whole
+ * life because a two-second pod took the light first.
  */
 export interface EnemyRig {
   readonly group: THREE.Group;
@@ -92,13 +98,24 @@ const makeSkimmer = (lights: LightPool): EnemyRig => {
   const lift = new THREE.Group();
   lift.position.y = stats.height / 2;
   lift.add(body, ring, core);
-  const light = lights.acquire(lift, 0xffa040, SKIMMER_LIGHT, 7, 1.5);
-  light?.position.set(0, 0, -0.5);
   group.add(lift);
   let night = -1;
+  let light: THREE.PointLight | null = null;
+  const claimLight = (): void => {
+    light = lights.acquire(
+      lift,
+      0xffa040,
+      SKIMMER_LIGHT * (1 + LIGHT_NIGHT * Math.max(0, night)),
+      7,
+      1.5,
+    );
+    light?.position.set(0, 0, -0.5);
+  };
+  claimLight();
   return {
     group,
     animate: (enemy, t) => {
+      if (!light && enemy.state !== 'dead') claimLight();
       ring.rotation.z = t * 4 + enemy.id;
       ring.rotation.x = Math.PI / 2 + Math.sin(t * 3 + enemy.id) * 0.25;
       lift.position.y = stats.height / 2 + 0.35 + Math.sin(t * 6 + enemy.id) * 0.14;
@@ -114,8 +131,6 @@ const makeSkimmer = (lights: LightPool): EnemyRig => {
     },
     dispose: () => {
       lights.release(light);
-      ringMaterial.dispose();
-      coreMaterial.dispose();
     },
   };
 };
@@ -145,8 +160,19 @@ const makeStrider = (lights: LightPool): EnemyRig => {
   const muzzle = new THREE.Mesh(STRIDER_MUZZLE, muzzleMaterial);
   muzzle.position.set(0.55, 0.45, -0.68);
   hip.add(torso, head, eye, cannon, muzzle);
-  const light = lights.acquire(hip, STRIDER_EYE_COLOR, STRIDER_LIGHT, 8, 1.5);
-  light?.position.copy(eye.position);
+  let night = 0;
+  let light: THREE.PointLight | null = null;
+  const claimLight = (): void => {
+    light = lights.acquire(
+      hip,
+      STRIDER_EYE_COLOR,
+      STRIDER_LIGHT * (1 + LIGHT_NIGHT * night),
+      8,
+      1.5,
+    );
+    light?.position.copy(eye.position);
+  };
+  claimLight();
   const legs: THREE.Mesh[] = [];
   for (const [angle, side] of [
     [-0.5, 1],
@@ -163,10 +189,10 @@ const makeStrider = (lights: LightPool): EnemyRig => {
     legs.push(leg);
   }
   group.add(hip);
-  let night = 0;
   return {
     group,
     animate: (enemy, t) => {
+      if (!light && enemy.state !== 'dead') claimLight();
       const walking = enemy.state === 'chase' ? 1 : 0.15;
       legs.forEach((leg, i) => {
         leg.rotation.x = (i % 2 === 0 ? 0.25 : -0.25) + Math.sin(t * 7 + i * 1.7) * 0.35 * walking;
@@ -190,8 +216,6 @@ const makeStrider = (lights: LightPool): EnemyRig => {
     },
     dispose: () => {
       lights.release(light);
-      eyeMaterial.dispose();
-      muzzleMaterial.dispose();
     },
   };
 };

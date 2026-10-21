@@ -86,6 +86,13 @@ const COLUMN_FRAGMENT = /* glsl */ `
   }
 `;
 
+/**
+ * A pickup's materials are its own (each fades on its own clock) and are kept, not disposed,
+ * when it goes: none owns a texture of its own, and three.js deletes a shader program when the
+ * last material on it is disposed, so taking the only pickup on the floor threw away four
+ * programs (emblem, base, column, halo) that the next spawn compiled again, a hitch of several
+ * frames. See the note on `Effect` in `weapons.ts`.
+ */
 interface Entry {
   readonly group: THREE.Group;
   readonly emblem: THREE.Mesh;
@@ -284,16 +291,12 @@ export class PickupMeshes {
         mesh.scale.setScalar(0.5 + t * 3);
         material.opacity = 0.8 * (1 - t);
       },
-      dispose: () => material.dispose(),
+      dispose: () => {},
     });
   }
 
   private remove(id: number, entry: Entry): void {
     this.parent.remove(entry.group);
-    entry.emblemMaterial.dispose();
-    entry.columnMaterial.dispose();
-    entry.baseMaterial.dispose();
-    entry.haloMaterial.dispose();
     this.entries.delete(id);
   }
 

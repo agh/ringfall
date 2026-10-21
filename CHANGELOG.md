@@ -178,6 +178,12 @@ and this project adheres to
 
 ### Fixed
 
+- Shader programs survive a shot, a pickup and a wave: effect and rig materials
+  (tracers, bolts, beams, launcher rings, pickups, landing dust, enemy rigs) are
+  kept rather than disposed, because three.js deletes a program when the last
+  material on it is disposed and compiled it again on the next use (#105, block 3).
+  An enemy rig that found the light pool empty at a wave start now claims a
+  light as soon as one is returned.
 - A chasing enemy wedged on the corner of a cover block, or pressed against
   a face the player stood straight behind, never moved again; it now
   sidesteps round the block after a second without headway (`STUCK_AFTER`
