@@ -6,6 +6,50 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
 /**
+ * Bloom tuning, chosen from measured frames (`docs/design-doc.md`, Presentation). Only the
+ * radiance above the threshold blooms, with a quadratic knee that starts at 1.0 so lit albedo
+ * never crosses it, and no pixel contributes more than the cap: the sky's sun disc is in the
+ * hundreds in HDR and would otherwise flood the frame through the blur chain.
+ */
+export const BLOOM_STRENGTH = 0.3;
+export const BLOOM_RADIUS = 0.35;
+export const BLOOM_THRESHOLD = 1.3;
+export const BLOOM_KNEE = 0.3;
+export const BLOOM_CAP = 1.5;
+
+/**
+ * Prefilter for the bloom chain. `UnrealBloomPass` passes the whole texel through once it is
+ * over the threshold, so a sun at 600 blooms six hundred times harder than a trim at 1.0.
+ * This version keeps only the excess over the threshold, softened by a knee, and caps it.
+ */
+const BloomPrefilterShader = {
+  vertexShader: /* glsl */ `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: /* glsl */ `
+    uniform sampler2D tDiffuse;
+    uniform float luminosityThreshold;
+    uniform float uKnee;
+    uniform float uCap;
+    varying vec2 vUv;
+
+    void main() {
+      vec4 texel = texture2D(tDiffuse, vUv);
+      float v = luminance(texel.rgb);
+      // Quadratic knee from (threshold - knee) to (threshold + knee), linear above it.
+      float soft = clamp(v - luminosityThreshold + uKnee, 0.0, 2.0 * uKnee);
+      soft = soft * soft / (4.0 * uKnee + 1e-4);
+      float excess = min(max(soft, v - luminosityThreshold), uCap);
+      gl_FragColor = vec4(texel.rgb * (excess / max(v, 1e-4)), 1.0);
+    }
+  `,
+};
+
+/**
  * Full-screen "feel" pass layered after bloom: vignette, chromatic aberration that grows with
  * damage, a hexagonal energy-shield flare from the screen edges on shield hits, and fine grain.
  */
@@ -101,7 +145,15 @@ export class PostStack {
     this.composer = new EffectComposer(renderer, target);
     this.composer.addPass(new RenderPass(scene, camera));
     // Threshold above 1.0 so only true emitters (trims, bolts, muzzle, explosions) bloom.
-    this.bloom = new UnrealBloomPass(size, 0.35, 0.6, 1.25);
+    this.bloom = new UnrealBloomPass(size, BLOOM_STRENGTH, BLOOM_RADIUS, BLOOM_THRESHOLD);
+    // The pass writes `tDiffuse` and `luminosityThreshold` into its own uniform objects every
+    // frame; sharing those instances keeps the replacement prefilter fed.
+    const highPass = this.bloom.highPassUniforms as Record<string, THREE.IUniform>;
+    this.bloom.materialHighPassFilter = new THREE.ShaderMaterial({
+      uniforms: { ...highPass, uKnee: { value: BLOOM_KNEE }, uCap: { value: BLOOM_CAP } },
+      vertexShader: BloomPrefilterShader.vertexShader,
+      fragmentShader: BloomPrefilterShader.fragmentShader,
+    });
     this.composer.addPass(this.bloom);
     this.feel = new ShaderPass(RingfallShader);
     this.composer.addPass(this.feel);

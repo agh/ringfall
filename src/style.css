@@ -7,8 +7,19 @@
   --ring: #b8d8ea;
   --bone: #e8e4d8;
   --rose: #fb7185;
-  --hull: rgba(16, 31, 54, 0.85);
+  --hull: color-mix(in srgb, #101f36 85%, transparent);
   --slate: #8aa0b8;
+  /* Derived: lifts for hover and gradient ends, never used as text on Ring or Bone. */
+  --beacon-lift: color-mix(in srgb, var(--beacon) 50%, var(--bone));
+  --abyss-lift: color-mix(in srgb, var(--abyss) 88%, var(--beacon));
+  /* Type scale (docs/brand.md): nothing below 14 px; viewport-relative between the stops. */
+  --text-label: clamp(14px, 1.6vmin, 16px);
+  --text-body: clamp(14px, 1.9vmin, 16px);
+  --text-stat: clamp(16px, 2.2vmin, 20px);
+  --text-button: clamp(16px, 2.6vmin, 22px);
+  --text-message: clamp(22px, 5.5vmin, 64px);
+  --text-wordmark: clamp(40px, 8vmin, 72px);
+  --text-hero: clamp(36px, 8vmin, 96px);
   --font-display: "Chakra Petch", "Rajdhani", "Bahnschrift", "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --u: clamp(2px, 0.45vmin, 6px); /* one HUD unit */
@@ -48,8 +59,8 @@ body {
   inset: 0;
   pointer-events: none;
   text-shadow:
-    0 1px 3px rgba(4, 8, 15, 0.85),
-    0 0 calc(var(--u) * 2) rgba(125, 211, 252, 0.45);
+    0 1px 3px color-mix(in srgb, var(--abyss) 85%, transparent),
+    0 0 calc(var(--u) * 2) color-mix(in srgb, var(--beacon) 45%, transparent);
 }
 
 .hud[hidden] {
@@ -75,14 +86,14 @@ body {
 .hud__label {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: calc(var(--u) * 3.2);
+  font-size: max(14px, calc(var(--u) * 3.2));
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--slate);
 }
 
 .hud__sub {
-  font-size: calc(var(--u) * 3);
+  font-size: max(14px, calc(var(--u) * 3));
   color: var(--ring);
   opacity: 0.8;
   margin-top: calc(var(--u) * 0.5);
@@ -125,8 +136,14 @@ body {
   transform: translateX(-50%);
   width: clamp(240px, 36vw, 560px);
   height: calc(var(--u) * 9);
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent,
+    var(--abyss) 18%,
+    var(--abyss) 82%,
+    transparent
+  );
+  mask-image: linear-gradient(90deg, transparent, var(--abyss) 18%, var(--abyss) 82%, transparent);
 }
 
 #compass,
@@ -147,7 +164,7 @@ body {
   background: var(--hull);
   box-shadow:
     0 0 0 1px var(--slate),
-    0 0 calc(var(--u) * 6) rgba(125, 211, 252, 0.18);
+    0 0 calc(var(--u) * 6) color-mix(in srgb, var(--beacon) 18%, transparent);
 }
 
 .hud__radar-label {
@@ -157,7 +174,7 @@ body {
   transform: translateX(-50%);
   white-space: nowrap;
   font-family: var(--font-display);
-  font-size: calc(var(--u) * 2.8);
+  font-size: max(14px, calc(var(--u) * 2.8));
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--slate);
@@ -239,8 +256,8 @@ body {
 .hud__hitmarker::after {
   content: "";
   position: absolute;
-  background: #fff;
-  box-shadow: 0 0 calc(var(--u) * 1.5) #fff;
+  background: var(--bone);
+  box-shadow: 0 0 calc(var(--u) * 1.5) var(--bone);
 }
 
 .hud__hitmarker::before {
@@ -286,7 +303,7 @@ body {
   border-radius: 50%;
   border: calc(var(--u) * 1.2) solid transparent;
   border-top-color: var(--rose);
-  box-shadow: 0 0 calc(var(--u) * 3) rgba(251, 113, 133, 0.5);
+  box-shadow: 0 0 calc(var(--u) * 3) color-mix(in srgb, var(--rose) 50%, transparent);
   clip-path: polygon(30% 0, 70% 0, 70% 30%, 30% 30%);
   animation: damage-fade 900ms ease-out forwards;
 }
@@ -310,13 +327,13 @@ body {
   text-align: center;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: clamp(22px, 5.5vmin, 64px);
+  font-size: var(--text-message);
   letter-spacing: 0.32em;
   text-indent: 0.32em;
   text-transform: uppercase;
   opacity: 0;
   transition: opacity 300ms ease;
-  text-shadow: 0 0 calc(var(--u) * 6) rgba(125, 211, 252, 0.8);
+  text-shadow: 0 0 calc(var(--u) * 6) color-mix(in srgb, var(--beacon) 80%, transparent);
 }
 
 .hud__message.is-visible {
@@ -341,7 +358,7 @@ body {
 
 .hud__arc-track {
   fill: none;
-  stroke: rgba(138, 160, 184, 0.22);
+  stroke: color-mix(in srgb, var(--slate) 22%, transparent);
   stroke-width: 10;
   stroke-linecap: butt;
 }
@@ -356,7 +373,7 @@ body {
   stroke-width: 10;
   stroke-dasharray: 100 100;
   stroke-dashoffset: 0;
-  filter: drop-shadow(0 0 6px rgba(125, 211, 252, 0.85));
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--beacon) 85%, transparent));
   transition: stroke-dasharray 120ms linear;
 }
 
@@ -373,7 +390,7 @@ body {
   stroke: var(--flare);
   stroke-width: 4;
   stroke-dasharray: 100 100;
-  filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.7));
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--flare) 70%, transparent));
   transition: stroke-dasharray 120ms linear;
 }
 
@@ -383,12 +400,12 @@ body {
 
 .hud__vitals.is-down .hud__arc-shield {
   stroke: var(--rose);
-  filter: drop-shadow(0 0 6px rgba(251, 113, 133, 0.85));
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--rose) 85%, transparent));
 }
 
 @keyframes recharge {
   50% {
-    filter: drop-shadow(0 0 14px rgba(125, 211, 252, 1));
+    filter: drop-shadow(0 0 14px var(--beacon));
   }
 }
 
@@ -413,7 +430,7 @@ body {
   display: block;
   margin-top: calc(var(--u) * 0.8);
   font-family: var(--font-display);
-  font-size: calc(var(--u) * 2.8);
+  font-size: max(14px, calc(var(--u) * 2.8));
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--slate);
@@ -437,12 +454,12 @@ body {
 .hud__ammo-mag {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: clamp(36px, 8vmin, 96px);
+  font-size: var(--text-hero);
   line-height: 0.9;
 }
 
 .hud__ammo-mag.is-low {
-  color: var(--rose);
+  color: var(--flare);
 }
 
 .hud__ammo-side {
@@ -451,13 +468,13 @@ body {
 }
 
 .hud__ammo-reserve {
-  font-size: calc(var(--u) * 3.6);
+  font-size: max(14px, calc(var(--u) * 3.6));
   color: var(--ring);
 }
 
 .hud__ammo-name {
   font-family: var(--font-display);
-  font-size: calc(var(--u) * 2.8);
+  font-size: max(14px, calc(var(--u) * 2.8));
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--slate);
@@ -468,7 +485,7 @@ body {
   width: calc(var(--u) * 36);
   height: calc(var(--u) * 0.8);
   margin: calc(var(--u) * 1.2) 0 0 auto;
-  background: rgba(138, 160, 184, 0.22);
+  background: color-mix(in srgb, var(--slate) 22%, transparent);
   opacity: 0;
   transition: opacity 120ms ease-out;
 }
@@ -479,7 +496,7 @@ body {
 
 .hud__charge.is-ready {
   --charge-color: var(--flare);
-  --charge-glow: rgba(251, 191, 36, 0.9);
+  --charge-glow: color-mix(in srgb, var(--flare) 90%, transparent);
 }
 
 .hud__charge i {
@@ -487,7 +504,8 @@ body {
   height: 100%;
   width: calc(var(--charge, 0) * 100%);
   background: var(--charge-color, var(--beacon));
-  box-shadow: 0 0 calc(var(--u) * 1.5) var(--charge-glow, rgba(125, 211, 252, 0.8));
+  box-shadow: 0 0 calc(var(--u) * 1.5)
+    var(--charge-glow, color-mix(in srgb, var(--beacon) 80%, transparent));
 }
 
 .hud__magazine {
@@ -503,7 +521,7 @@ body {
   --pip-height: calc(var(--u) * 1.6);
   width: calc(var(--u) * 36);
   margin-left: auto;
-  background: rgba(138, 160, 184, 0.22);
+  background: color-mix(in srgb, var(--slate) 22%, transparent);
 }
 
 .hud__magazine i {
@@ -511,7 +529,7 @@ body {
   height: var(--pip-height, calc(var(--u) * 3.2));
   background: var(--beacon);
   opacity: 0.9;
-  box-shadow: 0 0 calc(var(--u) * 1.2) rgba(125, 211, 252, 0.7);
+  box-shadow: 0 0 calc(var(--u) * 1.2) color-mix(in srgb, var(--beacon) 70%, transparent);
 }
 
 .hud__magazine i.is-spent {
@@ -524,7 +542,7 @@ body {
 .hud__offhand {
   margin-top: calc(var(--u) * 1.2);
   font-family: var(--font-display);
-  font-size: calc(var(--u) * 2.8);
+  font-size: max(14px, calc(var(--u) * 2.8));
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--slate);
@@ -546,14 +564,18 @@ body {
   width: calc(var(--u) * 3);
   height: calc(var(--u) * 4);
   border-radius: 40% 40% 30% 30%;
-  background: #a3e635;
-  box-shadow: 0 0 calc(var(--u) * 2) rgba(163, 230, 53, 0.8);
+  background: var(--beacon);
+  box-shadow: 0 0 calc(var(--u) * 2) color-mix(in srgb, var(--beacon) 80%, transparent);
 }
 
 .hud__damage {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at center, transparent 55%, rgba(251, 113, 133, 0.5) 100%);
+  background: radial-gradient(
+    ellipse at center,
+    transparent 55%,
+    color-mix(in srgb, var(--rose) 50%, transparent) 100%
+  );
   opacity: 0;
   transition: opacity 400ms ease-out;
 }
@@ -566,7 +588,7 @@ body {
 .hud__lowshield {
   position: absolute;
   inset: 0;
-  box-shadow: inset 0 0 calc(var(--u) * 40) rgba(251, 113, 133, 0.55);
+  box-shadow: inset 0 0 calc(var(--u) * 40) color-mix(in srgb, var(--rose) 55%, transparent);
   opacity: 0;
 }
 
@@ -592,7 +614,11 @@ body {
   display: grid;
   place-items: center;
   padding: var(--safe-y) var(--safe-x);
-  background: radial-gradient(circle at 50% 30%, rgba(14, 44, 72, 0.7), rgba(4, 8, 15, 0.9));
+  background: radial-gradient(
+    circle at 50% 30%,
+    color-mix(in srgb, var(--abyss-lift) 70%, transparent),
+    color-mix(in srgb, var(--abyss) 90%, transparent)
+  );
   backdrop-filter: blur(6px);
 }
 
@@ -605,13 +631,13 @@ body {
   padding: clamp(20px, 4vmin, 44px) clamp(20px, 4.5vmin, 48px);
   border: 1px solid var(--slate);
   background: var(--hull);
-  box-shadow: 0 0 60px rgba(125, 211, 252, 0.12);
+  box-shadow: 0 0 60px color-mix(in srgb, var(--beacon) 12%, transparent);
   text-align: center;
 }
 
 .overlay__eyebrow {
   font-family: var(--font-display);
-  font-size: clamp(11px, 1.6vmin, 14px);
+  font-size: var(--text-label);
   letter-spacing: 0.3em;
   text-transform: uppercase;
   color: var(--slate);
@@ -622,29 +648,29 @@ body {
   margin: 0;
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: clamp(40px, 8vmin, 72px);
+  font-size: var(--text-wordmark);
   letter-spacing: 0.14em;
   text-indent: 0.14em;
-  text-shadow: 0 0 30px rgba(125, 211, 252, 0.8);
+  text-shadow: 0 0 30px color-mix(in srgb, var(--beacon) 80%, transparent);
 }
 
 .overlay__tagline {
   margin: clamp(8px, 1.6vmin, 14px) 0 clamp(16px, 3vmin, 26px);
-  color: rgba(232, 228, 216, 0.8);
+  color: color-mix(in srgb, var(--bone) 80%, transparent);
   line-height: 1.5;
-  font-size: clamp(13px, 1.9vmin, 16px);
+  font-size: var(--text-body);
 }
 
 .overlay__stats {
   margin: 0 0 clamp(14px, 2.4vmin, 20px);
   font-family: var(--font-display);
-  font-size: clamp(14px, 2.2vmin, 20px);
+  font-size: var(--text-stat);
   letter-spacing: 0.06em;
   line-height: 1.5;
 }
 
 .overlay__button {
-  font: 700 clamp(16px, 2.6vmin, 22px) var(--font-display);
+  font: 700 var(--text-button) var(--font-display);
   letter-spacing: 0.3em;
   text-indent: 0.3em;
   text-transform: uppercase;
@@ -653,20 +679,20 @@ body {
   border: 0;
   padding: clamp(10px, 1.8vmin, 14px) clamp(28px, 5vmin, 44px);
   cursor: pointer;
-  box-shadow: 0 0 24px rgba(125, 211, 252, 0.6);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--beacon) 60%, transparent);
   animation: breathe 2.2s ease-in-out infinite;
 }
 
 @keyframes breathe {
   50% {
-    box-shadow: 0 0 36px rgba(125, 211, 252, 0.9);
+    box-shadow: 0 0 36px color-mix(in srgb, var(--beacon) 90%, transparent);
   }
 }
 
 .overlay__button:hover,
 .overlay__button:focus-visible {
-  background: #bae6fd;
-  outline: 2px solid #fff;
+  background: var(--beacon-lift);
+  outline: 2px solid var(--bone);
   outline-offset: 3px;
 }
 
@@ -676,7 +702,7 @@ body {
   gap: 5px 18px;
   justify-content: center;
   margin: clamp(18px, 3vmin, 28px) 0 0;
-  font-size: clamp(11px, 1.6vmin, 13px);
+  font-size: var(--text-label);
   color: var(--slate);
 }
 
@@ -694,6 +720,194 @@ body {
 
 .overlay__footnote {
   margin: clamp(14px, 2.4vmin, 24px) 0 0;
-  font-size: clamp(10px, 1.4vmin, 12px);
+  font-size: var(--text-label);
   color: var(--slate);
+}
+
+/* Brand: title motion and the Deploy moment (docs/brand.md, "Player landing"). ---------------- */
+
+/* The card fades up; the wordmark's letters slide in and lock at the brand tracking. */
+.overlay__card {
+  animation: card-in 700ms ease-out both;
+}
+
+.overlay__title {
+  animation: wordmark-lock 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--u) * 3));
+  }
+}
+
+@keyframes wordmark-lock {
+  from {
+    opacity: 0;
+    letter-spacing: 0.4em;
+    text-indent: 0.4em;
+  }
+}
+
+/* HUD elements slide in with a stagger when the HUD is shown. */
+.hud:not([hidden]) .hud__corner,
+.hud:not([hidden]) .hud__radar,
+.hud:not([hidden]) .hud__vitals,
+.hud:not([hidden]) .hud__weapon {
+  animation: hud-in 400ms ease-out both;
+}
+
+.hud:not([hidden]) .hud__radar {
+  animation-delay: 80ms;
+}
+
+.hud:not([hidden]) .hud__vitals {
+  animation-delay: 160ms;
+}
+
+.hud:not([hidden]) .hud__weapon {
+  animation-delay: 240ms;
+}
+
+@keyframes hud-in {
+  from {
+    opacity: 0;
+    translate: 0 calc(var(--u) * 2);
+  }
+}
+
+/* Shield arc gradient: Beacon to its lift, so the SVG carries no literal hex. */
+#shield-grad stop:first-child {
+  stop-color: var(--beacon);
+}
+
+#shield-grad stop:last-child {
+  stop-color: var(--beacon-lift);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay__card,
+  .overlay__title,
+  .overlay__button,
+  .hud:not([hidden]) .hud__corner,
+  .hud:not([hidden]) .hud__radar,
+  .hud:not([hidden]) .hud__vitals,
+  .hud:not([hidden]) .hud__weapon {
+    animation: none;
+  }
+}
+
+/* Settings panel on the title overlay (issue #37). Tokens from docs/brand.md. */
+.settings {
+  margin: clamp(14px, 2.4vmin, 24px) 0 0;
+  border: 1px solid var(--slate);
+  background: rgba(16, 31, 54, 0.6);
+  text-align: left;
+}
+
+.settings__summary {
+  padding: clamp(8px, 1.4vmin, 12px) clamp(12px, 2vmin, 18px);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(14px, 1.8vmin, 16px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ring);
+  cursor: pointer;
+  list-style: none;
+}
+
+.settings__summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings__summary::before {
+  content: "+";
+  display: inline-block;
+  width: 1.4em;
+  color: var(--beacon);
+}
+
+.settings[open] .settings__summary::before {
+  content: "−";
+}
+
+.settings__summary:focus-visible {
+  outline: 2px solid var(--beacon);
+  outline-offset: -2px;
+}
+
+.settings__grid {
+  display: grid;
+  gap: clamp(8px, 1.4vmin, 12px);
+  padding: 0 clamp(12px, 2vmin, 18px) clamp(10px, 1.6vmin, 14px);
+  border-top: 1px solid rgba(138, 160, 184, 0.4);
+  padding-top: clamp(10px, 1.6vmin, 14px);
+}
+
+.settings__row {
+  display: grid;
+  grid-template-columns: minmax(13ch, 15ch) 1fr 5.5ch;
+  align-items: center;
+  gap: clamp(8px, 1.4vmin, 14px);
+  font-size: clamp(14px, 1.8vmin, 16px);
+  color: var(--slate);
+  cursor: pointer;
+}
+
+.settings__name {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.settings__value {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--bone);
+}
+
+.settings__range {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--beacon);
+  cursor: pointer;
+}
+
+.settings__check {
+  justify-self: start;
+  width: clamp(16px, 2.2vmin, 20px);
+  height: clamp(16px, 2.2vmin, 20px);
+  margin: 0;
+  accent-color: var(--beacon);
+  cursor: pointer;
+}
+
+.settings__range:focus-visible,
+.settings__check:focus-visible {
+  outline: 2px solid var(--beacon);
+  outline-offset: 3px;
+}
+
+.settings__note {
+  margin: 0;
+  padding: 0 clamp(12px, 2vmin, 18px) clamp(10px, 1.6vmin, 14px);
+  font-size: clamp(14px, 1.6vmin, 15px);
+  line-height: 1.5;
+  color: var(--slate);
+}
+
+/* With the panel open the card can outgrow a short window: scroll rather than clip the title. */
+.overlay {
+  overflow-y: auto;
+  align-items: safe center;
+}
+
+/* Flash off: the HUD damage flash stays in the DOM for its timers but never paints. */
+body.settings-no-flash .hud__damage {
+  display: none;
 }

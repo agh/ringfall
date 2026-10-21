@@ -2,7 +2,8 @@
 type: storyboard
 title: "Ringfall Chapter 1 storyboard"
 status: draft
-authors: ["Ringfall hackathon team"]
+authors:
+  - name: "Ringfall hackathon team"
 created: 2026-10-21
 related: ["docs/spec.md", "docs/design-doc.md", "docs/brand.md"]
 ---
@@ -42,7 +43,7 @@ settles back into calm.
 | 3 to 5 s | Trim lines across the cover slabs ignite. The Deploy button draws its border and breathes. | Second phrase. | Finds the controls hint bottom-right. |
 | 5 to 6 s | Clicks Deploy. The blur drops, the mouse locks, HUD panels slide in with a stagger. | Shield-recharge sting; combat bus armed, silent. | "Oh, nice." |
 | 6 to 9 s | "WAVE 1" with the three second countdown. The sun sits low behind the ring. | Chant continues; a low string drone joins. | Looks up. This is the screenshot. |
-| 9 to 10 s | Three skimmers descend from six metres on the 26 m ring, invulnerable for one second. | Drop impacts. | Raises the rifle; one test shot shows kick, tracer and muzzle light. |
+| 9 to 10 s | Three skimmers descend from six meters on the 26 m ring, invulnerable for one second. | Drop impacts. | Raises the rifle; one test shot shows kick, tracer and muzzle light. |
 | 10 to 14 s | Skimmers close at 7 m/s with lateral jitter, fanning out. | Hover whine rising. | Picks one; first hit flashes it. |
 | 14 to 15 s | Second shot. First kill: 50 ms hit-stop, squash and tilt, kill ring, sparks, plus 100. | Kill chime, first drum. | Grins. |
 | 15 to 22 s | Two skimmers reach 2 m and zap for 12 every 0.9 s. The hex lattice flares on each hit. | Glassy FM shield hits. | Strafes and kills the second. |
@@ -134,7 +135,7 @@ Pipeline notes, from cutting it on a software GPU:
 - The large soft discs in the daytime frames are the airborne dust motes
   (`size: 3` in `src/render/scene.ts`, scaled by `300 / -mv.z` in
   `src/render/particles.ts`), which become hundreds of pixels wide within a
-  metre of the eye. They are a renderer setting, not a capture artefact;
+  meter of the eye. They are a renderer setting, not a capture artifact;
   the reel is re-cut with `--force` once that is tuned.
 
 ```bash
