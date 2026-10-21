@@ -21,7 +21,7 @@ export const PICKUP_FADE = 3;
 export const COLUMN_HEIGHT = 2;
 /** Column alpha at the floor; the gradient falls off with the square of the height. */
 const COLUMN_OPACITY = 0.5;
-/** Halo sprite diameter in metres: wide enough to be a few pixels at 40 m. */
+/** Glow sprite diameter in metres: wide enough to be a few pixels at 40 m. */
 const HALO_SIZE = 1.6;
 const HALO_OPACITY = 0.55;
 /** Emissive strength of the emblem in linear radiance; above the bloom threshold (1.25). */

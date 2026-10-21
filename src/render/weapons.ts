@@ -27,12 +27,29 @@ export const WEAPON_ACCENT: Readonly<Record<WeaponKind, number>> = {
 
 /** Seconds a drawn weapon takes to rise into place after a swap or pickup. */
 export const DRAW_TIME = 0.25;
-/** Seconds the laser's line and impact dot persist. */
-export const LASER_LIFE = 0.12;
-/** Seconds the beam cylinder takes to fade. */
+/** Seconds the laser's bolt and impact dot persist. */
+export const LASER_LIFE = 0.1;
+/** Radius in metres of the laser bolt: a cylinder, so it is still a few pixels wide at 4K. */
+export const LASER_RADIUS = 0.015;
+/** Seconds the beam takes to fade. */
 export const BEAM_LIFE = 0.3;
-/** Beam cylinder radius in metres. */
-export const BEAM_RADIUS = 0.12;
+/** Radius in metres of the beam's soft sheath. */
+export const BEAM_RADIUS = 0.14;
+/** Radius in metres of the beam's hot core; it has to stay well under the sheath to read as one. */
+export const BEAM_CORE_RADIUS = 0.035;
+/**
+ * Candela of the point light that rides inside the beam. Three.js attenuates a point light by
+ * `intensity / distance^decay`; with decay 1.5 a wall 2 m away receives about 8.5 lux, which
+ * at the game's exposure lights it to roughly two thirds of white without clipping.
+ */
+export const BEAM_LIGHT = 24;
+/**
+ * Metres across the launcher's muzzle ring reaches as it fades out. It opens 0.4 m past the
+ * muzzle, about 1.6 m from the eye, so even fully open it is under 170 px at 1280x720.
+ */
+export const LAUNCHER_RING_DIAMETER = 0.6;
+/** Seconds the launcher's muzzle ring lives. */
+export const LAUNCHER_RING_LIFE = 0.1;
 /** Radians per second of barrel rotation at full minigun spin. */
 const MINIGUN_SPIN_RATE = 45;
 /** Where the old rifle sat relative to the camera; the mount keeps it so sway code is untouched. */
@@ -40,41 +57,69 @@ const MOUNT_OFFSET = new THREE.Vector3(0.3, -0.27, -0.5);
 
 interface FlashStyle {
   readonly color: number;
+  /**
+   * Sprite width in metres at the muzzle, about 1.2 m from the eye, where one metre is about
+   * 370 px at 1280x720 with the 78 degree field of view. The gradient texture is transparent
+   * past 60 % of its radius, so `scale + jitter` under 0.4 m keeps the visible disc inside
+   * 160 px even before the flash has started to fade.
+   */
   readonly scale: number;
   readonly jitter: number;
+  /** Peak point-light candela; the light shares the sprite's life. */
   readonly light: number;
   readonly lightColor: number;
-  /** Opacity units per second the sprite loses. */
-  readonly decay: number;
+  /** Seconds from full opacity to gone; every kind stays under 80 ms. */
+  readonly life: number;
 }
 
 const FLASH: Readonly<Record<WeaponKind, FlashStyle>> = {
-  rifle: { color: 0xffe9b0, scale: 0.35, jitter: 0.15, light: 60, lightColor: 0xffd27a, decay: 18 },
-  laser: { color: 0xffffff, scale: 0.16, jitter: 0.04, light: 40, lightColor: 0xdbeafe, decay: 30 },
+  rifle: {
+    color: 0xffe9b0,
+    scale: 0.22,
+    jitter: 0.06,
+    light: 28,
+    lightColor: 0xffd27a,
+    life: 0.05,
+  },
+  laser: {
+    color: 0xffffff,
+    scale: 0.12,
+    jitter: 0.03,
+    light: 16,
+    lightColor: 0xdbeafe,
+    life: 0.035,
+  },
   scatter: {
     color: 0xffc98a,
-    scale: 0.52,
-    jitter: 0.2,
-    light: 90,
+    scale: 0.3,
+    jitter: 0.06,
+    light: 40,
     lightColor: 0xf6b26b,
-    decay: 14,
+    life: 0.07,
   },
-  beam: { color: 0xf3e8ff, scale: 0.48, jitter: 0.1, light: 120, lightColor: 0xd8b4fe, decay: 10 },
+  beam: {
+    color: 0xf3e8ff,
+    scale: 0.28,
+    jitter: 0.05,
+    light: 48,
+    lightColor: 0xd8b4fe,
+    life: 0.075,
+  },
   launcher: {
     color: 0xffb070,
-    scale: 0.42,
-    jitter: 0.1,
-    light: 70,
+    scale: 0.26,
+    jitter: 0.05,
+    light: 34,
     lightColor: 0xffa040,
-    decay: 12,
+    life: 0.07,
   },
   minigun: {
     color: 0xfff6e0,
-    scale: 0.22,
-    jitter: 0.08,
-    light: 50,
+    scale: 0.15,
+    jitter: 0.04,
+    light: 22,
     lightColor: 0xfff1c4,
-    decay: 26,
+    life: 0.04,
   },
 };
 
@@ -478,7 +523,7 @@ export class WeaponViewmodels {
     this.light.intensity = Math.max(0, this.light.intensity - dt * this.lightDecay);
     for (const kind of WEAPON_KINDS) {
       const m = this.rigs[kind].flash.material;
-      m.opacity = Math.max(0, m.opacity - dt * FLASH[kind].decay);
+      m.opacity = Math.max(0, m.opacity - dt / FLASH[kind].life);
     }
     if (this.charging && weapon.charge > 0) this.chargeInflow(now, weapon.charge);
     this.tickEffects(now);
@@ -517,7 +562,7 @@ export class WeaponViewmodels {
     sprite.material.rotation = Math.random() * Math.PI;
     sprite.scale.setScalar(style.scale + Math.random() * style.jitter);
     this.light.intensity = style.light;
-    this.lightDecay = style.light * style.decay * 0.9;
+    this.lightDecay = style.light / style.life;
   }
 
   private onShot(kind: WeaponKind, from: Vec3, to: Vec3, hitEnemy: boolean, now: number): void {
@@ -554,7 +599,7 @@ export class WeaponViewmodels {
   }
 
   private laserLine(start: THREE.Vector3, end: THREE.Vector3, now: number): void {
-    this.tracer(start, end, 0xffffff, LASER_LIFE, 1, now);
+    this.bolt(start, end, LASER_RADIUS, 0xffffff, 0.9, LASER_LIFE, now);
     const dot = new THREE.Sprite(
       new THREE.SpriteMaterial({
         map: this.dotTexture,
@@ -602,8 +647,8 @@ export class WeaponViewmodels {
         .normalize()
         .multiplyScalar(-back)
         .add(pelletEnd);
-      this.tracer(i === 0 ? start : pelletStart, pelletEnd, 0xffd9a0, 0.08, 0.85, now);
-      this.impact(toVec3(pelletEnd), start, hit ? 8 : 4, 0xf6b26b, now, 0xff6a1f);
+      this.tracer(i === 0 ? start : pelletStart, pelletEnd, 0xffd9a0, 0.08, 0.5, now);
+      this.impact(toVec3(pelletEnd), start, hit ? 6 : 3, 0xf6b26b, now, 0xff6a1f, 5);
     }
   }
 
@@ -618,17 +663,19 @@ export class WeaponViewmodels {
     const quaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
     const mid = start.clone().add(end).multiplyScalar(0.5);
 
+    // A hot core inside a soft sheath. Both are additive over an HDR scene that bloom reads
+    // above 1.25, so the sheath stays faint and only the thin core is allowed to run white.
     const shell = new THREE.MeshBasicMaterial({
       color: 0xd8b4fe,
       transparent: true,
-      opacity: 0.55,
+      opacity: 0.18,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
     const core = new THREE.MeshBasicMaterial({
       color: 0xffffff,
       transparent: true,
-      opacity: 0.95,
+      opacity: 0.8,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
@@ -638,11 +685,11 @@ export class WeaponViewmodels {
       shell,
     );
     const inner = new THREE.Mesh(
-      new THREE.CylinderGeometry(BEAM_RADIUS * 0.35, BEAM_RADIUS * 0.35, length, 10, 1, true),
+      new THREE.CylinderGeometry(BEAM_CORE_RADIUS, BEAM_CORE_RADIUS, length, 10, 1, true),
       core,
     );
     // Children live in beam space, where the axis is +Y: the light sits 2.5 m in from the muzzle.
-    const light = new THREE.PointLight(0xd8b4fe, 40, 10, 1.5);
+    const light = new THREE.PointLight(0xd8b4fe, BEAM_LIGHT, 10, 1.5);
     light.position.set(0, -length / 2 + Math.min(2.5, length / 2), 0);
     beam.add(outer, inner, light);
     beam.position.copy(mid);
@@ -653,11 +700,11 @@ export class WeaponViewmodels {
       BEAM_LIFE,
       (t) => {
         const k = 1 - t;
-        shell.opacity = 0.55 * k;
-        core.opacity = 0.95 * k * k;
-        outer.scale.set(1 + t * 0.8, 1, 1 + t * 0.8);
+        shell.opacity = 0.18 * k;
+        core.opacity = 0.8 * k * k;
+        outer.scale.set(1 + t * 0.5, 1, 1 + t * 0.5);
         inner.scale.set(k, 1, k);
-        light.intensity = 40 * k;
+        light.intensity = BEAM_LIGHT * k;
       },
       () => {
         outer.geometry.dispose();
@@ -675,30 +722,33 @@ export class WeaponViewmodels {
       this.particles.burst(
         {
           at: toVec3(at),
-          count: 36,
+          count: 24,
           color: 0xf3e8ff,
           colorEnd: 0x7c3aed,
           speed: 5,
           life: 0.5,
-          size: 4,
+          size: 3,
           gravity: 5,
         },
         now,
       );
     }
-    this.impact(to, start, 28, 0xf3e8ff, now, 0x7c3aed);
+    this.impact(to, start, 20, 0xf3e8ff, now, 0x7c3aed);
   }
 
   private onLauncher(now: number, camera: THREE.Camera): void {
     this.flash('launcher');
     this.recoilRequest = Math.max(this.recoilRequest, 2);
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-    // Particle `size` is pixels at 300 m, so anything this close to the camera must be tiny.
-    const at = toVec3(this.muzzleWorldPosition().addScaledVector(forward, 0.15));
+    const muzzle = this.muzzleWorldPosition();
+    this.muzzleRing(muzzle.clone().addScaledVector(forward, 0.4), forward, now);
+    // Particle sprites fade inside two metres of the eye, so the smoke starts a metre out,
+    // where it reads as a puff rather than a few huge motes on the lens.
+    const at = toVec3(muzzle.addScaledVector(forward, 1));
     this.particles.burst(
       {
         at,
-        count: 24,
+        count: 16,
         color: 0x8a8a8a,
         colorEnd: 0x2a2a2a,
         speed: 1.8,
@@ -714,7 +764,7 @@ export class WeaponViewmodels {
     this.particles.burst(
       {
         at,
-        count: 14,
+        count: 10,
         color: 0xffd9a0,
         colorEnd: 0xff6a1f,
         speed: 4,
@@ -725,6 +775,37 @@ export class WeaponViewmodels {
         gravity: 3,
       },
       now,
+    );
+  }
+
+  /** A flat ring in front of the muzzle that opens to `LAUNCHER_RING_DIAMETER` and fades. */
+  private muzzleRing(at: THREE.Vector3, forward: THREE.Vector3, now: number): void {
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xffb070,
+      transparent: true,
+      opacity: 0.45,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    });
+    const geometry = new THREE.RingGeometry(0.34, 0.5, 24);
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.copy(at);
+    mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), forward);
+    const open = 0.3;
+    mesh.scale.setScalar(open);
+    this.addEffect(
+      mesh,
+      now,
+      LAUNCHER_RING_LIFE,
+      (t) => {
+        mesh.scale.setScalar(open + (LAUNCHER_RING_DIAMETER - open) * t);
+        material.opacity = 0.45 * (1 - t) ** 2;
+      },
+      () => {
+        geometry.dispose();
+        material.dispose();
+      },
     );
   }
 
@@ -788,6 +869,47 @@ export class WeaponViewmodels {
     );
   }
 
+  /**
+   * A thin additive cylinder from `start` to `end`: a tracer with real width, so it keeps a few
+   * pixels at 4K where a `Line` stays at one.
+   */
+  private bolt(
+    start: THREE.Vector3,
+    end: THREE.Vector3,
+    radius: number,
+    color: number,
+    opacity: number,
+    life: number,
+    now: number,
+  ): void {
+    const axis = end.clone().sub(start);
+    const length = Math.max(0.1, axis.length());
+    const geometry = new THREE.CylinderGeometry(radius, radius, length, 8, 1, true);
+    const material = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.copy(start).add(end).multiplyScalar(0.5);
+    mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), axis.normalize());
+    this.addEffect(
+      mesh,
+      now,
+      life,
+      (t) => {
+        material.opacity = opacity * (1 - t);
+        mesh.scale.set(1 - t * 0.6, 1, 1 - t * 0.6);
+      },
+      () => {
+        geometry.dispose();
+        material.dispose();
+      },
+    );
+  }
+
   /** Impact sparks thrown back towards the shooter. */
   private impact(
     at: Vec3,
@@ -796,6 +918,7 @@ export class WeaponViewmodels {
     color: number,
     now: number,
     colorEnd = 0x7a6a4a,
+    size = 7,
   ): void {
     const dir = from.clone().sub(toVector(at)).normalize();
     this.particles.burst(
@@ -808,7 +931,7 @@ export class WeaponViewmodels {
         spread: 0.9,
         direction: toVec3(dir),
         life: 0.45,
-        size: 7,
+        size,
         gravity: 9,
       },
       now,

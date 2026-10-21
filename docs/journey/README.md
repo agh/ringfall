@@ -137,7 +137,7 @@ ring, enemies closing in.
 ## 14:30 First push, draft PR, research dispatched
 
 Six Conventional Commits, CI with SHA-pinned actions, a GitHub Pages deploy,
-and a draft PR. Three research agents were dispatched in parallel: Halo's
+and a draft PR. Three research agents were dispatched in parallel: the reference console shooter's
 design philosophy and an MLP cut, prior art in browser WebGL games, and a
 brand system. Their reports are under [`../research/`](../research/) and
 [`../brand.md`](../brand.md).
@@ -516,13 +516,13 @@ case). The old effect was a flash sphere, a flat disc and three big additive
 bursts; the grey "smoke" burst added light to the frame because the pool
 could only add. The pool now blends premultiplied alpha, which keeps the
 spark path byte-for-byte and lets a `smoke` puff or a `shard` chip lay its
-colour over the frame instead. The explosion became five things on their
+color over the frame instead. The explosion became five things on their
 own clocks: a 120 ms sprite flash, a thin crest torus that flattens as it
 expands, 32 sparks and 22 chips under gravity, a 56-puff column that rises
 and thins over 1.5 s, and a scorch disc that holds for four seconds. A
-kill now reads its colours off the rig that died: the light for the ring,
+kill now reads its colors off the rig that died: the light for the ring,
 the shell for the debris. Two things were learned on the way: the 64 px
-sprite cap means a smoke puff at 7 m is half a metre wide at most, so a
+sprite cap means a smoke puff at 7 m is half a meter wide at most, so a
 column needs count rather than size; and a torus scaled up to the blast
 radius thickens its tube with it, so the crest tube is 22 mm at unit
 radius. Frame means at 720p, HUD included, before and after, on a scale of
@@ -547,6 +547,53 @@ shield lattice up; the same frame measured 125 before the change.
 
 ![A blast in the open by day, 0.45 s on: smoke by the slab, the scorch under the pickup](images/1730-issue26-day-blast-smoke.jpg)
 
+## 17:39 Weapon flashes under the HDR stack (issue #28)
+
+The viewmodels had been tuned without bloom or the environment map, and
+under the post stack the scatter's flash was a solid disc, the launcher's
+near-camera smoke painted orange arcs over the lower third of the frame,
+and the beam was a white bar. Rather than wait on wall-clock in a
+software-GL browser, the shots were found first: a headless run of the
+bot at seed 7 lists the tick of every `shot` event by kind (rifle at tick
+263, beam at 1036, scatter at 2606, launcher at 2718, 2812 and 2874; the
+laser and minigun never come up in that run, so seed 3 supplies them at
+1443 and 3270). The capture hook then stepped straight to each tick and
+rendered once, with the tick before and five ticks after for comparison.
+
+What changed in `src/render/weapons.ts`: every flash sprite shrank (the
+scatter from 0.52 m to 0.3 m, the beam from 0.48 m to 0.28 m) and the
+table now carries a life in seconds instead of a decay rate, 35 to 75 ms,
+so sprite and light are gone within 80 ms by construction; the muzzle
+lights are a third to a half of what they were; the beam is a 3.5 cm white
+core in a 14 cm sheath at 0.18 opacity with a 24 cd light instead of a
+0.12 m cylinder at 0.55 with a 40 cd light; the laser is a 1.5 cm
+cylinder instead of a 1 px line; the launcher's smoke moved a meter out,
+past the particle shader's near-eye fade that had been turning it into
+64 px motes on the lens, and it gained a muzzle ring that opens to 0.6 m.
+
+Measured on the frames (connected region of pixels at or above 200/255
+brightness around the muzzle, with the frame before the shot as the
+control): the scatter's flash went from 331 px across to 133 px; the beam's
+muzzle region from 291 px to 175 px, of which 142 px is the capacitor ring
+that is lit in the control frame too; the rifle and minigun flashes no
+longer reach 200/255 at all, so the test finds only the gun's own trims.
+The launcher frame from seed 7 is the bot firing at a pickup under its own
+feet, so the frame is dominated by the round and the pickup's emblem, not
+the muzzle; the frame filed is from seed 3 at 50.9 s, where the bot fires
+level. Frames, one per kind, from the deterministic runs:
+
+![Rifle, seed 7 at 4.4 s](images/1739-flash-rifle.jpg)
+
+![Laser, seed 3 at 24.1 s: a cylinder bolt, not a line](images/1739-flash-laser.jpg)
+
+![Scatter, seed 7 at 43.4 s](images/1739-flash-scatter.jpg)
+
+![Beam, seed 7 at 17.3 s, at night: hot core, soft sheath](images/1739-flash-beam.jpg)
+
+![Launcher, seed 3 at 50.9 s](images/1739-flash-launcher.jpg)
+
+![Minigun, seed 3 at 54.5 s](images/1739-flash-minigun.jpg)
+
 ## 17:40 Bloom and flare pass, measured
 
 Issue #25 asked for bloom numbers chosen from frames, not taste. Before
@@ -561,7 +608,7 @@ height, and a mean of 136. The cause was not the bloom strength but the
 prefilter: `UnrealBloomPass` passes the whole HDR texel once it is over
 the threshold, and the sky's sun disc is in the hundreds, so it bloomed
 hundreds of times harder than a trim at 1.0; the dust motes, with their
-centre boost, did the same in miniature as fist-sized discs. The
+center boost, did the same in miniature as fist-sized discs. The
 prefilter now keeps only the excess over the threshold, with a quadratic
 knee that starts at 1.0 and a cap of 1.5 per pixel, and the strength and
 radius came down (0.35 to 0.3, 0.6 to 0.35). The flare ghosts, which
