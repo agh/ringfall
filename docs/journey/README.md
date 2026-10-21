@@ -128,7 +128,7 @@ ring, enemies closing in.
 ## 14:30 First push, draft PR, research dispatched
 
 Six Conventional Commits, CI with SHA-pinned actions, a GitHub Pages deploy,
-and a draft PR. Three research agents were dispatched in parallel: Halo's
+and a draft PR. Three research agents were dispatched in parallel: the reference console shooter's
 design philosophy and an MLP cut, prior art in browser WebGL games, and a
 brand system. Their reports are under [`../research/`](../research/) and
 [`../brand.md`](../brand.md).

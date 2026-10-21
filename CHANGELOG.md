@@ -45,6 +45,15 @@ and this project adheres to
   offline score, one MP4.
 - Pages deploys to ringfall.alexhowells.com.
 
+### Changed
+
+- The repository no longer names the console shooter franchise it was
+  inspired by outside the cited titles and URLs under `docs/research/`
+  (ADR-0003). The research note on feel and the MLP cut dropped the name
+  from its file name (`docs/research/feel-and-mlp.md`), and
+  `tests/unit/originality.test.ts` greps the tree for the term list in
+  `tests/unit/originality.terms.ts`.
+
 ### Fixed
 
 - A negative first frame delta after Deploy made every decay term grow
