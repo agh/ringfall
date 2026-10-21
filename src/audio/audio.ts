@@ -7,6 +7,7 @@ import {
   scheduleVoices,
   startChargeHum,
   stepSounds,
+  warmNoise,
 } from './sounds';
 
 /** Live-only pitch jitter so a magazine does not sound like one looped sample. */
@@ -55,6 +56,8 @@ export class AudioBank {
     musicBus.gain.value = 0.5;
     musicBus.connect(limiter);
     this.music.start(this.ctx, musicBus);
+    // Inside the gesture, beside the reverb impulse: the noise buffers are built once, here.
+    warmNoise(this.ctx);
   }
 
   setMusic(state: MusicState): void {

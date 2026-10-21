@@ -11,6 +11,7 @@ import {
   startChargeHum,
   type Voice,
   vowelFormants,
+  warmNoise,
 } from '../../src/audio/sounds';
 import type { GameEvent } from '../../src/core/game';
 import { vec3 } from '../../src/core/vec3';
@@ -113,17 +114,21 @@ const makeFakeContext = (): { ctx: BaseAudioContext; nodes: FakeNode[] } => {
   const ctx = {
     sampleRate,
     currentTime: 0,
+    buffersBuilt: 0,
     destination: node('destination'),
     createOscillator: () => node('oscillator'),
     createGain: () => node('gain'),
     createBiquadFilter: () => node('filter'),
     createBufferSource: () => node('source'),
-    createBuffer: (channels: number, length: number) => ({
-      numberOfChannels: channels,
-      length,
-      sampleRate,
-      getChannelData: () => new Float32Array(length),
-    }),
+    createBuffer: (channels: number, length: number) => {
+      ctx.buffersBuilt += 1;
+      return {
+        numberOfChannels: channels,
+        length,
+        sampleRate,
+        getChannelData: () => new Float32Array(length),
+      };
+    },
   };
   return { ctx: ctx as unknown as BaseAudioContext, nodes };
 };
@@ -212,6 +217,35 @@ describe('sound table', () => {
     expect(made.filter((n) => n.connected.includes(bus as unknown as FakeNode)).length).toBe(
       voices.length,
     );
+  });
+
+  it('fills each noise length once per context and reuses it', () => {
+    const { ctx, nodes } = makeFakeContext();
+    const built = (): number => (ctx as unknown as { buffersBuilt: number }).buffersBuilt;
+    const bus = ctx.createGain();
+    const pods = Array.from({ length: 9 }, () => SOUNDS.dropPod.voices).flat();
+    scheduleVoices(ctx, bus, 0, pods);
+    // Nine pods in one step (a wave start) share one buffer; nine fills cost about 20 ms.
+    expect(built()).toBe(1);
+    scheduleVoices(ctx, bus, 1, SOUNDS.explosion.voices);
+    expect(built()).toBe(2);
+    scheduleVoices(ctx, bus, 2, SOUNDS.explosion.voices);
+    expect(built()).toBe(2);
+    expect(nodes.filter((n) => n.tag === 'source')).toHaveLength(11);
+    // Another context never sees the first one's buffers.
+    const other = makeFakeContext();
+    scheduleVoices(other.ctx, other.ctx.createGain(), 0, SOUNDS.explosion.voices);
+    expect((other.ctx as unknown as { buffersBuilt: number }).buffersBuilt).toBe(1);
+  });
+
+  it('warms every noise length at unlock so the first wave builds nothing', () => {
+    const { ctx } = makeFakeContext();
+    const built = (): number => (ctx as unknown as { buffersBuilt: number }).buffersBuilt;
+    warmNoise(ctx);
+    const warmed = built();
+    expect(warmed).toBeGreaterThan(0);
+    scheduleVoices(ctx, ctx.createGain(), 0, [...allVoices(), SNARE]);
+    expect(built()).toBe(warmed);
   });
 
   it('jitters only the voices marked for it', () => {
