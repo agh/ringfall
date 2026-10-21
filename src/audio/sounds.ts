@@ -45,6 +45,8 @@ export interface Sound {
   readonly voices: readonly Voice[];
   /** Ends a running charge hum before the voices play. */
   readonly cutsCharge?: boolean;
+  /** Plays for the first event of its type in a step only; the rest of that step is silent. */
+  readonly once?: boolean;
 }
 
 /** Events that make no sound on purpose; the unit test refuses any event missing from both lists. */
@@ -166,8 +168,12 @@ export const SOUNDS: Readonly<Record<SoundKey, Sound>> = {
   // A routed skimmer's squeal: a rising chirp that answers the strider's death. The flee itself
   // (`enemyFled`) is silent; the bark carries the sound so a pack of three squeals three times.
   enemyBark: { voices: [tone('sine', 900, 1500, 0.14, 0.18, { jitter: true })] },
-  /** The dropship passing over: a low engine sweep that falls as it recedes, under a rumble. */
+  /**
+   * The dropship passing over: a low engine sweep that falls as it recedes, under a rumble.
+   * Once per step: a wave's pods launch together from the one craft the renderer draws.
+   */
   dropPod: {
+    once: true,
     voices: [tone('sawtooth', 110, 38, 1.8, 0.22), noise(1.2, 0.28, 220, { q: 1.4 })],
   },
 };
@@ -181,6 +187,28 @@ export const soundFor = (event: GameEvent): Sound | null => {
   }
   if ((SILENT as readonly string[]).includes(event.type)) return null;
   return SOUNDS[event.type as Exclude<SoundKey, ShotKey>];
+};
+
+/**
+ * `soundFor` over the events of a step: a sound marked `once` answers the first event of its
+ * type in the step and null for the rest, so nine Last Stand pods make one engine sweep. The
+ * live bank takes a fresh one per `handle` call; the score, which walks a whole timeline, passes
+ * each event's simulation time as `step`, and a new value starts a new step.
+ */
+export const stepSounds = (): ((event: GameEvent, step?: number) => Sound | null) => {
+  let current: number | undefined;
+  let heard = new Set<GameEvent['type']>();
+  return (event, step) => {
+    if (step !== current) {
+      current = step;
+      heard = new Set();
+    }
+    const sound = soundFor(event);
+    if (!sound?.once) return sound;
+    if (heard.has(event.type)) return null;
+    heard.add(event.type);
+    return sound;
+  };
 };
 
 /** The charge hum: a sine that climbs over the weapon's charge time until the release cuts it. */

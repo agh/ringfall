@@ -8,8 +8,8 @@ import {
   kick,
   SNARE,
   scheduleVoices,
-  soundFor,
   startChargeHum,
+  stepSounds,
 } from './sounds';
 
 /**
@@ -170,9 +170,11 @@ export const renderScore = async (options: ScoreOptions): Promise<string> => {
     charge?.stop(at);
     charge = null;
   };
+  // Events of one step share a time; a `once` sound plays for the first of them, as live.
+  const soundOf = stepSounds();
   for (const { time, event } of events) {
     const at = options.leadIn + time;
-    const sound = soundFor(event);
+    const sound = soundOf(event, time);
     if (!sound) continue;
     if (sound.cutsCharge) cutCharge(at);
     if (event.type === 'chargeStarted') {
