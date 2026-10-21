@@ -14,7 +14,7 @@ approved: 2026-10-21
 
 Ringfall is a single-player first-person arena shooter that runs in a
 browser tab with no install and no assets to download. The player defends a
-walled arena against eight waves of enemies using a rifle, grenades, and a
+walled arena against five named waves of enemies using a rifle, grenades, and a
 regenerating energy shield, under a ringworld arc on the horizon. It was
 built in a three hour hackathon window to the
 [crefft](https://github.com/agh/crefft) engineering standards: strict
@@ -39,8 +39,9 @@ cheap to build and easy to test, so it is the product.
   delay out of combat, health never regenerates.
 - **G3:** Two enemy archetypes that create different pressure: one that closes
   and one that fires dodgeable projectiles from range.
-- **G4:** Eight waves with escalating composition, a clear-wave pause, a win
-  state, and a lose state that loops back to the title.
+- **G4:** Five named waves with escalating composition, a clear-wave pause, a
+  win state that ends on a tableau, and a lose state that loops back to the
+  title.
 - **G5:** The simulation is unit-tested to a coverage threshold without a
   browser; the browser layer has smoke coverage in real Chromium.
 - **G6:** Every dependency and GitHub Action is pinned to an exact version or
@@ -102,13 +103,18 @@ in order, and freezes the result:
    skating across the arena. The blast deals 150 damage at the centre
    falling linearly to zero at 6 m, and half that to the thrower.
 4. **Enemies.** Each enemy is a small state machine (`spawning`, `chase`,
-   `attack`, `dead`). Spawning lasts 1 s and the enemy is invulnerable and
-   visibly descending during it, so the player has a beat to react.
+   `attack`, `fleeing`, `dead`). Spawning lasts 1.5 s from the drop pod's
+   launch (`DROP_POD_LEAD`) and the enemy is invulnerable and visibly
+   descending during it, so the player has a beat to react. Fleeing enemies
+   run from the player at twice their speed, around cover and off the arena.
 5. **Bolts.** Strider projectiles travel at 22 m/s for up to 3 s, stop on
    cover, the floor, and the arena edge, and hit a 0.9 m sphere around the
    player's centre.
 6. **Waves.** A 3 s countdown, an active phase until all enemies are dead, a
-   2.5 s cleared pause, then the next wave. Wave 8 cleared is victory.
+   2.5 s cleared pause, then the next wave. Enemies arrive by drop pod: the
+   `dropPod` event names the enemy, its landing point and the moment it goes
+   active, 1.5 s later. Wave 5 ends in victory when its armoured leader dies;
+   see Wave composition for the tableau that follows.
 7. **Vitality.** Damage hits the shield first (100), then health (100). The
    shield recharges at 35/s after 4 s without damage. Health never recharges.
 
@@ -158,20 +164,36 @@ of its full rate (`MINIGUN_IDLE_RATE`) until it has spun up.
 
 ### Wave composition
 
-Wave *n* spawns `2 + n` skimmers and `floor(n / 2)` striders on a 26 m ring
-around the arena centre, avoiding cover. Clearing a wave is worth 500. The
-roster for the eight waves:
+Chapter 1 is five named beats (`WAVE_BEATS` in `src/core/waves.ts`): a
+lesson, a first spectacle, a breather, a push, and an ending. Enemies land
+on a 26 m ring around the arena centre, avoiding cover. Clearing a wave is
+worth 500 and so is the victory. The table below is generated from the
+constants by `node scripts/wave-table.mjs --write`; do not edit it by hand.
 
-| Wave | Skimmers | Striders |
-| ---- | -------- | -------- |
-| 1    | 3        | 0        |
-| 2    | 4        | 1        |
-| 3    | 5        | 1        |
-| 4    | 6        | 2        |
-| 5    | 7        | 2        |
-| 6    | 8        | 3        |
-| 7    | 9        | 3        |
-| 8    | 10       | 4        |
+<!-- wave-table:start -->
+
+| Wave | Name       | Skimmers | Striders | Notes                                                                           |
+| ---- | ---------- | -------- | -------- | ------------------------------------------------------------------------------- |
+| 1    | Scouts     | 3        | 0        |                                                                                 |
+| 2    | The Leader | 4        | 1        | 1 strider lands 4 s late                                                        |
+| 3    | Fallback   | 5        | 2        |                                                                                 |
+| 4    | The Push   | 6        | 3        |                                                                                 |
+| 5    | Last Stand | 6        | 3        | 1 armoured strider at 3x health; ends when the leader falls; the survivors flee |
+
+Every enemy arrives by drop pod: the `dropPod` event fires 1.5 s before the
+enemy goes active. Chapter 1 fields 24 skimmers and 9 striders in all;
+the armoured strider has 3x the archetype's health.
+
+<!-- wave-table:end -->
+
+The final beat does not wait for a clean sweep: when the armoured strider
+dies the `victory` event fires with the run's kills and shield breaks, the
+state enters a `tableau` for `TABLEAU_DURATION` (5 s) during which input is
+ignored, the player cannot be hurt, and every survivor turns to `fleeing`
+(twice its speed, straight away from the player, off the arena edge, where
+it is removed). `timeScaleOf(state)` asks the presentation for 0.2x speed
+for the first 1.5 s of wall clock of the tableau. The status becomes `won`
+when the tableau ends.
 
 ### Arena
 
@@ -308,13 +330,14 @@ round cover convincingly enough for an arena with convex blocks.
 
 1. Pull request from `feat/ringfall-webgl-arena` into `main` with CI green.
 2. Merge; the Pages workflow builds `dist/` and publishes it.
-3. Tag `v2026.10.0` once the deployed page has been played through to wave 8.
+3. Tag `v2026.10.0` once the deployed page has been played through to wave 5.
 
 ## Open Questions
 
 - [ ] Should striders lead their shots using player velocity? Currently they
       aim at the current eye position with a fixed spread.
-- [ ] Is 8 waves the right length for a demo? A `FINAL_WAVE` constant makes
-      this a one-line change.
+- [x] Is 8 waves the right length for a demo? No: issue #8 cut Chapter 1 to
+      five named beats; `FINAL_WAVE` and `WAVE_BEATS` in `src/core/waves.ts`
+      hold the shape.
 - [ ] Gamepad support via the Gamepad API would fit the input layer; it was
       out of the three hour window.

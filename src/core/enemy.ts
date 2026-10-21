@@ -3,7 +3,8 @@ import { add, distanceXZ, normalize, scale, sub, type Vec3, vec3 } from './vec3'
 import { type Arena, moveWithCollision } from './world';
 
 export type EnemyKind = 'skimmer' | 'strider';
-export type EnemyState = 'spawning' | 'chase' | 'attack' | 'dead';
+/** `fleeing` enemies run from the player and off the arena once the wave's leader has fallen. */
+export type EnemyState = 'spawning' | 'chase' | 'attack' | 'fleeing' | 'dead';
 
 export interface EnemyStats {
   readonly maxHealth: number;
@@ -49,6 +50,10 @@ export interface Enemy {
   readonly kind: EnemyKind;
   readonly position: Vec3;
   readonly health: number;
+  /** Full health at spawn; the archetype's value times the wave's health scale. */
+  readonly maxHealth: number;
+  /** The wave's leader, whose death can end the wave (see `WaveBeat.ending`). */
+  readonly leader: boolean;
   readonly state: EnemyState;
   readonly yaw: number;
   /** Simulation time the enemy becomes active. */
@@ -59,18 +64,65 @@ export interface Enemy {
 }
 
 export const SPAWN_DELAY = 1;
+/** Fleeing enemies run at this multiple of their speed. */
+export const FLEE_SPEED_SCALE = 2;
+/** How far past the arena edge a fleeing enemy may travel; the game removes it there. */
+export const FLEE_EXIT_MARGIN = 6;
 
-export const createEnemy = (id: number, kind: EnemyKind, position: Vec3, now: number): Enemy => ({
-  id,
-  kind,
-  position,
-  health: ENEMY_STATS[kind].maxHealth,
-  state: 'spawning',
-  yaw: 0,
-  activeAt: now + SPAWN_DELAY,
-  nextAttackAt: now + SPAWN_DELAY + 0.5,
-  diedAt: null,
-});
+export interface SpawnOptions {
+  /** Seconds the enemy spends `spawning` (invulnerable) before it acts; `SPAWN_DELAY` by default. */
+  readonly spawnDelay?: number;
+  /** Multiplier on the archetype's health; 1 by default. */
+  readonly healthScale?: number;
+  readonly leader?: boolean;
+}
+
+export const createEnemy = (
+  id: number,
+  kind: EnemyKind,
+  position: Vec3,
+  now: number,
+  options: SpawnOptions = {},
+): Enemy => {
+  const spawnDelay = options.spawnDelay ?? SPAWN_DELAY;
+  const maxHealth = ENEMY_STATS[kind].maxHealth * (options.healthScale ?? 1);
+  return {
+    id,
+    kind,
+    position,
+    health: maxHealth,
+    maxHealth,
+    leader: options.leader ?? false,
+    state: 'spawning',
+    yaw: 0,
+    activeAt: now + spawnDelay,
+    nextAttackAt: now + spawnDelay + 0.5,
+    diedAt: null,
+  };
+};
+
+/** Turns a live enemy to flight; the dead stay where they fell. */
+export const startFleeing = (e: Enemy): Enemy =>
+  e.state === 'dead' ? e : { ...e, state: 'fleeing' };
+
+/** True once a fleeing enemy is far enough past the arena edge to be removed. */
+export const hasFled = (e: Enemy, arena: Arena): boolean =>
+  e.state === 'fleeing' &&
+  Math.max(Math.abs(e.position.x), Math.abs(e.position.z)) >=
+    arena.halfSize + FLEE_EXIT_MARGIN - ENEMY_STATS[e.kind].radius;
+
+/** Runs straight away from the player, around cover and out past the arena edge. */
+const flee = (e: Enemy, arena: Arena, playerFeet: Vec3, dt: number): Enemy => {
+  const stats = ENEMY_STATS[e.kind];
+  const away = sub(e.position, playerFeet);
+  const flat = normalize(vec3(away.x, 0, away.z));
+  // An enemy standing on the player has no "away"; it leaves by the far wall.
+  const dir = Math.hypot(flat.x, flat.z) > 0.5 ? flat : vec3(0, 0, -1);
+  const exit: Arena = { ...arena, halfSize: arena.halfSize + FLEE_EXIT_MARGIN };
+  const step = scale(dir, stats.speed * FLEE_SPEED_SCALE * dt);
+  const position = moveWithCollision(exit, e.position, stats.radius, stats.height, step);
+  return { ...e, position, yaw: Math.atan2(-dir.x, -dir.z) };
+};
 
 export type EnemyAction =
   | { readonly type: 'melee'; readonly damage: number }
@@ -100,6 +152,7 @@ export const updateEnemy = (
   rng: Rng,
 ): EnemyUpdate => {
   if (e.state === 'dead') return { enemy: e, action: null };
+  if (e.state === 'fleeing') return { enemy: flee(e, arena, playerFeet, dt), action: null };
   if (e.state === 'spawning') {
     return { enemy: now >= e.activeAt ? { ...e, state: 'chase' } : e, action: null };
   }

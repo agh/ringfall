@@ -5,7 +5,11 @@ import {
   ENEMY_STATS,
   type Enemy,
   enemyCenter,
+  FLEE_EXIT_MARGIN,
+  FLEE_SPEED_SCALE,
+  hasFled,
   SPAWN_DELAY,
+  startFleeing,
   updateEnemy,
 } from '../../src/core/enemy';
 import { createRng } from '../../src/core/rng';
@@ -82,5 +86,63 @@ describe('enemy', () => {
     const { enemy, action } = updateEnemy(dead.enemy, arena, feet, eye, 1, 10, createRng(1));
     expect(enemy).toBe(dead.enemy);
     expect(action).toBeNull();
+  });
+
+  it('spawns with the archetype health unless scaled, and remembers its maximum', () => {
+    const plain = createEnemy(4, 'strider', vec3(0, 0, -5), 0);
+    expect(plain.health).toBe(ENEMY_STATS.strider.maxHealth);
+    expect(plain.maxHealth).toBe(ENEMY_STATS.strider.maxHealth);
+    expect(plain.leader).toBe(false);
+    expect(plain.activeAt).toBe(SPAWN_DELAY);
+    const armoured = createEnemy(5, 'strider', vec3(0, 0, -5), 2, {
+      healthScale: 3,
+      leader: true,
+      spawnDelay: 1.5,
+    });
+    expect(armoured.health).toBe(360);
+    expect(armoured.maxHealth).toBe(360);
+    expect(armoured.leader).toBe(true);
+    expect(armoured.activeAt).toBe(3.5);
+    expect(damageEnemy(armoured, 120, 3).enemy.health).toBe(240);
+  });
+
+  it('flees away from the player at double speed and leaves the arena', () => {
+    const e = startFleeing({ ...createEnemy(6, 'skimmer', vec3(0, 0, -10), 0), state: 'attack' });
+    expect(e.state).toBe('fleeing');
+    const dt = 1 / 60;
+    const { enemy: moved, action } = updateEnemy(e, arena, feet, eye, dt, 5, createRng(1));
+    expect(action).toBeNull();
+    expect(moved.position.z).toBeCloseTo(-10 - ENEMY_STATS.skimmer.speed * FLEE_SPEED_SCALE * dt);
+    // Facing -Z (away from the player) is yaw 0.
+    expect(moved.yaw).toBeCloseTo(0);
+    let runner = e;
+    for (let i = 0; i < 180; i += 1) {
+      runner = updateEnemy(runner, arena, feet, eye, dt, 5 + i * dt, createRng(1)).enemy;
+    }
+    expect(Math.abs(runner.position.z)).toBeGreaterThan(arena.halfSize);
+    expect(Math.abs(runner.position.z)).toBeLessThanOrEqual(arena.halfSize + FLEE_EXIT_MARGIN);
+    expect(hasFled(runner, arena)).toBe(true);
+    expect(hasFled(e, arena)).toBe(false);
+    expect(hasFled({ ...runner, state: 'chase' }, arena)).toBe(false);
+  });
+
+  it('fleeing enemies slide around cover and the dead do not flee', () => {
+    const blocked: Arena = {
+      halfSize: 30,
+      obstacles: [{ min: vec3(-2, 0, -14), max: vec3(2, 3, -12) }],
+    };
+    let e = startFleeing({ ...createEnemy(7, 'skimmer', vec3(0, 0, -10), 0), state: 'chase' });
+    for (let i = 0; i < 60; i += 1) {
+      e = updateEnemy(e, blocked, feet, eye, 1 / 60, 5 + i / 60, createRng(1)).enemy;
+    }
+    expect(e.position.z).toBeGreaterThan(-12);
+    const dead = damageEnemy(createEnemy(8, 'skimmer', vec3(0, 0, -5), 0), 100, 1).enemy;
+    expect(startFleeing(dead)).toBe(dead);
+  });
+
+  it('stands on the player and still finds a way out', () => {
+    const e = startFleeing({ ...createEnemy(9, 'skimmer', vec3(0, 0, 0), 0), state: 'attack' });
+    const { enemy } = updateEnemy(e, arena, feet, eye, 1 / 60, 5, createRng(1));
+    expect(enemy.position.z).toBeLessThan(0);
   });
 });

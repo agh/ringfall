@@ -46,9 +46,9 @@ the win rate.
 
 ### wavesCleared
 
-A count of waves. On a win it equals `wave.number`, which is 8, the value
+A count of waves. On a win it equals `wave.number`, which is 5, the value
 of `FINAL_WAVE`; otherwise it is `wave.number - 1`, so a run that dies or
-times out during wave 3 reports 2. A good Chapter 1 value is 8 for the
+times out during wave 3 reports 2. A good Chapter 1 value is 5 for the
 steady profile on most seeds and at least 1 on every seed, which is story
 S3's acceptance criterion: a first-time player must get the first kill and
 the first clear before they are in danger. The second and third tests in
@@ -67,16 +67,17 @@ mean.
 ### kills
 
 A count of enemies killed, read from `GameState.kills`. The maximum in a
-full clear is 68, which is the 52 skimmers and 16 striders in the
-composition table of [design-doc.md](design-doc.md) summed over eight
-waves. The second test requires at least 3 kills on seed 3 within 120
+full clear is 33, which is the 24 skimmers and 9 striders in the
+composition table of [design-doc.md](design-doc.md) summed over five
+waves; the final wave ends when its leader dies, so survivors that flee
+are not counted. The second test requires at least 3 kills on seed 3 within 120
 seconds, which is the whole of wave 1. Story S3 uses it.
 
 ### score
 
 Points, read from `GameState.score`. A skimmer is worth 100, a strider
 300, and a wave bonus of 500 is added when a wave clears and again on the
-final wave's victory, so a full clear scores 14,000 at most. The score is
+final wave's victory, so a full clear scores 7,600 at most. The score is
 also what `src/core/records.ts` keeps as a personal best in local storage.
 No test asserts a score threshold; the end card and spec item 15 use it.
 
@@ -141,10 +142,10 @@ although no threshold is asserted yet.
 An array of simulation seconds, one per cleared wave, each measured from
 the `waveStarted` event of that wave to its `waveCleared` event. The
 final wave emits `victory` rather than `waveCleared`, so a won run has at
-most seven entries and the last wave's duration is not recorded; a gate on
-wave 8 pacing would need that event added in `src/core/game.ts`. A good
-Chapter 1 series rises gently with the composition table, which is what
-the five named waves in issue #8 will reshape. Story S9 and issue #12 use
+most four entries and the last wave's duration is not recorded; a gate on
+wave 5 pacing would need that event added in `src/core/game.ts`. A good
+Chapter 1 series rises gently with the composition table of the five named
+waves from issue #8. Story S9 and issue #12 use
 it, and the second and third tests assert at least one entry.
 
 ## Summary fields from summarize
@@ -199,7 +200,7 @@ expected direction is that the reckless bot breaks more often.
 An array of simulation seconds indexed by wave, where entry `i` is the
 mean of `waveClearTimes[i]` over the runs that have an entry at that
 index, and 0 where no run reached that wave. Its length is the longest
-`waveClearTimes` in the batch, so it holds at most seven entries for the
+`waveClearTimes` in the batch, so it holds at most four entries for the
 reason given above. This is the series a designer reads to see the
 escalation across the composition table.
 

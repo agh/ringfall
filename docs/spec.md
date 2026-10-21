@@ -53,7 +53,7 @@ a friend. Each MLP item names that moment.
 | 5 | Firing points for striders | "They take positions." | Not started | #7 |
 | 6 | The ring overhead, dawn sky, terrain, fog | "Where am I?" | Done | n/a |
 | 7 | Procedural chant, calm and combat states, stingers | "What is that music?" | Partial (drone, states) | #9 |
-| 8 | Five named waves, drop-pods, victory tableau | "It had an ending." | Not started (eight uniform waves today) | #8 |
+| 8 | Five named waves, drop-pods, victory tableau | "It had an ending." | Partial (five beats, `dropPod` and `victory` events, tableau state in `src/core`; rendering follows) | #8 |
 | 9 | Title choreography and the Deploy moment | "Oh, nice." | Not started | #9 |
 | 10 | Brand compliance (fonts, tokens, banner) | Consistency, not a moment | Not started | #10 |
 | 11 | Frame budget on an integrated GPU | It runs on the laptop in the room | Not measured | #11 |

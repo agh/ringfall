@@ -40,7 +40,7 @@ profile that retreats at 30 percent shield and a reckless one that never
 retreats. Its purpose is described in [test-plan.md](test-plan.md).
 
 **Chapter 1.** The demo as specified in [spec.md](spec.md): one arena,
-one rifle, four grenades, two enemies, eight waves, and a victory tableau,
+one rifle, four grenades, two enemies, five named waves, and a victory tableau,
 lasting five to ten minutes. Anything beyond it is Later.
 
 **Cover slab.** One of the sixteen cover blocks in the arena, 2 to 6 m in
@@ -59,6 +59,12 @@ shield-recharge sting, and the combat bus armed. The choreography is
 specified in [brand.md](brand.md) and story S2 of
 [requirements.md](product/requirements.md); the handler is `start()` in
 `src/main.ts`.
+
+**Drop pod.** How every enemy arrives: `spawnWave` in `src/core/game.ts`
+schedules a `PendingSpawn` per roster entry and, when its delay is up, the
+enemy appears at its landing point and the `dropPod` event fires with the
+enemy's id, kind, landing point and `activeAt`, 1.5 s (`DROP_POD_LEAD`)
+before it can act. The renderer draws the streak and the dust burst.
 
 **Feel pass.** The custom full-screen post-processing pass that adds the
 vignette, chromatic aberration that grows with damage, the hexagonal
@@ -125,6 +131,12 @@ harness and the recorder run steps directly. The rule is
 every 1.4 s, holding 8 to 16 m and backing off when crowded, worth 300
 points. Its stats are in `src/core/enemy.ts`.
 
+**Tableau.** The end of a won run: when the Last Stand's armoured leader
+dies, `victory` fires with kills and shield breaks, `GameState.tableau`
+holds for `TABLEAU_DURATION` (5 s) with input frozen and the player safe
+while the survivors flee off the arena, and then the status turns `won`.
+`timeScaleOf(state)` asks for 0.2x speed for its first 1.5 s of wall clock.
+
 **Trim.** A thin emissive strip in Beacon on world geometry, never more
 than 5 percent of an object's surface and always on the datum. The rule is
 in [brand.md](brand.md) and the strips are built in `src/render/`.
@@ -136,6 +148,6 @@ per second after 4 s without damage and health never recharging. Owned by
 
 **Wave phases.** The four states of `WaveState.phase` in
 `src/core/waves.ts`: `countdown` for 3 s, `active` until every enemy is
-dead, `cleared` for a 2.5 s pause, and `won` after wave 8, the value of
-`FINAL_WAVE`. The music follows the phase: combat while active with
+dead, `cleared` for a 2.5 s pause, and `won` after wave 5, the value of
+`FINAL_WAVE`, whose armoured leader's death ends the run. The music follows the phase: combat while active with
 enemies alive, calm otherwise.
