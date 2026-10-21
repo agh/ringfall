@@ -12,6 +12,10 @@ export const FLEE_RADIUS = 25;
 export const FLEE_DURATION = 4;
 /** Fleeing speed as a multiple of the skimmer's chase speed. */
 export const FLEE_SPEED_FACTOR = 1.3;
+/** Speed multiple of an enemy leaving the arena for good after the final leader falls. */
+export const FLEE_EXIT_SPEED_FACTOR = 2;
+/** How far past the arena edge an exiting enemy may travel; the game removes it there. */
+export const FLEE_EXIT_MARGIN = 6;
 /** What a routed skimmer shouts. Original lines; the first rout of a pack always calls the first. */
 export const BARK_LINES = ['LEADER DOWN', 'FALL BACK', 'REGROUP'] as const;
 export type BarkLine = (typeof BARK_LINES)[number];
@@ -135,6 +139,10 @@ export interface Enemy {
   readonly kind: EnemyKind;
   readonly position: Vec3;
   readonly health: number;
+  /** Full health at spawn; the archetype's value times the wave's health scale. */
+  readonly maxHealth: number;
+  /** The wave's leader, whose death can end the wave (see `WaveBeat.ending`). */
+  readonly leader: boolean;
   readonly state: EnemyState;
   readonly yaw: number;
   /** Simulation time the enemy becomes active. */
@@ -142,7 +150,10 @@ export interface Enemy {
   readonly nextAttackAt: number;
   /** Simulation time of death, used by the renderer for a short fade. */
   readonly diedAt: number | null;
-  /** Simulation time a `flee` ends; null in every other state. */
+  /**
+   * Simulation time a `flee` ends: finite for a rout, `Number.POSITIVE_INFINITY` for an enemy
+   * leaving the arena for good, null in every other state.
+   */
   readonly fleeUntil: number | null;
   /** Movement policy; only skimmers read it, striders carry the default. */
   readonly temperament: Temperament;
@@ -150,25 +161,58 @@ export interface Enemy {
 
 export const SPAWN_DELAY = 1;
 
+export interface SpawnOptions {
+  /** Seconds the enemy spends `spawning` (invulnerable) before it acts; `SPAWN_DELAY` by default. */
+  readonly spawnDelay?: number;
+  /** Multiplier on the archetype's health; 1 by default. */
+  readonly healthScale?: number;
+  readonly leader?: boolean;
+  /** Movement policy for skimmers; `chaser` by default. */
+  readonly temperament?: Temperament;
+}
+
 export const createEnemy = (
   id: number,
   kind: EnemyKind,
   position: Vec3,
   now: number,
-  temperament: Temperament = 'chaser',
-): Enemy => ({
-  id,
-  kind,
-  position,
-  health: ENEMY_STATS[kind].maxHealth,
-  state: 'spawning',
-  yaw: 0,
-  activeAt: now + SPAWN_DELAY,
-  nextAttackAt: now + SPAWN_DELAY + 0.5,
-  diedAt: null,
-  fleeUntil: null,
-  temperament,
-});
+  options: SpawnOptions = {},
+): Enemy => {
+  const spawnDelay = options.spawnDelay ?? SPAWN_DELAY;
+  const maxHealth = ENEMY_STATS[kind].maxHealth * (options.healthScale ?? 1);
+  return {
+    id,
+    kind,
+    position,
+    health: maxHealth,
+    maxHealth,
+    leader: options.leader ?? false,
+    state: 'spawning',
+    yaw: 0,
+    activeAt: now + spawnDelay,
+    nextAttackAt: now + spawnDelay + 0.5,
+    diedAt: null,
+    fleeUntil: null,
+    temperament: options.temperament ?? 'chaser',
+  };
+};
+
+/**
+ * Sends a live enemy off the arena for good: `flee` with no end, used when the final leader
+ * falls. Any kind and any live state, spawning included; the dead stay where they fell.
+ */
+export const startExit = (e: Enemy): Enemy =>
+  e.state === 'dead' ? e : { ...e, state: 'flee', fleeUntil: Number.POSITIVE_INFINITY };
+
+/** True for an enemy leaving the arena for good (as opposed to a timed rout). */
+export const isExiting = (e: Enemy): boolean =>
+  e.state === 'flee' && e.fleeUntil === Number.POSITIVE_INFINITY;
+
+/** True once an exiting enemy is far enough past the arena edge to be removed. */
+export const hasFled = (e: Enemy, arena: Arena): boolean =>
+  isExiting(e) &&
+  Math.max(Math.abs(e.position.x), Math.abs(e.position.z)) >=
+    arena.halfSize + FLEE_EXIT_MARGIN - ENEMY_STATS[e.kind].radius;
 
 /**
  * Routs a skimmer: it enters `flee` until `now + FLEE_DURATION`. A skimmer already fleeing has
@@ -208,8 +252,12 @@ const fleeStep = (e: Enemy, arena: Arena, playerFeet: Vec3, dt: number): Enemy =
   const flat = vec3(away.x, 0, away.z);
   // A skimmer standing exactly on the player runs along +Z rather than nowhere.
   const dir = Math.hypot(flat.x, flat.z) > 1e-6 ? normalize(flat) : vec3(0, 0, 1);
-  const step = scale(dir, stats.speed * FLEE_SPEED_FACTOR * dt);
-  const position = moveWithCollision(arena, e.position, stats.radius, stats.height, step);
+  // A rout stops at the arena edge; an exit runs faster and out past it, where the game removes it.
+  const exiting = isExiting(e);
+  const factor = exiting ? FLEE_EXIT_SPEED_FACTOR : FLEE_SPEED_FACTOR;
+  const bounds: Arena = exiting ? { ...arena, halfSize: arena.halfSize + FLEE_EXIT_MARGIN } : arena;
+  const step = scale(dir, stats.speed * factor * dt);
+  const position = moveWithCollision(bounds, e.position, stats.radius, stats.height, step);
   return { ...e, position, yaw: Math.atan2(-dir.x, -dir.z) };
 };
 

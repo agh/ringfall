@@ -46,7 +46,7 @@ toolchain carries a published high-severity advisory, which a green build
 job says nothing about.
 
 **A person has played through to the final wave.** Someone plays the
-deployed page from the title card to the victory tableau on wave 8 with a
+deployed page from the title card to the victory tableau on wave 5 with a
 mouse and keyboard, and records the time taken against the five to ten
 minute target in [spec.md](spec.md). This prevents shipping a game the bot
 can win but a human cannot, which the playtest layer is explicitly not

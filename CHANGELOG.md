@@ -25,6 +25,14 @@ and this project adheres to
 
 ### Added
 
+- Five named wave beats (Scouts, The Leader, Fallback, The Push, Last
+  Stand) replace the eight-wave formula; `waveStarted` carries the name and
+  the HUD announces it. Enemies arrive by drop pod (`dropPod` event 1.5 s
+  before they go active; The Leader's strider lands 4 s late). The Last
+  Stand ends when its armoured strider (3x health) falls: `victory` carries
+  kills and shield breaks, the survivors flee off the arena, and the state
+  holds a 5 s tableau before the run is won. `scripts/wave-table.mjs`
+  generates the design doc's composition table from the constants.
 - A unit test that fails if the pre-rename repository path reappears outside
   `docs/journey/`, and a runbook note on the rename order (#70).
 

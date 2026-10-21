@@ -10,19 +10,24 @@ import {
   enemyCenter,
   FLANK_MAX_OFFSET,
   FLEE_DURATION,
+  FLEE_EXIT_MARGIN,
+  FLEE_EXIT_SPEED_FACTOR,
   FLEE_SPEED_FACTOR,
+  hasFled,
   offHandSide,
   pickBark,
   SKITTISH_HOLD_RANGE,
   SKITTISH_PACK_RANGE,
   SPAWN_DELAY,
   STILL_TRACKING,
+  startExit,
   startFlee,
   TEMPERAMENTS,
   type Tracking,
   temperamentFor,
   updateEnemy,
 } from '../../src/core/enemy';
+
 import { createRng } from '../../src/core/rng';
 import { distanceXZ, vec3 } from '../../src/core/vec3';
 import type { Arena } from '../../src/core/world';
@@ -97,6 +102,73 @@ describe('enemy', () => {
     const { enemy, action } = updateEnemy(dead.enemy, arena, feet, eye, 1, 10, createRng(1));
     expect(enemy).toBe(dead.enemy);
     expect(action).toBeNull();
+  });
+
+  it('spawns with the archetype health unless scaled, and remembers its maximum', () => {
+    const plain = createEnemy(4, 'strider', vec3(0, 0, -5), 0);
+    expect(plain.health).toBe(ENEMY_STATS.strider.maxHealth);
+    expect(plain.maxHealth).toBe(ENEMY_STATS.strider.maxHealth);
+    expect(plain.leader).toBe(false);
+    expect(plain.activeAt).toBe(SPAWN_DELAY);
+    const armoured = createEnemy(5, 'strider', vec3(0, 0, -5), 2, {
+      healthScale: 3,
+      leader: true,
+      spawnDelay: 1.5,
+    });
+    expect(armoured.health).toBe(360);
+    expect(armoured.maxHealth).toBe(360);
+    expect(armoured.leader).toBe(true);
+    expect(armoured.activeAt).toBe(3.5);
+    expect(damageEnemy(armoured, 120, 3).enemy.health).toBe(240);
+  });
+
+  it('exits away from the player at double speed and leaves the arena', () => {
+    const e = startExit({ ...createEnemy(6, 'skimmer', vec3(0, 0, -10), 0), state: 'attack' });
+    expect(e.state).toBe('flee');
+    expect(e.fleeUntil).toBe(Number.POSITIVE_INFINITY);
+    const dt = 1 / 60;
+    const { enemy: moved, action } = updateEnemy(e, arena, feet, eye, dt, 5, createRng(1));
+    expect(action).toBeNull();
+    expect(moved.position.z).toBeCloseTo(
+      -10 - ENEMY_STATS.skimmer.speed * FLEE_EXIT_SPEED_FACTOR * dt,
+    );
+    // Facing -Z (away from the player) is yaw 0.
+    expect(moved.yaw).toBeCloseTo(0);
+    let runner = e;
+    for (let i = 0; i < 180; i += 1) {
+      runner = updateEnemy(runner, arena, feet, eye, dt, 5 + i * dt, createRng(1)).enemy;
+    }
+    expect(Math.abs(runner.position.z)).toBeGreaterThan(arena.halfSize);
+    expect(Math.abs(runner.position.z)).toBeLessThanOrEqual(arena.halfSize + FLEE_EXIT_MARGIN);
+    expect(hasFled(runner, arena)).toBe(true);
+    expect(hasFled(e, arena)).toBe(false);
+    expect(hasFled({ ...runner, state: 'chase' }, arena)).toBe(false);
+  });
+
+  it('exiting enemies slide around cover, striders and spawning enemies exit too, the dead do not', () => {
+    const blocked: Arena = {
+      halfSize: 30,
+      obstacles: [{ min: vec3(-2, 0, -14), max: vec3(2, 3, -12) }],
+      secret: null,
+    };
+    let e = startExit({ ...createEnemy(7, 'skimmer', vec3(0, 0, -10), 0), state: 'chase' });
+    for (let i = 0; i < 60; i += 1) {
+      e = updateEnemy(e, blocked, feet, eye, 1 / 60, 5 + i / 60, createRng(1)).enemy;
+    }
+    expect(e.position.z).toBeGreaterThan(-12);
+    const dead = damageEnemy(createEnemy(8, 'skimmer', vec3(0, 0, -5), 0), 100, 1).enemy;
+    expect(startExit(dead)).toBe(dead);
+    const strider: Enemy = { ...createEnemy(10, 'strider', vec3(0, 0, -5), 0), state: 'attack' };
+    expect(startExit(strider).state).toBe('flee');
+    expect(startExit(createEnemy(11, 'skimmer', vec3(0, 0, -5), 0)).state).toBe('flee');
+    // A rout refreshed on an exiting enemy keeps it leaving.
+    expect(startFlee(startExit(strider), 1)).toEqual(startExit(strider));
+  });
+
+  it('stands on the player and still finds a way out', () => {
+    const e = startExit({ ...createEnemy(9, 'skimmer', vec3(0, 0, 0), 0), state: 'attack' });
+    const { enemy } = updateEnemy(e, arena, feet, eye, 1 / 60, 5, createRng(1));
+    expect(enemy.position.z).toBeGreaterThan(0);
   });
 
   it('routs a chasing or attacking skimmer and nobody else', () => {
@@ -213,7 +285,9 @@ describe('enemy', () => {
         'ambusher',
       ]);
       expect(createEnemy(1, 'skimmer', feet, 0).temperament).toBe('chaser');
-      expect(createEnemy(1, 'skimmer', feet, 0, 'flanker').temperament).toBe('flanker');
+      expect(createEnemy(1, 'skimmer', feet, 0, { temperament: 'flanker' }).temperament).toBe(
+        'flanker',
+      );
     });
 
     it('a chaser heads straight at the player', () => {
@@ -273,7 +347,7 @@ describe('enemy', () => {
     it('a stepped flanker arrives on the off-hand side; a skittish one holds', () => {
       const rng = createRng(3);
       let flanker: Enemy = {
-        ...createEnemy(1, 'skimmer', vec3(0, 0, -12), 0, 'flanker'),
+        ...createEnemy(1, 'skimmer', vec3(0, 0, -12), 0, { temperament: 'flanker' }),
         state: 'chase',
       };
       let leftmost = 0;
@@ -286,7 +360,7 @@ describe('enemy', () => {
 
       const pack: Tracking = { ...STILL_TRACKING, pack: [vec3(0, 0, 25)] };
       let skittish: Enemy = {
-        ...createEnemy(2, 'skimmer', vec3(0, 0, -6), 0, 'skittish'),
+        ...createEnemy(2, 'skimmer', vec3(0, 0, -6), 0, { temperament: 'skittish' }),
         state: 'chase',
       };
       for (let i = 0; i < 60; i += 1) {
@@ -296,7 +370,7 @@ describe('enemy', () => {
       expect(skittish.state).toBe('chase');
       // Striders ignore temperaments entirely.
       const strider: Enemy = {
-        ...createEnemy(3, 'strider', vec3(0, 0, -30), 0, 'skittish'),
+        ...createEnemy(3, 'strider', vec3(0, 0, -30), 0, { temperament: 'skittish' }),
         state: 'chase',
       };
       const stepped = updateEnemy(strider, arena, feet, eye, 1 / 60, 5, rng, pack).enemy;

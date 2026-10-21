@@ -7,8 +7,11 @@ import {
   type EnemyKind,
   enemyCenter,
   FLEE_RADIUS,
+  hasFled,
   pickBark,
+  startExit,
   startFlee,
+  type Temperament,
   type Tracking,
   temperamentFor,
   updateEnemy,
@@ -52,7 +55,16 @@ import {
   ZERO,
 } from './vec3';
 import { applyDamage, createVitality, tickVitality, type Vitality } from './vitality';
-import { createWaveState, tickWave, WAVE_BONUS, type WaveState, waveComposition } from './waves';
+import {
+  createWaveState,
+  DROP_POD_LEAD,
+  tickWave,
+  WAVE_BONUS,
+  type WaveBeat,
+  type WaveSpawn,
+  type WaveState,
+  waveBeat,
+} from './waves';
 import {
   beamHits,
   createRifle,
@@ -84,6 +96,11 @@ export const GRAVITY = 18;
 export const STARTING_GRENADES = 4;
 export const SPAWN_RING_RADIUS = 26;
 export const CORPSE_LINGER = 1.2;
+/** Simulation seconds the victory tableau holds before the run is `won`: survivors flee. */
+export const TABLEAU_DURATION = 5;
+/** The tableau opens in slow motion: this time scale for `TABLEAU_SLOW_SECONDS` of wall clock. */
+export const TABLEAU_TIME_SCALE = 0.2;
+export const TABLEAU_SLOW_SECONDS = 1.5;
 /** Crouching lowers the eye by this much; the body and its collision are unchanged. */
 export const CROUCH_EYE_DROP = 0.6;
 /** Crouch starts within `TAUNT_WINDOW` seconds over a strider's grave that earn a bark. */
@@ -199,6 +216,16 @@ export type GameEvent =
   | { readonly type: 'playerDamaged'; readonly amount: number; readonly from: Vec3 | null }
   | { readonly type: 'shieldBroken' }
   | { readonly type: 'boltFired'; readonly id: number }
+  | { readonly type: 'waveStarted'; readonly number: number; readonly name: string }
+  /** A pod is inbound: the enemy with this `id` lands at `at` and goes active at `activeAt`. */
+  | {
+      readonly type: 'dropPod';
+      readonly id: number;
+      readonly kind: EnemyKind;
+      readonly at: Vec3;
+      readonly activeAt: number;
+      readonly leader: boolean;
+    }
   | { readonly type: 'watcherCharging'; readonly id: number; readonly at: Vec3 }
   | {
       readonly type: 'watcherFired';
@@ -207,13 +234,30 @@ export type GameEvent =
       readonly to: Vec3;
       readonly hit: boolean;
     }
-  | { readonly type: 'waveStarted'; readonly number: number }
   | { readonly type: 'waveCleared'; readonly number: number }
   | { readonly type: 'playerDied' }
-  | { readonly type: 'victory' }
+  /** The final leader has fallen; the tableau begins. The status turns `won` when it ends. */
+  | { readonly type: 'victory'; readonly kills: number; readonly shieldBreaks: number }
   | { readonly type: 'secretFound'; readonly at: Vec3; readonly score: number };
 
 export type GameStatus = 'playing' | 'dead' | 'won';
+
+/** An enemy whose drop pod has been scheduled but has not launched yet. */
+export interface PendingSpawn {
+  readonly id: number;
+  readonly spawn: WaveSpawn;
+  /** Movement policy handed out round-robin over the wave's skimmers. */
+  readonly temperament: Temperament;
+  readonly at: Vec3;
+  /** Simulation time the pod launches: the enemy appears and `dropPod` fires. */
+  readonly dropAt: number;
+}
+
+/** The end of the run: input is frozen, the player is safe, and the survivors flee. */
+export interface Tableau {
+  readonly startedAt: number;
+  readonly endsAt: number;
+}
 
 export interface GameState {
   readonly time: number;
@@ -221,12 +265,15 @@ export interface GameState {
   readonly arena: Arena;
   readonly player: Player;
   readonly enemies: readonly Enemy[];
+  readonly pendingSpawns: readonly PendingSpawn[];
   readonly bolts: readonly Bolt[];
   readonly grenades: readonly Grenade[];
   readonly pickups: readonly Pickup[];
   readonly wave: WaveState;
+  readonly tableau: Tableau | null;
   readonly score: number;
   readonly kills: number;
+  readonly shieldBreaks: number;
   /** Where striders fell this game; a crouch taunt needs one underfoot. */
   readonly graves: readonly Vec3[];
   /** Hidden switches shot so far; the arena has one. */
@@ -234,6 +281,13 @@ export interface GameState {
   readonly nextId: number;
   readonly events: readonly GameEvent[];
 }
+
+/** Simulation speed the presentation should run at: slow motion as the tableau opens, else 1. */
+export const timeScaleOf = (state: GameState): number => {
+  if (state.tableau === null) return 1;
+  const slowUntil = state.tableau.startedAt + TABLEAU_SLOW_SECONDS * TABLEAU_TIME_SCALE;
+  return state.time < slowUntil ? TABLEAU_TIME_SCALE : 1;
+};
 
 export interface GameConfig {
   readonly seed: number;
@@ -262,12 +316,15 @@ export const createGame = (config: GameConfig = { seed: 1 }): GameState => {
       grenades: STARTING_GRENADES,
     },
     enemies: [],
+    pendingSpawns: [],
     bolts: [],
     grenades: [],
     pickups: [],
     wave: createWaveState(0),
+    tableau: null,
     score: 0,
     kills: 0,
+    shieldBreaks: 0,
     graves: [],
     secretsFound: 0,
     nextId: 1,
@@ -287,12 +344,15 @@ interface Draft {
   arena: Arena;
   player: Player;
   enemies: Enemy[];
+  pendingSpawns: PendingSpawn[];
   bolts: Bolt[];
   grenades: Grenade[];
   pickups: Pickup[];
   wave: WaveState;
+  tableau: Tableau | null;
   score: number;
   kills: number;
+  shieldBreaks: number;
   graves: Vec3[];
   secretsFound: number;
   nextId: number;
@@ -320,11 +380,14 @@ const spawnPickup = (d: Draft, kind: WeaponKind, at: Vec3): void => {
 };
 
 const hurtPlayer = (d: Draft, amount: number, from: Vec3 | null): void => {
-  if (d.status !== 'playing') return;
+  if (d.status !== 'playing' || d.tableau !== null) return;
   const outcome = applyDamage(d.player.vitality, amount, d.time);
   d.player = { ...d.player, vitality: outcome.vitality };
   d.events.push({ type: 'playerDamaged', amount, from });
-  if (outcome.shieldBroken) d.events.push({ type: 'shieldBroken' });
+  if (outcome.shieldBroken) {
+    d.shieldBreaks += 1;
+    d.events.push({ type: 'shieldBroken' });
+  }
   if (outcome.died) {
     d.status = 'dead';
     d.events.push({ type: 'playerDied' });
@@ -636,7 +699,9 @@ const stepEnemies = (d: Draft, dt: number): void => {
     return enemy;
   });
   d.enemies = d.enemies.filter(
-    (e) => e.state !== 'dead' || e.diedAt === null || d.time - e.diedAt < CORPSE_LINGER,
+    (e) =>
+      !hasFled(e, d.arena) &&
+      (e.state !== 'dead' || e.diedAt === null || d.time - e.diedAt < CORPSE_LINGER),
   );
 };
 
@@ -651,18 +716,25 @@ const stepBolts = (d: Draft, dt: number): void => {
   d.bolts = next;
 };
 
+/** Schedules the wave's drop pods: ids and landing points are fixed now, pods launch on time. */
 const spawnWave = (d: Draft, wave: number): void => {
+  const beat = waveBeat(wave);
   let skimmers = 0;
-  for (const kind of waveComposition(wave)) {
+  for (const spawn of beat.spawns) {
     const id = d.nextId;
     d.nextId += 1;
+    // Temperaments go round-robin over the wave's skimmers, in roster order.
     const temperament = temperamentFor(skimmers);
-    if (kind === 'skimmer') skimmers += 1;
-    d.enemies.push(
-      createEnemy(id, kind, findSpawnPoint(d.arena, d.rng, SPAWN_RING_RADIUS), d.time, temperament),
-    );
+    if (spawn.kind === 'skimmer') skimmers += 1;
+    d.pendingSpawns.push({
+      id,
+      spawn,
+      temperament,
+      at: findSpawnPoint(d.arena, d.rng, SPAWN_RING_RADIUS),
+      dropAt: d.time + spawn.delay,
+    });
   }
-  d.events.push({ type: 'waveStarted', number: wave });
+  d.events.push({ type: 'waveStarted', number: wave, name: beat.name });
   if (wave >= WAVE_REWARD_FROM) {
     const kind = chooseKind(heldKinds(d.player.weapons), d.rng);
     if (kind !== null)
@@ -670,10 +742,44 @@ const spawnWave = (d: Draft, wave: number): void => {
   }
 };
 
+/** Launches the pods whose time has come: the enemy exists from here, active `DROP_POD_LEAD` later. */
+const stepPendingSpawns = (d: Draft): void => {
+  const waiting: PendingSpawn[] = [];
+  for (const pending of d.pendingSpawns) {
+    if (d.time < pending.dropAt) {
+      waiting.push(pending);
+      continue;
+    }
+    const { id, spawn, at, temperament } = pending;
+    const enemy = createEnemy(id, spawn.kind, at, d.time, {
+      spawnDelay: DROP_POD_LEAD,
+      healthScale: spawn.healthScale,
+      leader: spawn.leader,
+      temperament,
+    });
+    d.enemies.push(enemy);
+    d.events.push({
+      type: 'dropPod',
+      id,
+      kind: spawn.kind,
+      at,
+      activeAt: enemy.activeAt,
+      leader: spawn.leader,
+    });
+  }
+  d.pendingSpawns = waiting;
+};
+
+/** Enemies still standing between the player and the end of the wave, pods included. */
+const holdouts = (d: Draft, beat: WaveBeat): number => {
+  const counts = beat.ending === 'leaderDown' ? (leader: boolean) => leader : () => true;
+  const standing = d.enemies.filter((e) => e.state !== 'dead' && counts(e.leader)).length;
+  return standing + d.pendingSpawns.filter((p) => counts(p.spawn.leader)).length;
+};
+
 const stepWaves = (d: Draft): void => {
-  const alive = d.enemies.filter((e) => e.state !== 'dead').length;
   const previousPhase = d.wave.phase;
-  const { wave, transition } = tickWave(d.wave, alive, d.time);
+  const { wave, transition } = tickWave(d.wave, holdouts(d, waveBeat(d.wave.number)), d.time);
   d.wave = wave;
   if (transition === 'spawn') spawnWave(d, wave.number);
   if (previousPhase === 'active' && wave.phase === 'cleared') {
@@ -684,9 +790,17 @@ const stepWaves = (d: Draft): void => {
   // as the last enemy has already ended the run, and death is not overwritten by victory.
   if (transition === 'won' && d.status === 'playing') {
     d.score += WAVE_BONUS;
-    d.status = 'won';
-    d.events.push({ type: 'victory' });
+    d.tableau = { startedAt: d.time, endsAt: d.time + TABLEAU_DURATION };
+    d.pendingSpawns = [];
+    d.enemies = d.enemies.map(startExit);
+    d.events.push({ type: 'victory', kills: d.kills, shieldBreaks: d.shieldBreaks });
   }
+};
+
+/** The tableau holds the player still and safe until it ends; then the run is won. */
+const stepTableau = (d: Draft): void => {
+  if (d.tableau === null || d.time < d.tableau.endsAt) return;
+  d.status = 'won';
 };
 
 /**
@@ -698,6 +812,7 @@ export const stepGame = (state: GameState, input: InputFrame, dt: number, rng: R
   const d: Draft = {
     ...state,
     enemies: [...state.enemies],
+    pendingSpawns: [...state.pendingSpawns],
     bolts: [...state.bolts],
     grenades: [...state.grenades],
     pickups: [...state.pickups],
@@ -706,14 +821,19 @@ export const stepGame = (state: GameState, input: InputFrame, dt: number, rng: R
     rng,
   };
   d.time += dt;
-  stepPlayerMovement(d, input, dt);
+  // During the tableau the player stands where the leader fell; only the look angles are kept.
+  const frame: InputFrame =
+    d.tableau === null ? input : { ...IDLE_INPUT, yaw: d.player.yaw, pitch: d.player.pitch };
+  stepPlayerMovement(d, frame, dt);
   stepTaunt(d);
   stepPickups(d);
-  stepWeapon(d, input, dt);
-  stepGrenades(d, input, dt);
+  stepWeapon(d, frame, dt);
+  stepGrenades(d, frame, dt);
+  stepPendingSpawns(d);
   stepEnemies(d, dt);
   stepBolts(d, dt);
   stepWaves(d);
+  stepTableau(d);
   d.player = { ...d.player, vitality: tickVitality(d.player.vitality, dt, d.time) };
   const { rng: _rng, ...rest } = d;
   return rest;
