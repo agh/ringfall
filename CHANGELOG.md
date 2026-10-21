@@ -10,6 +10,8 @@ and this project adheres to
 
 ### Added
 
+- A unit test that fails if the pre-rename repository path reappears outside
+  `docs/journey/`, and a runbook note on the rename order (#70).
 - Four skimmer temperaments handed out round-robin per wave: chaser,
   ambusher (leads the player's velocity by 4 m), flanker (swings to the
   off-hand side) and skittish (holds at 10 m until a packmate is within
@@ -100,4 +102,4 @@ and this project adheres to
 - GitHub Actions CI (lint, type check, unit, e2e, build) and GitHub Pages
   deployment, all actions pinned to commit SHAs.
 
-[Unreleased]: https://github.com/agh/hack/commits/main
+[Unreleased]: https://github.com/agh/ringfall/commits/main

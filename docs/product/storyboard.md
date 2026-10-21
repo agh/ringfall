@@ -112,7 +112,7 @@ at a time, so the same command gives the same film.
 | 0:33 to 0:48 | Wave 1 from Deploy: countdown, three skimmers, first kill at about five seconds, the wave cleared, the wave 2 countdown begins. | The score from t=0: drone, then the combat pulse, shots and kill chimes. | "The gun feels good." |
 | 0:47 to 0:50 | Intertitle: "Wave 2 · Night". | Choir alone. | A beat of calm. |
 | 0:49 to 1:06 | Wave 2 at night (`?atmo=night`): the first strider, bolts, trims and emissives carrying the frame. | The score from the same run, trimmed to where wave 2 goes active. | "Same arena, different world." |
-| 1:05 to 1:14 | Outro: wordmark, `ringfall.alexhowells.com`, TypeScript + three.js, `github.com/agh/hack`. | The choir resolves and fades. | Wanting to play it. |
+| 1:05 to 1:14 | Outro: wordmark, `ringfall.alexhowells.com`, TypeScript + three.js, `github.com/agh/ringfall`. | The choir resolves and fades. | Wanting to play it. |
 
 Segments overlap by the 0.5 s crossfade, which is why each start is half a
 second before the previous end. The total is 75 s; the day-only cut, made
