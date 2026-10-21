@@ -30,14 +30,29 @@ import type { GateThreshold } from '../../src/core/playtest';
  *   reckless  win=85% waves=4.70 seconds=138 accuracy=83% breaks=0.20 clear=[4,16,15,18]
  *
  * Accuracy jumps because shots into cover were counted as misses; it is now a line-of-sight
- * signal as much as an aim one. Each limit is the baseline moved by the same margin as before in
- * the lenient direction: one game of twenty on the steady win rate, half a wave on waves cleared,
+ * signal as much as an aim one.
+ *
+ * The enemy dead ends seen in the #93 traces came next: a chasing enemy wedged on the corner of
+ * a cover block, or pressed against a face the player stood straight behind, never moved again,
+ * and a strider inside its range band with cover between it and the player held still, firing
+ * into the block. Five of the forty games above ran to the cap that way, and three more once
+ * only the sidestep was in. With the sidestep (`STUCK_AFTER`) and the clear-shot rule
+ * (`hasClearShot`) both profiles win every game. The baseline below is that branch on `main` at
+ * 8c840b2, same seeds and cap, and the limits are re-derived from it with the margins unchanged:
+ *
+ *   steady    win=100% waves=5.00 seconds=93 accuracy=88% breaks=0.10 clear=[4,11,14,17]
+ *   reckless  win=100% waves=5.00 seconds=95 accuracy=80% breaks=0.20 clear=[4,11,14,15]
+ *
+ * The reckless win-rate cap saturates: 100% plus two games of twenty is 100%, so that row holds
+ * nothing until #63 gives the gate a cross-profile bound; it stays so the report keeps showing
+ * it. Each limit is the baseline moved by the same margin as before in the lenient direction:
+ * one game of twenty on the steady win rate, half a wave on waves cleared,
  * ten points of accuracy, twice the slowest wave, two games on the reckless win rate. The margins
  * were sized against the reference breaking change in issue #12 (halving rifle damage) under the
  * eight-wave formula and have not been re-measured under the five beats. One intent is lost: the
  * reckless bound used to say "never retreating must not become the way to win", and under the
  * beats as specified in #8 the reckless profile wins 85% of its games, so that bound now only
- * catches drift. Issue #63 holds that question.
+ * catches drift, and as of this baseline not even that. Issue #63 holds that question.
  */
 export const SEEDS: readonly number[] = Array.from({ length: 20 }, (_, i) => 100 + i);
 export const MAX_SECONDS = 480;
@@ -48,48 +63,49 @@ export const GATE_THRESHOLDS: readonly GateThreshold[] = [
     profile: 'steady',
     metric: 'winRate',
     bound: 'min',
-    limit: 0.8,
-    baseline: 0.85,
+    limit: 0.95,
+    baseline: 1,
     margin: 'one game of twenty (5 points)',
   },
   {
     profile: 'steady',
     metric: 'meanWavesCleared',
     bound: 'min',
-    limit: 4,
-    baseline: 4.5,
+    limit: 4.5,
+    baseline: 5,
     margin: 'half a wave of five',
   },
   {
     profile: 'steady',
     metric: 'accuracy',
     bound: 'min',
-    limit: 0.73,
-    baseline: 0.83,
+    limit: 0.78,
+    baseline: 0.88,
     margin: '10 points',
   },
   {
     profile: 'steady',
     metric: 'slowestWaveClear',
     bound: 'max',
-    limit: 40,
-    baseline: 20,
+    limit: 34,
+    baseline: 17,
     margin: 'twice the slowest baseline wave',
   },
   {
     profile: 'reckless',
     metric: 'winRate',
     bound: 'max',
-    limit: 0.95,
-    baseline: 0.85,
-    margin: 'two games of twenty (10 points); drift only, see the note above and #63',
+    limit: 1,
+    baseline: 1,
+    margin:
+      'two games of twenty (10 points), saturated at 100%: holds nothing, see the note above and #63',
   },
   {
     profile: 'reckless',
     metric: 'meanWavesCleared',
     bound: 'min',
-    limit: 4.2,
-    baseline: 4.7,
+    limit: 4.5,
+    baseline: 5,
     margin: 'half a wave of five',
   },
 ];

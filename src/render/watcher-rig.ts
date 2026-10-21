@@ -87,12 +87,18 @@ export const makeWatcherRig = (lights: LightPool): EnemyRig => {
   const lens = new THREE.Mesh(WATCHER_LENS, lensMaterial);
   lens.position.y = height * 0.9 - hip.position.y;
   hip.add(mast, head, collar, lens);
-  const light = lights.acquire(hip, ROSE, 2, 10, 1.5);
-  light?.position.copy(lens.position);
+  // Asked again each frame while the pool is empty; see the note in `enemies.ts`.
+  let light: THREE.PointLight | null = null;
+  const claimLight = (): void => {
+    light = lights.acquire(hip, ROSE, 2, 10, 1.5);
+    light?.position.copy(lens.position);
+  };
+  claimLight();
   group.add(hip);
   return {
     group,
     animate: (enemy, t) => {
+      if (!light && enemy.state !== 'dead') claimLight();
       const charge = watcherChargeProgress(enemy, t);
       const walking = enemy.state === 'chase' ? 1 : 0;
       legs.forEach((leg, i) => {
@@ -107,9 +113,9 @@ export const makeWatcherRig = (lights: LightPool): EnemyRig => {
       }
       lens.scale.setScalar(1 + charge * 1.2 + (charge > 0 ? Math.sin(t * 40) * 0.1 : 0));
     },
+    // The lens material is kept, not disposed: see the note at the top of `enemies.ts`.
     dispose: () => {
       lights.release(light);
-      lensMaterial.dispose();
     },
   };
 };

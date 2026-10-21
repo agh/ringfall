@@ -188,7 +188,24 @@ and this project adheres to
   scaler is off under `?record`, where a frame's delta is simulation time;
   a dead particle slot is clipped in the vertex shader instead of
   rasterising a zero-alpha sprite up to the 64 px cap until the ring
-  overwrites it (NUMBERS).
+  overwrites it. Baseline on seed 7, first 90 s under the record hook: 73
+  shader links and 68 program deletes after Deploy, each link frame 300 to
+  1900 ms against a 3.9 ms median.
+- Shader programs survive a shot, a pickup and a wave: effect and rig materials
+  (tracers, bolts, beams, launcher rings, pickups, landing dust, enemy rigs) are
+  kept rather than disposed, because three.js deletes a program when the last
+  material on it is disposed and compiled it again on the next use (#105, block 3).
+  An enemy rig that found the light pool empty at a wave start now claims a
+  light as soon as one is returned.
+- A chasing enemy wedged on the corner of a cover block, or pressed against
+  a face the player stood straight behind, never moved again; it now
+  sidesteps round the block after a second without headway (`STUCK_AFTER`
+  and `sidestepDirection` in `src/core/enemy.ts`, numbers in
+  `docs/design-doc.md`). A strider inside its range band with cover between
+  it and the player's eye closes instead of firing into the block
+  (`hasClearShot`). Seen in the balance traces for #93: five of the forty
+  gate games ran to the clock that way, none does now, and the gate is
+  re-derived from the new run (`tests/balance/gate.ts`, `docs/test-plan.md`).
 - The HUD no longer forces a synchronous layout and style recalc on every
   playing frame: text is written only when it changes and the tracker and
   compass canvas sizes come from a `ResizeObserver` instead of a per-frame
