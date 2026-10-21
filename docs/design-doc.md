@@ -276,7 +276,7 @@ roster for the eight waves:
 
 A 60 m square with transparent boundary walls and 16 procedurally placed
 cover blocks (2 to 6 m footprint, 1.5 to 4 m tall), none within 6 m of the
-centre so the spawn point is open. Layout is seeded; the seed comes from the
+center so the spawn point is open. Layout is seeded; the seed comes from the
 clock in production and is fixed in tests. The HUD calls it Sector 117
 (`ARENA_SECTOR`); there is no explanation and none is planned.
 
@@ -284,7 +284,7 @@ clock in production and is fixed in tests. The HUD calls it Sector 117
 
 One block per arena carries a glyph (`Arena.secret`, placed by
 `placeSecret` with the arena's own seed) on the face that points away from
-the centre, so it is never visible from the spawn. The glyph sits 1 m up
+the center, so it is never visible from the spawn. The glyph sits 1 m up
 (`SECRET_HEIGHT`, or half the block's height if lower): level with a
 crouched eye. A hitscan ray from any weapon that reaches a 0.35 m sphere
 (`SECRET_RADIUS`) around the glyph before any other surface trips it: 1000
@@ -331,7 +331,7 @@ clock in production and is fixed in tests.
   14% of the frame height; at the first kill at night from 60 to 19. The
   budget is a mean under 150 by day and 110 at night.
 - **Sun flare.** An additive core sprite at the sun (scale 520 at 9 km,
-  about 4% of the frame height) and three ghosts on the sun-to-centre axis,
+  about 4% of the frame height) and three ghosts on the sun-to-center axis,
   sized as fractions of the frame height (5%, 8%, 3.5%) at opacity 0.6, so
   no ghost can reach the third of the frame the budget allows. Core and
   ghosts follow `sunDisc`, which is 0 at night, and are hidden rather than
@@ -421,7 +421,7 @@ clock in production and is fixed in tests.
   to 32. Hit-stop of 50 ms (skimmer kill), 90 ms (strider kill) and
   120 ms (shield break) slows the simulation to 5 % in `src/main.ts`.
 - **HUD.** DOM elements updated every frame: the sector designation, wave and enemies left, score,
-  shield and health bars, ammo with a low-ammo colour, grenade pips, centre
+  shield and health bars, ammo with a low-ammo color, grenade pips, center
 
 - **HUD.** DOM elements updated every frame: wave and enemies left, score,
   shield and health bars, ammo with a low-ammo color, grenade pips, center
