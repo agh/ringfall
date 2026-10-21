@@ -127,7 +127,6 @@ within ten minutes: TypeScript, three.js on WebGL, Vite, a pure simulation
 core so the game logic is unit-testable in Node, original names and
 procedural art only.
 
-
 ## 14:08 to 14:27 Core and first renderer
 
 The simulation (`src/core/`) was written first: vector helpers, a seeded
@@ -143,7 +142,6 @@ the horizon.
 The first in-game frame confirmed the loop worked end to end: HUD, radar,
 ring, enemies closing in.
 
-
 ## 14:30 First push, draft PR, research dispatched
 
 Six Conventional Commits, CI with SHA-pinned actions, a GitHub Pages deploy,
@@ -151,7 +149,6 @@ and a draft PR. Three research agents were dispatched in parallel: the reference
 design philosophy and an MLP cut, prior art in browser WebGL games, and a
 brand system. Their reports are under [`../research/`](../research/) and
 [`../brand.md`](../brand.md).
-
 
 ## 14:34 to 15:05 Renderer v2 and three bugs
 
@@ -186,14 +183,12 @@ flags and headless screenshots:
 
 ![Terrain depth fixed, direct path](images/1458-terrain-depth-fixed.png)
 
-
 ## 15:05 Procedural score
 
 A choir drone in D minor (three detuned oscillators per voice, vowel
 formant filters drifting between "ah", "oh" and "oo", a synthesized
 cathedral impulse response) with calm and combat buses that crossfade on
 wave state. No samples anywhere.
-
 
 ## 15:06 The bot that plays the game
 
@@ -204,11 +199,9 @@ headless at 60 Hz and reports win rate, accuracy, shield breaks, and
 per-wave clear times. Because the sim is deterministic, the same seed
 drives balance measurement, browser smoke tests, and the demo film.
 
-
 ## 15:14 Renderer v2 with the post stack, working
 
 ![Post stack working: sun, bloom on trims, ring, mountains](images/1514-renderer-v2-post.png)
-
 
 ## 15:17 Backlog landed
 
@@ -218,7 +211,6 @@ stingers and title choreography, brand compliance, frame budget, playtest
 gate, demo pipeline, easter eggs) and a Later epic with four explicitly
 deferred items. Each child has context, scope, acceptance criteria, and an
 out-of-scope line.
-
 
 ## 15:20 Recording the demo
 
@@ -230,7 +222,6 @@ frames with ffmpeg. On a software GPU the capture runs far slower than
 real time; the film still plays at the right speed because the sim is
 stepped, not timed.
 
-
 ## 15:30 Soundtrack without a clock
 
 Headless Chromium cannot play audio, and the live score schedules against
@@ -239,7 +230,6 @@ recover the event timeline, schedules every voice, drum and effect into an
 `OfflineAudioContext`, and returns a WAV that `scripts/render-score.mjs`
 muxes into the silent capture. Determinism makes the audio line up with
 frames rendered minutes apart.
-
 
 ## 15:45 HUD v2 and the full-tab experience
 
@@ -252,7 +242,6 @@ finally applied. The renderer gained a sun flare, airborne dust, hit-stop
 on kills and shield breaks, death and victory cameras, and a frame-time
 driven resolution scaler. The first flare used the three.js addon and
 failed on the multisampled target; it was replaced with sprites.
-
 
 ## 15:50 The audit
 
@@ -278,7 +267,6 @@ No profile reaches wave eight. Either the bot is too weak or the later
 waves are too hard for a five-to-ten-minute demo; issue #8 (five named
 waves) and #12 (the balance gate) decide which. Until then this table is
 the baseline every tuning change is measured against.
-
 
 ## 16:05 Coach, not player
 
@@ -312,7 +300,6 @@ Stream B1 landed the six weapons at 16:22 (b09ff28) and re-ran
 Weapons, not tuning, moved the bot from never reaching wave eight to
 winning three runs in twenty.
 
-
 ## 16:45 "The flare when enemies explode is way too much"
 
 The user watched the reel and said so. The fix was briefed to stream A
@@ -333,7 +320,6 @@ burst is sixteen motes. Mean frame brightness at that moment went from
 
 ![Night kill, after: a glow at the kill point](images/1700-night-kill-after.jpg)
 
-
 ## 16:56 Weapons in hand
 
 Stream B2's viewmodels integrated with the scene by the coach from the
@@ -344,7 +330,6 @@ gun with a pickup column beside it, from the deterministic run at seed 7:
 ![Wave 2 at night with the beam](images/1656-wave2-night-beam.jpg)
 
 ![Wave 3, the scatter gun and a pickup](images/1656-wave3-scatter-pickup.jpg)
-
 
 ## 17:03 Three streams land
 
@@ -368,7 +353,6 @@ software GL in 1.7 minutes, and the build. Issue #24 was filed for the
 one ugly moment left in the seed 7 run: the bot fires the launcher into
 cover at its own feet at 48 s.
 
-
 ## 17:07 Merged before CI finished
 
 The user asked for main to be merged "ASAP so other agents can PR off
@@ -383,7 +367,6 @@ The coach had been holding the PR as a draft until the reel landed. The
 user wanted main unblocked first, and that was right, because thirteen
 agents were about to branch from it. It is recorded in the overruled
 list above.
-
 
 ## 17:08 The bloom problem, divided
 
@@ -421,7 +404,6 @@ the PR link and the measured numbers. The coach reviews and merges in
 gate-first order: #32, #30 and #12 first, then the renderer PRs, then
 core, merging main into each branch where `scene.ts` regions touch.
 
-
 ## 17:13 Three pull requests against an empty main
 
 While the feature branch was still open, three bot PRs had been raised
@@ -439,7 +421,6 @@ SHA-pinned) at 17:08; it merges when its CI is green.
 The lesson: an issue assigned to a repository bot runs against whatever
 main holds at that minute. File the backlog before the merge, assign it
 after.
-
 
 ## 17:13 Pickup glow without a light
 
@@ -475,7 +456,6 @@ the problem.
 
 ![Injected pickup at 40 m, night](images/1731-pickup-glow-40m-night.jpg)
 
-
 ## 17:15 The reel, twice
 
 The day-only interim cut (56.5 s, cards plus wave 1) was sent to the user
@@ -489,7 +469,6 @@ on this machine's software GL; the check-in to deliver it is set for
 
 The reel agent's shortfall list was honest and short: night unverified,
 dust discs, and two browser deaths recovered by the resume logic.
-
 
 ## 17:26 A settings panel on the title card
 
@@ -511,7 +490,6 @@ overlay now scrolls and the label column is wider.
 
 ![The title overlay with the settings panel open](images/1726-settings-panel.jpg)
 
-
 ## 17:29 Brand compliance
 
 The stylesheet had thirty-odd literal colors that predated the brand doc
@@ -531,7 +509,6 @@ status moved from draft to approved. Frames: title and 10 s of seed 7,
 before (`1724-*`) and after (`1729-*`), at 1280 by 720.
 
 ![Title card after the pass](images/1729-title-after.jpg)
-
 
 ## 17:30 An explosion, not a glowing blob
 
@@ -577,7 +554,6 @@ shield lattice up; the same frame measured 125 before the change.
 ![Launcher kill at 3 m by night, after: crest, chips, and the shield lattice](images/1730-issue26-grenade-kill-after.jpg)
 
 ![A blast in the open by day, 0.45 s on: smoke by the slab, the scorch under the pickup](images/1730-issue26-day-blast-smoke.jpg)
-
 
 ## 17:39 Weapon flashes under the HDR stack (issue #28)
 
@@ -625,7 +601,6 @@ level. Frames, one per kind, from the deterministic runs:
 ![Launcher, seed 3 at 50.9 s](images/1739-flash-launcher.jpg)
 
 ![Minigun, seed 3 at 54.5 s](images/1739-flash-minigun.jpg)
-
 
 ## 17:40 Bloom and flare pass, measured
 
@@ -684,7 +659,6 @@ The remaining pairs (day 10 s and 18 s, night 8.5 s and 18 s, the moon)
 are filed beside them as `1715-bloom-before-*.jpg` and
 `1740-bloom-after-*.jpg`.
 
-
 ## 17:40 The hero is a frame, not a drawing
 
 Seven moments of seed 7 were rendered headless at 3840x1600 with the post
@@ -697,7 +671,6 @@ README strip. The contact sheet is `images/1740-hero-contact.jpg`; the
 recipe is the "Hero and social" section of `docs/brand.md`.
 
 ![Contact sheet of the seven candidate hero frames](images/1740-hero-contact.jpg)
-
 
 ## 17:50 The watcher, held at the gate
 
