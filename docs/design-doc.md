@@ -257,6 +257,18 @@ read live each step; reload and grenade are latched so a key press between
 two steps is never lost. Esc releases the lock and the game returns to the
 overlay, where the run can be resumed with another click.
 
+The title overlay carries a settings panel whose values persist under the
+local-storage key `ringfall.settings.v1` (`src/core/settings.ts`). Corrupt or
+blocked storage yields the defaults, which equal the behaviour before the
+panel existed.
+
+| Setting | Range | Default | Applied to |
+| ------- | ----- | ------- | ---------- |
+| Sensitivity | 0.5 to 2.0 × | 1.0 (0.0022 rad per pixel) | `InputController.setSensitivity` |
+| Field of view | 70 to 100 degrees | 78 | `SceneRenderer.setBaseFov`; sprint still adds 6 |
+| Screen shake | on / off | on | `SceneRenderer.setShakeEnabled`: off sets the shake cap to 0 rad |
+| Hit flash | on / off | on | `SceneRenderer.setFlashEnabled` (hex shield lattice) and the HUD damage flash |
+
 ## Alternatives Considered
 
 ### Option A: Deterministic lockstep with interpolation

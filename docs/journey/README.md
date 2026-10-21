@@ -419,6 +419,26 @@ on this machine's software GL; the check-in to deliver it is set for
 The reel agent's shortfall list was honest and short: night unverified,
 dust discs, and two browser deaths recovered by the resume logic.
 
+## 17:26 A settings panel on the title card
+
+Issue #37 asked for the four things a demo on a borrowed laptop needs:
+mouse sensitivity, field of view, and switches for screen shake and the hit
+flash, all kept between visits. The values live in a pure module,
+`src/core/settings.ts`, modelled on the personal-bests store: missing,
+blocked or corrupt storage yields the defaults, and the defaults are
+exactly what the game did before the panel existed. The panel itself is a
+collapsed "Settings" strip under the controls list so the title card stays
+one button; opened, it shows two sliders and two checkboxes in the brand
+tokens. Wiring stayed small: three one-line setters on the renderer (base
+FOV, shake cap to zero, lattice off), one on the input controller, and a
+body class that hides the HUD damage flash. The frame below was taken
+headless from a clean profile with non-default values, after a reload, to
+show the persistence working. The first capture showed the open card
+overflowing an 800 px window and the field-of-view label wrapping; the
+overlay now scrolls and the label column is wider.
+
+![The title overlay with the settings panel open](images/1726-settings-panel.jpg)
+
 ## Playtest reviews
 
 Each row is a human or agent watching the game play, not a screenshot.
