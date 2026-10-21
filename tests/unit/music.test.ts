@@ -21,6 +21,23 @@ describe('music beat scheduling', () => {
     expect(placed.length).toBeGreaterThanOrEqual(jitter.length);
   });
 
+  it('keeps the grid through a timer tick a whole tick late', () => {
+    // A hitch on the main thread (a shader compile, a GC pause) delays setInterval by up to a
+    // tick; the beat already placed must still be followed by one exactly a tick later.
+    let cursor = 0;
+    const placed: number[] = [];
+    let now = 10;
+    for (const late of [0, 0, TICK, 0, TICK, TICK, 0]) {
+      now += TICK + late;
+      const due = beatsDue(cursor, now);
+      cursor = due.cursor;
+      placed.push(...due.times);
+    }
+    for (let i = 1; i < placed.length; i += 1) {
+      expect((placed[i] ?? 0) - (placed[i - 1] ?? 0)).toBeCloseTo(TICK, 9);
+    }
+  });
+
   it('never fills a stall: after a 10 s gap only the lookahead window is placed, in the future', () => {
     const before = beatsDue(0, 5);
     const after = beatsDue(before.cursor, 15);
