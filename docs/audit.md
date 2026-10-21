@@ -115,7 +115,7 @@ procedures.
 | Medium | Dead screenshake devlog and quakejs.com links | Fixed: removed, attribution kept |
 | Medium | Riot VFX guide redirects to a homepage, a UW course link needs a login, three bungie.org and Princeton pages reset the connection from the sandbox | Deferred: needs verification or a Wayback capture from an unproxied network |
 | Medium | Every document fails the crefft frontmatter schema; four carry `approved:` with no reviewers on a draft | Deferred to #43, which owns the schema |
-| Low | Command comments, controls table, "two research reports", research MLP numbering, Griesemer row dropping the cover condition, misattributed trailer structure and requirement tagging, the Grunt quotation's speakers, "every claim carries a source" | Fixed |
+| Low | Command comments, controls table, "two research reports", research MLP numbering, Griesemer row dropping the cover condition, misattributed trailer structure and requirement tagging, the fleeing-minion quotation's speakers, "every claim carries a source" | Fixed |
 | Low | Journey images named `1535-*` for frames committed at 15:29; a brand sentence on ringworld width the citations do not support; the complexity rule still at warn (seven warnings) | Open |
 
 Seventy findings, fifty-six fixed in the pull request for #54, fourteen
