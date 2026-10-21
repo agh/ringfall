@@ -844,6 +844,25 @@ export const stepGame = (state: GameState, input: InputFrame, dt: number, rng: R
   stepWaves(d);
   stepTableau(d);
   d.player = { ...d.player, vitality: tickVitality(d.player.vitality, dt, d.time) };
-  const { rng: _rng, ...rest } = d;
-  return rest;
+  // Listed field by field: an object rest that excludes `rng` goes through a slow runtime path.
+  return {
+    time: d.time,
+    status: d.status,
+    arena: d.arena,
+    player: d.player,
+    enemies: d.enemies,
+    pendingSpawns: d.pendingSpawns,
+    bolts: d.bolts,
+    grenades: d.grenades,
+    pickups: d.pickups,
+    wave: d.wave,
+    tableau: d.tableau,
+    score: d.score,
+    kills: d.kills,
+    shieldBreaks: d.shieldBreaks,
+    graves: d.graves,
+    secretsFound: d.secretsFound,
+    nextId: d.nextId,
+    events: d.events,
+  };
 };
