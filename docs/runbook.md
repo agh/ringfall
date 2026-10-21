@@ -2,7 +2,8 @@
 type: runbook
 title: "Ringfall runbook: run, build, deploy, test, film, and fix"
 status: draft
-authors: ["Ringfall hackathon team"]
+authors:
+  - name: "Ringfall hackathon team"
 created: 2026-10-21
 ---
 
@@ -115,7 +116,7 @@ pnpm test:e2e
 With `PLAYWRIGHT_CHROMIUM_EXECUTABLE`, `playwright.config.ts` passes the
 path through as `launchOptions.executablePath`, which is how a sandbox with
 a preinstalled Chromium runs the suite without a download. The two demo
-scripts honour the same variable.
+scripts honor the same variable.
 
 ```bash
 pnpm build
@@ -208,7 +209,7 @@ Browsers refuse to start an `AudioContext` without a user gesture.
 `AudioBank.unlock()` is called from the Deploy click and from the first
 pointer down anywhere on the overlay, which is why the title drone starts
 on the first click rather than on page load. There is nothing to fix; a
-report of silence before any click is expected behaviour.
+report of silence before any click is expected behavior.
 
 ### Everything is slow on a software GPU
 

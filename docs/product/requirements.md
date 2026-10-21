@@ -2,7 +2,8 @@
 type: prd
 title: "Ringfall Chapter 1 product requirements"
 status: draft
-authors: ["Ringfall hackathon team"]
+authors:
+  - name: "Ringfall hackathon team"
 created: 2026-10-21
 related: ["docs/spec.md", "docs/design-doc.md", "docs/test-plan.md", "docs/brand.md"]
 ---
@@ -40,7 +41,7 @@ competes with them.
 
 ## The core loop
 
-The player stands at the centre of a 60 m walled arena among sixteen cover
+The player stands at the center of a 60 m walled arena among sixteen cover
 blocks. After a three second countdown a wave descends on a 26 m ring
 around them, each enemy taking one invulnerable second to land. Skimmers
 close at 7 m/s and zap for 12 damage every 0.9 s; striders hold 8 to 16 m
@@ -126,7 +127,7 @@ per the feel research note in [research/](../research/). These are targets
 until spec item 11 measures them.
 
 **Accessibility.** A toggle sets the screen shake cap to zero. Every HUD
-colour pairing meets the contrast ratios in brand.md, and no text sits
+color pairing meets the contrast ratios in brand.md, and no text sits
 below 14 px. The game is playable with keyboard and mouse only, and no
 action depends on a sound cue alone.
 

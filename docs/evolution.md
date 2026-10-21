@@ -2,8 +2,8 @@
 type: design-doc
 title: "How Ringfall proves intent, prevents regressions, and evolves with agents"
 status: draft
-authors: ["Ringfall hackathon team"]
-reviewers: []
+authors:
+  - name: "Ringfall hackathon team"
 created: 2026-10-21
 ---
 
@@ -11,7 +11,7 @@ created: 2026-10-21
 
 > [spec](spec.md) · [test plan](test-plan.md) · [journey](journey/README.md)
 
-This document answers four questions a sceptical engineer asks of a
+This document answers four questions a skeptical engineer asks of a
 project built largely by a coding agent in a morning: how do we know the
 implementation is the product that was designed, how is it tested, what
 stops the next change from breaking it, and how can the next change be
@@ -40,7 +40,7 @@ The whole step is exercised end to end: moving, jumping, shooting,
 reloading, a grenade killing a strider, a swarm breaking the shield and
 killing the player, a wave clearing and the next arriving, and victory
 (`tests/unit/game.test.ts`). These are not tautologies; several of them
-failed when first written and exposed real behaviour (the grenade flew too
+failed when first written and exposed real behavior (the grenade flew too
 far; the enemy faced the wrong way by the renderer's convention; the
 rifle shot over a low enemy's head because the player must aim down).
 

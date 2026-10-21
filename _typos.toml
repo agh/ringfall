@@ -1,0 +1,67 @@
+# Adapted from crefft _typos.toml at commit 6e6481840e68a89874e0d90eaae3cf23e83379fb.
+# Every exception below names the reason it exists, per crefft.
+
+[files]
+extend-exclude = [
+  "node_modules/**",
+  "dist/**",
+  "coverage/**",
+  "playwright-report/**",
+  "test-results/**",
+  "pnpm-lock.yaml",
+  # Git's own metadata and sample hooks, present in a full clone.
+  ".git/**",
+  # The vendored Vale spelling rule encodes the rejected spellings on purpose.
+  "styles/Crefft/US.yml",
+]
+ignore-hidden = false
+
+[default]
+# US spelling is enforced in the documents this repository owns (README.md and
+# docs/). Code comments and the three Markdown files below still carry
+# British spellings that other in-flight changes own; those file types keep
+# plain misspelling detection under the variant-neutral "en" locale until
+# their owners migrate them, at which point delete the overrides.
+locale = "en-us"
+
+[default.extend-words]
+# A formant is a resonance peak of the vocal tract; the synth choir in
+# src/audio/ and the journey log use the acoustics term, not "format".
+formant = "formant"
+
+[default.extend-identifiers]
+# three.js names its physically based material property `metalness`.
+metalness = "metalness"
+# The HTMLMediaElement event is named `seeked`; scripts/reel.mjs uses the same word.
+seeked = "seeked"
+# An ffmpeg filter-graph output label in scripts/reel.mjs, not "about".
+aout = "aout"
+# Allo (allo.io) is the publisher cited in docs/research/product-management.md.
+Allo = "Allo"
+allo = "allo"
+
+[type.ts]
+locale = "en"
+
+[type.js]
+locale = "en"
+
+[type.css]
+locale = "en"
+
+[type.html]
+locale = "en"
+
+[type.yaml]
+locale = "en"
+
+[type.json]
+locale = "en"
+
+[type.sh]
+locale = "en"
+
+[type.other-prose]
+# Not in the docs/ tree, edited concurrently by other changes.
+extend-glob = ["AGENTS.md", "CHANGELOG.md", "PULL_REQUEST_TEMPLATE.md"]
+locale = "en"

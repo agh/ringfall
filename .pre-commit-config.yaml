@@ -14,3 +14,21 @@ repos:
     rev: v2.5.12
     hooks:
       - id: biome-check
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.51.1
+    hooks:
+      - id: typos
+  - repo: https://github.com/vale-cli/vale
+    rev: v3.24.0
+    hooks:
+      - id: vale
+        args: [--no-global]
+        types: [markdown]
+  - repo: local
+    hooks:
+      - id: check-frontmatter
+        name: Validate docs frontmatter against docs/frontmatter.schema.json
+        entry: node scripts/check-frontmatter.mjs
+        language: system
+        files: ^(README\.md|docs/.*\.md)$
+        pass_filenames: false

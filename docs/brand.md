@@ -2,10 +2,9 @@
 type: design-doc
 title: "Ringfall brand and design system"
 status: draft
-authors: ["Ringfall research agent (Claude), reviewed by the hackathon team"]
-reviewers: []
+authors:
+  - name: "Ringfall research agent (Claude), reviewed by the hackathon team"
 created: 2026-10-21
-approved: 2026-10-21
 ---
 
 # Ringfall brand and design system
@@ -21,7 +20,7 @@ document disagree, fix the code or update this document in the same PR.
 
 | Token | Hex | Role | Contrast vs Abyss sky / vs Hull panel |
 | ----- | --- | ---- | ------------------------------------- |
-| Abyss | `#0b1a2e` | Sky zenith, page background, clear colour | n/a |
+| Abyss | `#0b1a2e` | Sky zenith, page background, clear color | n/a |
 | Beacon | `#7dd3fc` | Primary HUD accent, reticle, cover trims, shield | 10.5 / 9.9 (AAA) |
 | Flare | `#fbbf24` | Health, low ammo, the player's own state | 10.5 / 9.9 (AAA) |
 | Dawn | `#f6b26b` | Sun, horizon glow, sun-lit face tint | 9.6 / 9.1 (AAA) |
@@ -35,14 +34,14 @@ Thresholds per [WCAG 2.2 SC 1.4.3][wcag]. Rule: every panel gets a 1 px
 Slate border; never rely on fill alone. Never place Beacon text on Ring or
 Bone.
 
-### Colour psychology
+### Color psychology
 
 - The cold base (Abyss, Ring, Beacon) reads as composure and precision. The
   whole world is cold so the eye is drawn to the two warm exceptions.
 - Flare is reserved for the player's own state: caution without alarm.
   Rose is reserved for threat: enemies and incoming damage. That single rule
   makes every warm pixel meaningful.
-- Dawn is the narrative colour: the sun is low, the day is starting, the
+- Dawn is the narrative color: the sun is low, the day is starting, the
   ring is catching first light. Warm key against cool fill is what makes
   flat-shaded faces read as volume.
 
@@ -52,7 +51,7 @@ Bone.
   [Helland approximation][helland]), elevation 11 to 12 degrees, azimuth
   towards the ring so the ring is backlit by the horizon. Shadow map 2048.
 - Hemisphere: sky `#3b6a9a`, ground `#15202e`, intensity 0.6.
-- Fog: exponential, colour between Abyss and the horizon band so geometry
+- Fog: exponential, color between Abyss and the horizon band so geometry
   dissolves into the horizon rather than into the sky.
 - Sky: scattering sky (three.js `Sky`) with turbidity 4, Rayleigh 2.2; the
   ring, sun and stars are excluded from fog.
@@ -90,7 +89,7 @@ Anything smaller is decoration and must not carry gameplay meaning.
 - Strider: vertical, tall, four legs. One Rose lens on the head; charge
   telegraph: muzzle swells and the lens goes white.
 - Enemies carry no Beacon cyan anywhere; the world carries no Rose anywhere.
-  Colour tells you what is hostile before shape does.
+  Color tells you what is hostile before shape does.
 
 **Trim conventions.** Emissive trim strips are thin, Beacon, and sit on a
 shared datum (the top edge of every cover slab). One horizontal line across
@@ -104,7 +103,7 @@ its inner face and a bright rim.
 
 **Low-poly, deliberate, not cheap.** Flat shading on terrain and enemies;
 emissive trim no more than 5% of any object's surface; gradient sky plus
-fog band, never a flat clear colour; no imported textures (the floor plating
+fog band, never a flat clear color; no imported textures (the floor plating
 and ring surface are procedural canvases).
 
 ## Audio identity
@@ -112,7 +111,7 @@ and ring surface are procedural canvases).
 - Title theme: D minor pedal with open fifths and a ninth. Each voice is
   three detuned oscillators with slow vibrato, through two parallel
   bandpass formants that drift between "ah", "oh" and "oo", into a
-  convolver whose impulse response is synthesised decaying noise
+  convolver whose impulse response is synthesized decaying noise
   ([ReverbGen recipe][reverbgen], re-implemented; [MDN][convolver]). A deep
   drum (pitch-drop sine plus a noise burst) lands every few bars.
 - Weapon and shield: rifle is a click plus bandpassed noise plus a pitch
@@ -163,7 +162,7 @@ is tiny, short and additive.
 ## Consistency checklist (PR gate)
 
 1. Only palette tokens are used; no new hex values without a token name.
-2. Warm colours are semantic: Flare is player state, Rose is threat, Dawn is
+2. Warm colors are semantic: Flare is player state, Rose is threat, Dawn is
    light.
 3. Enemies carry no Beacon; world geometry carries no Rose.
 4. Every HUD panel has a 1 px Slate border; no text below 14 px.
@@ -171,7 +170,7 @@ is tiny, short and additive.
 6. Emissive trim stays thin and on the datum.
 7. Smallest gameplay-meaningful feature is 0.5 m or larger.
 8. Bloom threshold stays above 1.0; tone mapping stays ACES.
-9. No external audio files; every sound is synthesised.
+9. No external audio files; every sound is synthesized.
 10. Music changes are gain ramps, never hard cuts.
 11. Screen shake respects the cap and the accessibility toggle.
 12. No franchise names, logos, glyphs, fonts or melodies anywhere.
