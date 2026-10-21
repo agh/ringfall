@@ -1023,9 +1023,10 @@ of which is in the tree:
 | Demo reel and walkthrough deck | 69 s MP4, 7.6 MB PPTX |
 | Shipped bundle | 4.2 MB, no source map |
 
-Open at the stop: block 2 of #105 (scene, post, particles, lights,
-environment) was still measuring; the eleven `later` issues and #3 hold
-everything deferred.
+Block 2 of #105 landed at 20:07 as #117 (effect shaders warmed before
+Deploy, the composer following the resolution scaler, dead particles
+clipped), which closed the quality pass. Nothing is open at the stop except
+the eleven `later` issues and #3, which hold everything deferred.
 
 ## Playtest reviews
 
