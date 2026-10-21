@@ -94,8 +94,9 @@ shape, colour, font and note in Ringfall is original, and
 moment the shield breaks, and the moment a strider dies and the skimmers
 run. Those three beats are the product.
 
-**Does it have an ending?** Yes. Clearing the final wave freezes the fight
-and tilts the camera to the ring while the score resolves. We end on the
+**Does it have an ending?** Partly. Clearing the final wave lifts the
+camera to the ring; the tableau text and the resolving score are not built
+(#8). We end on the
 image and the sound, not a menu.
 
 ## Internal FAQ
@@ -116,12 +117,12 @@ mood. Names, logos, glyphs, melodies and models are someone else's
 property, and using them would turn a portfolio piece into a liability.
 The rule is written down in ADR-0003 and enforced by the brand checklist.
 
-**What is the MLP cut?** The fourteen numbered items in the
+**What is the MLP cut?** The sixteen numbered items in the
 [specification](../spec.md), each tied to a moment a first-time player
 would describe to a friend. The loop-changing items come first: the shield
 break as an event, enemy theatre, grenade dives, firing points, five named
-waves with a tableau. Melee, a second weapon, a third enemy, mobile and
-co-op are explicitly Later.
+waves with a tableau. Melee, a third enemy, mobile and co-op are
+explicitly Later.
 
 **What is the risk?** That the demo laptop is slower than the targets, or
 that the title and Deploy choreography is not finished and the first thirty

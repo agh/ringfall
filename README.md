@@ -30,6 +30,7 @@ pnpm dev            # http://localhost:5173
 | Grenade        | G or right click   |
 | Reload         | R                  |
 | Jump / Sprint  | Space / Shift      |
+| Swap weapon    | Q                  |
 | Release mouse  | Esc                |
 
 Requires a browser with WebGL 2 and pointer lock.
@@ -43,7 +44,7 @@ events that happened during the step. Everything else reacts to those events:
 
 - `src/render/` mirrors the state into a three.js scene and plays effects
 - `src/hud/` draws vitals, ammo, wave status, and a motion tracker in the DOM
-- `src/audio/` synthesises every sound with WebAudio oscillators
+- `src/audio/` synthesises every sound with WebAudio oscillators and filtered noise
 - `src/input/` turns keyboard, mouse, and pointer lock into an `InputFrame`
 
 Because `src/core/` never touches the DOM or WebGL, it is unit-tested in Node
@@ -59,10 +60,17 @@ tests in real Chromium.
 | [docs/evolution.md](docs/evolution.md) | How intent is proven in code, how regressions are prevented, how the product evolves with agents |
 | [docs/design-doc.md](docs/design-doc.md) | Architecture and every gameplay number with its rationale |
 | [docs/brand.md](docs/brand.md) | Palette, typography, geometry language, audio identity, feel values, PR checklist |
-| [docs/test-plan.md](docs/test-plan.md) | Static, unit, playtest, browser, visual, and recording layers |
-| [docs/research/](docs/research/) | Sourced research on Halo's design and on browser WebGL prior art |
+| [docs/test-plan.md](docs/test-plan.md) | Static, unit, playtest, balance gate, browser, visual, and recording layers |
+| [docs/research/](docs/research/) | Sourced research on classic shooter design, browser WebGL prior art, and product management practice |
 | [docs/journey/](docs/journey/) | Time-indexed build log with captured frames |
 | [docs/adr/](docs/adr/) | Architecture decision records |
+| [docs/runbook.md](docs/runbook.md) | Run, build, deploy, test, film, and fix |
+| [docs/metrics.md](docs/metrics.md) | Every number the playtest harness reports |
+| [docs/decisions.md](docs/decisions.md) | Decision index with the commits that made them |
+| [docs/risks.md](docs/risks.md) | Risk register |
+| [docs/launch-checklist.md](docs/launch-checklist.md) | Go or no-go before a release tag |
+| [docs/glossary.md](docs/glossary.md) | Glossary |
+| [docs/audit.md](docs/audit.md) | Adversarial audits: findings and outcomes |
 
 The backlog lives in GitHub Issues: the MLP epic (#2) and the Later epic (#3).
 
@@ -81,7 +89,7 @@ pnpm demo                         # film seed 7 to demo.mp4 (needs pnpm build an
 ## Develop
 
 ```bash
-pnpm lint           # Biome (lint + format, CI mode)
+pnpm lint           # Biome (CI mode) and markdownlint
 pnpm typecheck      # tsc --noEmit, strict
 pnpm test           # Vitest unit tests with V8 coverage thresholds
 pnpm test:e2e       # Playwright smoke tests against a production preview

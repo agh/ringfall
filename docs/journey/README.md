@@ -54,9 +54,9 @@ Meanwhile three research agents ran in parallel and came back with sourced
 reports on the design philosophy being borrowed, the browser prior art, and
 a brand system. Their findings became the specification, the brand doc,
 and a backlog of GitHub issues, each with acceptance criteria a person can
-check; it started at seventeen and stood at thirty-three by the end.
+check; it started at seventeen and stood at thirty-three by 17:24.
 
-**Act four: the coach.** With an hour and a half left the asks came five
+**Act four: the coach.** With two and a half hours left the asks came five
 at a time (day and night, six weapons, weather, a story reel, a domain)
 and the role changed: dispatch to agents, review what comes back, land
 the code. The first round was four local streams with disjoint files; it
@@ -83,7 +83,7 @@ entries from 16:05 on are that act.
 - **Holding PR #1 as a draft until the reel landed.** The coach wanted
   the film in the tree before main took anything. The user wanted main
   unblocked first so other agents could branch from it. That was right:
-  thirteen agents were about to branch from it. Merged at 17:06 as
+  thirteen agents were about to branch from it. Merged at 17:07 as
   8566f27.
 
 ### Calls that were wrong on the evidence
@@ -101,6 +101,14 @@ Not overruled by anyone; found out by measuring.
 - **A checkpoint commit to satisfy the stop hook.** It swept an agent's
   scratch harness into the tree and broke CI lint for one run (16:35 to
   16:42). Checkpoints now go through the same gates as any commit.
+- **An ambiguous brief.** "Wave 1 unchanged" and "day: sun at 35 degrees"
+  in one brief to stream A; the agent chose the first and flagged it (16:05
+  entry).
+- **Shipping the interim reel from a stale build.** The 16:47 cut was
+  captured on a 16:11 build with the old flare (17:15 entry).
+- **Claiming a fix that was not made.** The first audit recorded a recorder
+  frame-rate guard as fixed; only the demo's frame rate changed (second
+  audit).
 
 ## 14:08 Kick-off
 
@@ -199,7 +207,7 @@ out-of-scope line.
 
 `scripts/record-demo.mjs` opens the built page with `?record&bot&seed=7`,
 steps the simulation a whole number of ticks per captured frame (the
-frame rate must divide 60; an earlier run at 24 fps rounded to three ticks
+frame rate should divide 60, which the recorder does not enforce; an earlier run at 24 fps rounded to three ticks
 and played a fifth too fast, which the audit caught), and assembles the
 frames with ffmpeg. On a software GPU the capture runs far slower than
 real time; the film still plays at the right speed because the sim is
@@ -336,7 +344,7 @@ software GL in 1.7 minutes, and the build. Issue #24 was filed for the
 one ugly moment left in the seed 7 run: the bot fires the launcher into
 cover at its own feet at 48 s.
 
-## 17:06 Merged before CI finished
+## 17:07 Merged before CI finished
 
 The user asked for main to be merged "ASAP so other agents can PR off
 main", and for more agents. PR #1 was taken out of draft and merged as
@@ -372,7 +380,7 @@ requests cannot collide, plus a gate that measures:
   are recorded from the frames at the commit they land on, not chosen
   to pass.
 
-Seven more issues went out at the same time, outside the renderer: #32
+Seven more issues were dispatched alongside them, two new (#32, #33) and five from the backlog, outside the renderer: #32
 core purity as a Biome rule instead of a grep, #33 one event-to-sound
 table so the live bank and the offline score cannot drift, #24 the bot's
 launcher, #12 the balance gate in CI with thresholds from the baseline
@@ -393,7 +401,7 @@ While the feature branch was still open, three bot PRs had been raised
 from the issues between 16:53 and 16:55: #21 (the Claude GitHub app,
 Easter eggs, #14), #22 (Copilot, the recording pipeline, #13) and #23
 (Copilot, the third enemy archetype, #17). All three stopped themselves
-with "game code not in repo", because main held nothing until 17:06.
+with "game code not in repo", because main held nothing until 17:07.
 They were closed with a note. Issue #13 was closed as already done on
 main, issue #14 was re-dispatched from main, and #17 stays in the Later
 epic.
@@ -428,6 +436,12 @@ Each row is a human or agent watching the game play, not a screenshot.
 | 17:00 | 7 | A 75 s bot run by day, frames every 3 s, and the night kill at 10 s, after the weapon integration | Weapon swaps read (beam at 18 s, scatter at 45 s, launcher at 48 s), pickup columns are visible from across the arena, the night frame keeps its stars and trims. The launcher round the bot fired at its own feet at 48 s still washes the frame pink with the shield-down effect; that is the jolt it should be, but the bot should not do it (issue for the bot: no launcher inside the blast radius). |
 | 15:56 | 7 | The whole 49 s film with its offline score: title, deploy, waves 1 to 4 | Reviewed frame-by-frame at 8 s, 22 s and 46 s and watched end to end at speed: the sun flare and bloom carry the opening, the bot's first kill lands at 4.8 s, wave 2 brings the first strider and bolts, the HUD reads at 720p. Weak points: around 8 s the bot turns into the sun and the frame whites out for about two seconds (this capture predates the exposure and haze reduction and HUD v2), and the bot stands in the open while reloading. Shipped as the first reel; a second capture with the current build was started at 16:00. |
 | 15:29 | 7 | Frames 100 to 225 of the first capture (wave 1, 24 fps) | Bot kills two skimmers by 8 s, loses the third behind cover and reloads in the open; the sun behind a slab blooms hard enough to hide the reticle for a second. Readable, dramatic, slightly over-bright. Exposure left as is for the reel; a bloom radius reduction is a candidate. |
+
+![The first film at 8 s](images/1556-film-08s.jpg)
+
+![The first film at 22 s](images/1556-film-22s.jpg)
+
+![The first film at 46 s](images/1556-film-46s.jpg)
 
 ![Wave 1, the sun behind a slab](images/1535-demo-seed7-wave1-sun.jpg)
 

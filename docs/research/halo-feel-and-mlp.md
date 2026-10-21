@@ -117,9 +117,9 @@ theatrical enemies**.
 | Priority | Item | Why it is lovable, not merely functional |
 | -------- | ---- | ---------------------------------------- |
 | MLP 1 | Shield pop and recharge as a full audiovisual event; enemies back off while the shield is down | The Halo contract. The player feels the game letting them breathe. |
-| MLP 2 | Skimmers flee when a strider dies, with exaggerated animation and a bark | Fewer than a third of players noticed even at 11; the demo must crank to 12. |
-| MLP 3 | Striders dive from grenades and sidestep fire; seek cover on low shield | Makes bouncing grenades a conversation. |
-| MLP 4 | Weapon juice: camera kick, recoil, tracer, hit-flash, distinct chimes | Cheapest wow available. |
+| MLP 3 | Skimmers flee when a strider dies, with exaggerated animation and a bark | Fewer than a third of players noticed even at 11; the demo must crank to 12. |
+| MLP 4 | Striders dive from grenades and sidestep fire; seek cover on low shield | Makes bouncing grenades a conversation. |
+| MLP 2 | Weapon juice: camera kick, recoil, tracer, hit-flash, distinct chimes | Cheapest wow available. |
 | MLP 5 | Firing points: enemies choose scored positions rather than beelining | "Transparent thought process" needs positioning. |
 | MLP 6 | The ring overhead, sun, fog | The single image everyone remembers. |
 | MLP 7 | Procedural title chant plus scored stingers | Audio identity is what the audience hums in the lift. |

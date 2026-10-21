@@ -86,13 +86,14 @@ gh run watch
 
 The unit suite runs in Node against `src/core/` only, with V8 coverage
 thresholds of 85 percent for lines, functions, and statements and 75
-percent for branches. The playtest suite is the same runner pointed at
-`tests/unit/bot.test.ts` with coverage disabled, so it finishes in seconds
-and prints the balance numbers defined in [metrics.md](metrics.md).
+percent for branches. The balance gate is the same runner pointed at
+`tests/balance/` with coverage disabled, so it finishes in seconds,
+prints the balance numbers defined in [metrics.md](metrics.md), and writes
+`test-results/balance/balance-report.md`.
 
 ```bash
 pnpm test           # vitest run --coverage
-pnpm balance        # vitest run tests/unit/bot.test.ts --coverage.enabled=false
+pnpm balance        # vitest run tests/balance --coverage.enabled=false --silent=false --reporter=verbose
 pnpm test:watch     # vitest in watch mode
 ```
 
@@ -128,7 +129,7 @@ workflow.
 ## Film the demo and score it
 
 `pnpm demo` runs the two scripts in sequence with the settings used for
-the reel: seed 7, 40 seconds, 24 frames per second, a one second lead-in on
+the reel: seed 7, 40 seconds, 30 frames per second, a one second lead-in on
 the score. It needs a production build and `ffmpeg`.
 
 ```bash
@@ -183,8 +184,8 @@ The ffmpeg that Playwright bundles (`/opt/pw-browsers/ffmpeg-*/ffmpeg-linux`)
 is built for screencasts only: VP8 and WebM, no JPEG decoder, no H.264, no
 audio encoder. Point `FFMPEG` at a full build instead. The static binary
 from `pip install imageio-ffmpeg` (`imageio_ffmpeg/binaries/ffmpeg-linux-*`)
-or a system `ffmpeg` both work. A 24 fps capture made before the frame-rate
-guard was added holds three simulation ticks per frame; encode it at
+or a system `ffmpeg` both work. A 24 fps capture holds three simulation ticks per
+frame (the recorder rounds `60 / fps` and does not refuse such rates); encode it at
 `-framerate 20` so it plays in real time, and render the score for the
 simulated length (48 s for 960 frames) with a lead-in equal to the title
 frames divided by 20.

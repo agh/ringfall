@@ -40,7 +40,7 @@ profile that retreats at 30 percent shield and a reckless one that never
 retreats. Its purpose is described in [test-plan.md](test-plan.md).
 
 **Chapter 1.** The demo as specified in [spec.md](spec.md): one arena,
-one rifle, four grenades, two enemies, eight waves, and a victory tableau,
+six weapons, four grenades, two enemies, eight waves, and a victory camera,
 lasting five to ten minutes. Anything beyond it is Later.
 
 **Cover slab.** One of the sixteen cover blocks in the arena, 2 to 6 m in
@@ -80,7 +80,7 @@ mouse, and `src/core/bot.ts` builds it from state; the type lives in
 `src/core/game.ts`.
 
 **Later.** The explicit deferral list in [spec.md](spec.md), mirrored by
-the Later epic in issue #3: melee, a second weapon, a third enemy, mobile
+the Later epic in issue #3: melee, a third enemy, mobile
 and WebGPU, and vehicles or a campaign. A feature that adds content
 without changing one of the three loops is Later.
 

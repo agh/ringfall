@@ -64,7 +64,9 @@ to the job summary.
 ### Baseline
 
 The run the thresholds are derived from, printed by `pnpm balance` on
-`main` at the commit that introduced the gate:
+`main` at the commit that introduced the gate (#39, before the rout
+in #40; on `main` after #40 the same games give steady 20% wins,
+5.40 waves, reckless 5% wins, 5.20 waves, and the gate passes):
 
 | Profile | Win rate | Mean waves cleared | Mean seconds | Accuracy | Shield breaks | Mean clear per wave (s) |
 | ------- | -------- | ------------------ | ------------ | -------- | ------------- | ----------------------- |
@@ -123,7 +125,8 @@ judged good or bad.
 - Pixel-exact rendering: software GL differs from hardware; we check
   structure (no errors, expected elements) not pixels.
 - Audio output: synthesis is verified by code review and by listening; the
-  event-to-sound mapping is unit-testable and will be (#9).
+  event-to-sound mapping is unit-tested in `tests/unit/sounds.test.ts`;
+  the synthesis itself is not.
 - Human feel: the bot measures fairness, not fun. A human playtest is the
   last gate before a release tag.
 

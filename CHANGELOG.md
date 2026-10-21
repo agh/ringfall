@@ -15,6 +15,12 @@ and this project adheres to
   New enemy state `flee` and two events for the presentation layers,
   `enemyFled { id, kind }` and `enemyBark { id, line }`, with three original
   bark lines (`src/core/enemy.ts`).
+- Core purity as a lint rule: a Biome override on `src/core/**` and
+  `tests/unit/purity.test.ts` (#34).
+- Balance gate in CI: `pnpm balance` fails on baseline-derived thresholds
+  in `tests/balance/gate.ts` and uploads a `balance-report` artifact (#39).
+- One event-to-sound table (`src/audio/sounds.ts`) shared by the live bank
+  and the offline score, with a bark squeal for routed skimmers (#42).
 - Renderer v2: scattering dawn sky, a ringworld you stand on, rolling
   terrain with mountains, image-based lighting, a GPU particle pool, an HDR
   composer with bloom and a custom feel pass (vignette, chromatic
@@ -26,7 +32,7 @@ and this project adheres to
   `src/core/playtest.ts`) with balance tests; `pnpm balance`.
 - Deterministic demo recorder (`scripts/record-demo.mjs`, `pnpm demo`) and
   the `?record&bot&seed=N` capture hook.
-- Specification, brand system, test plan, two research reports, a journey
+- Specification, brand system, test plan, three research reports, a journey
   log with captured frames, and a README banner.
 - Personal bests kept in the browser's local storage: the end card compares
   the round with the previous best score, deepest wave, runs and clears.
@@ -47,6 +53,8 @@ and this project adheres to
 
 ### Fixed
 
+- The bot no longer fires the launcher when cover sits inside the blast
+  radius (#36).
 - A negative first frame delta after Deploy made every decay term grow
   without bound; the delta is now clamped at zero.
 - The terrain under the arena z-fought the floor at range; it is sunk six

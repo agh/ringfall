@@ -130,8 +130,8 @@ view; sprint adds 6 degrees over 150 ms. Head bob is 0.03 m vertical and
 the look direction and springs back; recoil kicks it back and up and
 recovers within 200 ms. The mouse turns at 0.0022 rad per pixel with pitch
 clamped just short of vertical. Screen shake is max(current, new), never
-additive, hard-capped at 0.035 rad, and the accessibility toggle sets the
-cap to zero. Tone mapping is ACES at exposure 0.38; fog is exponential at
+additive, hard-capped at 0.035 rad; the accessibility toggle to set the
+cap to zero is not built (#37). Tone mapping is ACES at exposure 0.38; fog is exponential at
 density 0.0032. The tableau is the only scripted camera move: a tilt up to the ring, then
 stillness.
 

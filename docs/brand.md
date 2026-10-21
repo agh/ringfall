@@ -11,7 +11,7 @@ approved: 2026-10-21
 # Ringfall brand and design system
 
 One recommendation per decision; alternatives marked "Alt". Values here are
-the source of truth for `src/style.css`, the light rig in
+the reference for `src/style.css`, the light rig in
 `src/render/scene.ts`, and the README banner. Where the code and this
 document disagree, fix the code or update this document in the same PR.
 
@@ -157,7 +157,8 @@ is tiny, short and additive.
 - Hit-stop: 50 ms on a skimmer kill, 90 ms on a strider kill, 120 ms on the
   player's shield break. Implement as a time-scale, not a frame skip.
 - Screen shake: magnitude is max(current, new), never additive; hard cap
-  0.035 rad; an accessibility toggle sets the cap to zero.
+  0.035 rad; an accessibility toggle to set the cap to zero is specified and
+  not built (#37).
 - HUD tweens at most 500 ms; numbers never snap.
 
 ## Consistency checklist (PR gate)
@@ -173,7 +174,7 @@ is tiny, short and additive.
 8. Bloom threshold stays above 1.0; tone mapping stays ACES.
 9. No external audio files; every sound is synthesised.
 10. Music changes are gain ramps, never hard cuts.
-11. Screen shake respects the cap and the accessibility toggle.
+11. Screen shake respects the cap (the accessibility toggle is not built, #37).
 12. No franchise names, logos, glyphs, fonts or melodies anywhere.
 
 ## Sources

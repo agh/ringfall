@@ -125,7 +125,8 @@ with the scene under 7 ms, bloom under 2 ms and the feel pass under 0.5 ms,
 per the feel research note in [research/](../research/). These are targets
 until spec item 11 measures them.
 
-**Accessibility.** A toggle sets the screen shake cap to zero. Every HUD
+**Accessibility.** A toggle to set the screen shake cap to zero is required
+and not built (#37). Every HUD
 colour pairing meets the contrast ratios in brand.md, and no text sits
 below 14 px. The game is playable with keyboard and mouse only, and no
 action depends on a sound cue alone.

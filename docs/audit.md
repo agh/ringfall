@@ -33,7 +33,7 @@ the frame rate the demo script used.
 
 | Severity | Finding | Outcome |
 | -------- | ------- | ------- |
-| High | `Math.round(60 / 24) = 3` steps per frame: a 40 s film held 48 s of play and the offline score drifted by 8 s | Fixed: the recorder refuses frame rates that do not divide 60; `pnpm demo` films at 30 fps; the film already captured at 24 fps is encoded at 20 fps so it plays in real time |
+| High | `Math.round(60 / 24) = 3` steps per frame: a 40 s film held 48 s of play and the offline score drifted by 8 s | Fixed in part: `pnpm demo` films at 30 fps, but the recorder still rounds `60 / fps` and does not refuse rates that do not divide 60 (second audit); the film already captured at 24 fps is encoded at 20 fps so it plays in real time |
 | High | Four documents said "no persistence of any kind" while personal bests were shipped and listed as done | Fixed in all four |
 | High | A bot test titled "reckless dies sooner" asserted the opposite with a 0.5 factor chosen to pass | Tests renamed to what they assert; a printed balance report replaces the claim |
 | High | The bot read enemy health and targeted enemies beyond sight and tracker range while documents said it sees what a player sees | Fixed: candidates are visible or within 28 m, health is not used; documents now say exactly that |
