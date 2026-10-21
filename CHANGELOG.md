@@ -132,11 +132,15 @@ and this project adheres to
 
 ### Changed
 
+- The luminance gate is its own optional workflow (`.github/workflows/frames.yml`)
+  on pull requests that touch the renderer and by hand; the smoke job is
+  capped at twelve minutes (#104).
 - The Pages build waits on the lint, unit, build, balance, docs and
-  security jobs only; the luminance gate and the browser smoke tests still
-  fail the run but no longer hold the deploy. The smoke tests wait up to
+  security jobs only; the browser smoke tests (and, until #104, the
+  luminance gate) still fail the run but no longer hold the deploy. The smoke tests wait up to
   four minutes for the first simulation step and the e2e job uploads the
-  Playwright traces on failure (#100).
+  Playwright traces, and since #96 the HTML report, as `playwright-report`
+  on failure (#100).
 - Pickups glow through their own emissive rig instead of one point light
   each (#29).
 - HUD and overlay styling moved onto the brand tokens and type scale, with
@@ -157,6 +161,7 @@ and this project adheres to
 
 ### Fixed
 
+- The dropship and its pods borrow their lights from the pool too (#103).
 - Weapon muzzle flashes, tracers and the beam re-tuned under the HDR
   composer so they read without blooming out (#28).
 - Review sweep for #51 and #52, after the owning pull requests merged:

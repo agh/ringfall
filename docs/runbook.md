@@ -65,8 +65,8 @@ pnpm check          # lint, typecheck, unit tests with coverage, build
 
 The `Pages build` and `Pages deploy` jobs at the end of
 `.github/workflows/ci.yml` run on every push to `main`, after every other
-CI job on that push except the luminance gate and the browser smoke tests
-has passed (`needs`, #100), so a red run never ships. The
+CI job on that push except the browser smoke tests has passed (`needs`
+since #100 and #104), so a red run never ships. The
 build job installs with the frozen lockfile, runs `pnpm build`, calls
 `actions/configure-pages`, and uploads `dist/` with
 `actions/upload-pages-artifact`. The deploy job publishes that artifact
@@ -80,8 +80,9 @@ One repository setting must be made once by hand, because a workflow
 cannot make it: under Settings, Pages, Build and deployment, the Source
 must be set to GitHub Actions. Until that is done the deploy job fails at
 `configure-pages`, and with the branch source the site at
-<https://agh.github.io/ringfall/> serves the repository's raw `index.html`
-rather than the build (observed 2026-10-21). The `github-pages` environment is created by the first successful
+<https://agh.github.io/ringfall/> served the repository's raw `index.html`
+rather than the build (observed 2026-10-21 until the source was set later
+that day). The `github-pages` environment is created by the first successful
 run.
 
 To redeploy without a code change, re-run the last `CI` run on `main`
@@ -110,8 +111,8 @@ pnpm test:watch     # vitest in watch mode
 
 ## Playwright
 
-The smoke tests in `tests/e2e/` run against `vite preview`, so the
-production build must exist first. Each test has a 600 second budget and
+The smoke tests in `tests/e2e/` run against `vite preview`; `pnpm test:e2e`
+builds first (#96). Each test has a 600 second budget and
 waits up to 240 seconds for the simulation clock to pass 0.5 seconds,
 because software GL renders the post stack at a few frames per second.
 
@@ -162,7 +163,7 @@ node scripts/record-demo.mjs --seed 7 --seconds 45 --fps 30 --out demo.mp4
 
 `scripts/render-score.mjs` starts a second preview on port 4176, re-runs
 the same seed headlessly to recover the event timeline, renders every voice
-and effect into an `OfflineAudioContext`, writes `.record-score.wav`, and
+and effect into an `OfflineAudioContext`, writes a `score.wav` in a temporary directory, and
 muxes it into the silent film as 192 kbps AAC. Its flags and defaults are
 `--seed 7`, `--seconds 40`, `--lead-in 1`, `--video demo.mp4`, and
 `--out demo-scored.mp4`. The seed and seconds must match the capture or the
@@ -219,8 +220,9 @@ not captured in parallel because SwiftShader already uses every core.
 
 ### Custom domain
 
-The site's custom domain is <https://ringfall.alexhowells.com> (not live as
-of 2026-10-21; the Pages source setting is #85). `public/CNAME` holds
+The site is served at <https://ringfall.alexhowells.com> (the build, over
+HTTPS, as of 2026-10-21, 19:10 UTC; plain HTTP still answers, so "Enforce
+HTTPS" is not yet on, #85). `public/CNAME` holds
 the hostname so every Pages deploy keeps it. One-time setup: a DNS `CNAME`
 record for `ringfall` pointing at `agh.github.io`, then in the repository's
 Settings, Pages, enter the custom domain and tick "Enforce HTTPS" once the
