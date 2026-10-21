@@ -292,6 +292,12 @@ its plume, between the trims:
 
 ![Injected pickup at 21 m, night](images/1724-pickup-glow-21m-night.jpg)
 
+At 40 m, the far side of the arena, it is a lime point under the
+reticle: findable, not loud. The 3 m column read further, and that was
+the problem.
+
+![Injected pickup at 40 m, night](images/1731-pickup-glow-40m-night.jpg)
+
 ## Playtest reviews
 
 Each row is a human or agent watching the game play, not a screenshot.
