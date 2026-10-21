@@ -10,6 +10,14 @@ and this project adheres to
 
 ### Added
 
+- Five named wave beats (Scouts, The Leader, Fallback, The Push, Last
+  Stand) replace the eight-wave formula; `waveStarted` carries the name and
+  the HUD announces it. Enemies arrive by drop pod (`dropPod` event 1.5 s
+  before they go active; The Leader's strider lands 4 s late). The Last
+  Stand ends when its armoured strider (3x health) falls: `victory` carries
+  kills and shield breaks, the survivors flee off the arena, and the state
+  holds a 5 s tableau before the run is won. `scripts/wave-table.mjs`
+  generates the design doc's composition table from the constants.
 - Renderer v2: scattering dawn sky, a ringworld you stand on, rolling
   terrain with mountains, image-based lighting, a GPU particle pool, an HDR
   composer with bloom and a custom feel pass (vignette, chromatic
@@ -42,6 +50,8 @@ and this project adheres to
 
 ### Fixed
 
+- `pnpm balance` prints its summary table again; Vitest 5 intercepts
+  `console.log` unless told not to.
 - A negative first frame delta after Deploy made every decay term grow
   without bound; the delta is now clamped at zero.
 - The terrain under the arena z-fought the floor at range; it is sunk six
