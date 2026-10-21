@@ -251,11 +251,13 @@ export const hasFled = (e: Enemy, arena: Arena): boolean =>
     arena.halfSize + FLEE_EXIT_MARGIN - ENEMY_STATS[e.kind].radius;
 
 /**
- * Routs a skimmer: it enters `flee` until `now + FLEE_DURATION`. A skimmer already fleeing has
- * its timer refreshed. Striders never flee, and a spawning or dead enemy is returned unchanged.
+ * Routs a skimmer: it enters `flee` until `now + FLEE_DURATION`. A skimmer already routed has
+ * its timer refreshed; one leaving for good (`startExit`) keeps leaving. Striders never flee,
+ * and a spawning or dead enemy is returned unchanged.
  */
 export const startFlee = (e: Enemy, now: number): Enemy => {
   if (e.kind !== 'skimmer' || e.state === 'spawning' || e.state === 'dead') return e;
+  if (isExiting(e)) return e;
   return { ...e, state: 'flee', fleeUntil: now + FLEE_DURATION, detour: null };
 };
 
@@ -353,7 +355,7 @@ export const sidestepDirection = (
   const ahead = add(position, scale(heading, radius));
   const blocker = retry
     ? undefined
-    : arena.obstacles.find((box) => circleHitsBoxXZ(ahead, radius, box));
+    : arena.obstacles.find((box) => circleHitsBoxXZ(ahead.x, ahead.z, radius, box));
   if (blocker === undefined) return rng.next() < 0.5 ? strafe : scale(strafe, -1);
   const corners = [
     vec3(blocker.min.x, 0, blocker.min.z),
@@ -499,7 +501,6 @@ export const updateEnemy = (
   rng: Rng,
   tracking: Tracking = STILL_TRACKING,
 ): EnemyUpdate => {
-  if (e.kind === 'watcher') return updateWatcher(e, arena, playerFeet, playerEye, dt, now, rng);
   if (e.state === 'dead') return { enemy: e, action: null };
   if (e.state === 'spawning') {
     const woken: Enemy = { ...e, state: 'chase', headwayAt: now, detour: null };
@@ -508,6 +509,9 @@ export const updateEnemy = (
   if (e.state === 'flee' && e.fleeUntil !== null && now < e.fleeUntil) {
     return { enemy: fleeStep(e, arena, playerFeet, dt), action: null };
   }
+  // The dead, the spawning and the fleeing are handled above for every kind, the exit after the
+  // final leader included; the watcher has its own chase and attack.
+  if (e.kind === 'watcher') return updateWatcher(e, arena, playerFeet, playerEye, dt, now, rng);
   // A rout that has run its course falls through to the chase-or-attack decision below, with
   // the headway clock restarted so the rout itself never reads as a dead end.
   const toPlayer = sub(playerFeet, e.position);

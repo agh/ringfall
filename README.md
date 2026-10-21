@@ -89,6 +89,8 @@ tests in real Chromium.
 | [docs/test-plan.md](docs/test-plan.md) | Static, unit, playtest, balance gate, browser, visual, and recording layers |
 | [docs/research/](docs/research/) | Sourced research on the reference console shooter's design, on browser WebGL prior art, and on product management practice |
 | [docs/journey/](docs/journey/) | Time-indexed build log with captured frames |
+| [docs/reel/](docs/reel/) | The 69-second demo reel (`ringfall-reel.mp4`, seed 7, day and night) |
+| [docs/deck/](docs/deck/) | The walkthrough deck (`ringfall-journey.pptx`) with the reel embedded on its jump-out slide |
 | [docs/adr/](docs/adr/) | Architecture decision records |
 | [docs/runbook.md](docs/runbook.md) | Run, build, deploy, test, film, and fix |
 | [docs/metrics.md](docs/metrics.md) | Every number the playtest harness reports |

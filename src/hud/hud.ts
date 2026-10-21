@@ -18,12 +18,28 @@ const byId = <T extends HTMLElement>(id: string): T => {
   return el as T;
 };
 
-/** Keeps a canvas's backing store matched to its CSS size and the device pixel ratio. */
+/** A CSS box size in CSS pixels, as a ResizeObserver reports it. */
+interface BoxSize {
+  readonly width: number;
+  readonly height: number;
+}
+
+/** Writes text only when it changed: an unchanged `textContent` write still dirties layout. */
+const setText = (el: HTMLElement, text: string): void => {
+  if (el.textContent !== text) el.textContent = text;
+};
+
+/**
+ * Keeps a canvas's backing store matched to its CSS size and the device pixel ratio. `size` is
+ * the observed CSS box; reading `getBoundingClientRect()` here instead forced a synchronous
+ * layout every frame, right after the text writes above it had dirtied the HUD.
+ */
 const fitCanvas = (
   canvas: HTMLCanvasElement,
+  size: BoxSize | undefined,
 ): { ctx: CanvasRenderingContext2D; w: number; h: number } | null => {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const rect = canvas.getBoundingClientRect();
+  const rect = size ?? canvas.getBoundingClientRect();
   const w = Math.max(1, Math.round(rect.width * dpr));
   const h = Math.max(1, Math.round(rect.height * dpr));
   if (canvas.width !== w || canvas.height !== h) {
@@ -79,9 +95,16 @@ export class Hud {
   private emptyAnnounced = false;
   private sweep = 0;
   private pendingDamage: Vec3[] = [];
+  /** CSS sizes of the tracker and compass canvases, delivered only when they change. */
+  private readonly canvasSizes = new Map<Element, BoxSize>();
 
   constructor() {
     this.sector.textContent = `Sector ${ARENA_SECTOR}`;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) this.canvasSizes.set(entry.target, entry.contentRect);
+    });
+    observer.observe(this.radar);
+    observer.observe(this.compass);
   }
 
   show(): void {
@@ -162,33 +185,35 @@ export class Hud {
   render(state: GameState): void {
     const { player } = state;
     const alive = state.enemies.filter((e) => e.state !== 'dead').length;
-    this.wave.textContent = `Wave ${state.wave.number}`;
-    this.waveSub.textContent =
+    setText(this.wave, `Wave ${state.wave.number}`);
+    setText(
+      this.waveSub,
       state.wave.phase === 'countdown'
         ? `Contact in ${Math.ceil(state.wave.phaseEndsAt - state.time)}`
         : state.wave.phase === 'active'
           ? `${alive} hostile${alive === 1 ? '' : 's'}`
-          : 'Clear';
+          : 'Clear',
+    );
     // The countdown is the first thing the player should see, so it takes the centre line.
     if (state.wave.phase === 'countdown') {
       const left = Math.ceil(state.wave.phaseEndsAt - state.time);
       if (this.message.textContent !== `Contact in ${left}`)
         this.announce(`Contact in ${left}`, 1100);
     }
-    this.score.textContent = state.score.toString().padStart(6, '0');
-    this.kills.textContent = `${state.kills} down`;
+    setText(this.score, state.score.toString().padStart(6, '0'));
+    setText(this.kills, `${state.kills} down`);
 
     const v = player.vitality;
     const shieldFrac = v.shield / v.maxShield;
     if (this.shieldArc) this.shieldArc.style.strokeDasharray = `${shieldFrac * 100} 100`;
     if (this.healthArc)
       this.healthArc.style.strokeDasharray = `${(v.health / v.maxHealth) * 100} 100`;
-    this.shieldValue.textContent = Math.round(v.shield).toString();
+    setText(this.shieldValue, Math.round(v.shield).toString());
     const recharging = v.shield > this.lastShield + 1e-6 && v.shield < v.maxShield;
     const down = v.shield <= 0 && state.status === 'playing';
     this.vitals?.classList.toggle('is-recharging', recharging);
     this.vitals?.classList.toggle('is-down', down);
-    this.shieldLabel.textContent = down ? 'Shield down' : recharging ? 'Recharging' : 'Shield';
+    setText(this.shieldLabel, down ? 'Shield down' : recharging ? 'Recharging' : 'Shield');
     this.lastShield = v.shield;
     this.lowShield.classList.toggle('is-active', down);
 
@@ -210,13 +235,13 @@ export class Hud {
     const lowAt = Math.max(1, Math.round(w.magazineSize * 0.2));
     const low = w.magazine <= lowAt && !reloading;
     // Low ammo is a word as well as a colour; an empty magazine says which key reloads, once.
-    this.ammoName.textContent = low ? `${name} · Low` : name;
-    this.ammoMag.textContent = reloading ? '--' : w.magazine.toString();
+    setText(this.ammoName, low ? `${name} · Low` : name);
+    setText(this.ammoMag, reloading ? '--' : w.magazine.toString());
     this.ammoMag.classList.toggle('is-low', low);
     const empty = w.magazine === 0 && !reloading;
     if (empty && !this.emptyAnnounced) this.announce('Reload · R', 1200);
     this.emptyAnnounced = empty;
-    this.ammoReserve.textContent = `/ ${w.reserve}`;
+    setText(this.ammoReserve, `/ ${w.reserve}`);
   }
 
   private renderWeapon(w: Weapon, offhand: Weapon | null): void {
@@ -252,9 +277,12 @@ export class Hud {
     }
 
     this.offhand.classList.toggle('is-empty', offhand === null);
-    this.offhand.textContent = offhand
-      ? `${WEAPON_SPECS[offhand.kind].name} ${offhand.magazine} / ${offhand.reserve}`
-      : 'No sidearm';
+    setText(
+      this.offhand,
+      offhand
+        ? `${WEAPON_SPECS[offhand.kind].name} ${offhand.magazine} / ${offhand.reserve}`
+        : 'No sidearm',
+    );
   }
 
   private flushDamageIndicators(state: GameState): void {
@@ -276,7 +304,7 @@ export class Hud {
   }
 
   private drawRadar(state: GameState): void {
-    const fit = fitCanvas(this.radar);
+    const fit = fitCanvas(this.radar, this.canvasSizes.get(this.radar));
     if (!fit) return;
     const { ctx, w, h } = fit;
     const half = w / 2;
@@ -377,7 +405,7 @@ export class Hud {
   }
 
   private drawCompass(state: GameState): void {
-    const fit = fitCanvas(this.compass);
+    const fit = fitCanvas(this.compass, this.canvasSizes.get(this.compass));
     if (!fit) return;
     const { ctx, w, h } = fit;
     ctx.clearRect(0, 0, w, h);
