@@ -66,14 +66,16 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm build
+      # `test:e2e` builds first, so the preview server never serves a stale dist/.
       - run: pnpm test:e2e
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
-          name: playwright-traces
-          # The reporter is `github`, so the evidence of a failure is the trace under test-results.
-          path: test-results
+          name: playwright-report
+          # The HTML report (CI reporter: github + html) and the traces from the first retry.
+          path: |
+            playwright-report
+            test-results
           retention-days: 7
 
   frames:

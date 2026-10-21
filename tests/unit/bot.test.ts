@@ -3,7 +3,7 @@ import { createBotMemory, decideBot, RECKLESS_BOT, STEADY_BOT } from '../../src/
 import { createEnemy, type EnemyKind } from '../../src/core/enemy';
 import { createGame, type GameState } from '../../src/core/game';
 import { createPickup } from '../../src/core/pickups';
-import { runPlaytest, summarize } from '../../src/core/playtest';
+import { runPlaytest, summarize, wavesClearedOf } from '../../src/core/playtest';
 import { createRng } from '../../src/core/rng';
 import { vec3 } from '../../src/core/vec3';
 import { createWeapon, type Weapon, type WeaponKind } from '../../src/core/weapon';
@@ -207,5 +207,26 @@ describe('playtest bot', () => {
       expect(input.fire).toBe(false);
       expect(decide(quiet).forward).toBe(0);
     });
+  });
+});
+
+describe('wavesClearedOf', () => {
+  const base = createGame({ seed: 1 });
+  const at = (phase: GameState['wave']['phase'], status: GameState['status'] = 'playing') => ({
+    ...base,
+    status,
+    wave: { ...base.wave, number: 3, phase },
+  });
+
+  it('does not count the wave being fought or counted down to', () => {
+    expect(wavesClearedOf(at('countdown'))).toBe(2);
+    expect(wavesClearedOf(at('active'))).toBe(2);
+    expect(wavesClearedOf(at('active', 'dead'))).toBe(2);
+  });
+
+  it('counts a wave the moment it is cleared, even if the player dies in the pause', () => {
+    expect(wavesClearedOf(at('cleared'))).toBe(3);
+    expect(wavesClearedOf(at('cleared', 'dead'))).toBe(3);
+    expect(wavesClearedOf(at('won', 'won'))).toBe(3);
   });
 });

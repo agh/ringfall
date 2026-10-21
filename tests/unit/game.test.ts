@@ -176,6 +176,30 @@ describe('game', () => {
     expect(s.player.position.y).toBe(0);
   });
 
+  it('grounds the player on a block they fall onto', () => {
+    const base = openGame();
+    const block = aabbFromCenter(0, 0, 4, 1, 4);
+    const dropped: GameState = {
+      ...base,
+      arena: { ...base.arena, obstacles: [block] },
+      player: { ...base.player, position: vec3(0, 3, 0), onGround: false },
+    };
+    const { state } = run(dropped, IDLE_INPUT, 1);
+    expect(state.player.position.y).toBe(1);
+    expect(state.player.onGround).toBe(true);
+    expect(state.player.verticalVelocity).toBe(0);
+  });
+
+  it('announces a shot before the kill it causes', () => {
+    const weak = { ...awake(1, 'skimmer', vec3(0, 0, -6)), health: 1 };
+    const armed = armedWith('rifle', [weak]);
+    const { events } = run(armed, { ...IDLE_INPUT, fire: true, pitch: pitchTo(0.6, 6) }, 0.3);
+    const shot = events.findIndex((e) => e.type === 'shot' && e.hitEnemy);
+    const kill = events.findIndex((e) => e.type === 'enemyKilled');
+    expect(shot).toBeGreaterThanOrEqual(0);
+    expect(kill).toBe(shot + 1);
+  });
+
   it('shoots an enemy standing in front of the player', () => {
     const base = openGame();
     const enemy = { ...createEnemy(99, 'skimmer', vec3(0, 0, -8), 0), state: 'chase' as const };

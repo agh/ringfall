@@ -2,7 +2,9 @@ import * as THREE from 'three';
 import type { GameEvent, GameState } from '../core/game';
 import type { Vec3 } from '../core/vec3';
 import { WEAPON_KINDS, type Weapon, type WeaponKind } from '../core/weapon';
+import type { LightPool } from './lights';
 import type { ParticleSystem } from './particles';
+import { renderRandom } from './random';
 
 /**
  * First-person weapon rigs and their fire effects. One primitive rig per `WeaponKind` hangs
@@ -456,6 +458,7 @@ export class WeaponViewmodels {
   private readonly light = new THREE.PointLight(0xffd27a, 0, 9, 1.5);
   private readonly dotTexture = makeDotTexture();
   private readonly particles: ParticleSystem;
+  private readonly lights: LightPool;
   private activeKind: WeaponKind = 'rifle';
   private swapAt = -1;
   private lightDecay = 900;
@@ -463,8 +466,9 @@ export class WeaponViewmodels {
   private lastNow: number | null = null;
   private pending: Effect[] = [];
 
-  constructor(camera: THREE.Camera, particles: ParticleSystem) {
+  constructor(camera: THREE.Camera, particles: ParticleSystem, lights: LightPool) {
     this.particles = particles;
+    this.lights = lights;
     const materials: Materials = {
       body: new THREE.MeshStandardMaterial({ color: 0x4b5664, roughness: 0.42, metalness: 0.8 }),
       dark: new THREE.MeshStandardMaterial({ color: 0x1d242c, roughness: 0.6, metalness: 0.7 }),
@@ -559,8 +563,8 @@ export class WeaponViewmodels {
     const style = FLASH[kind];
     const sprite = this.rigs[kind].flash;
     sprite.material.opacity = 1;
-    sprite.material.rotation = Math.random() * Math.PI;
-    sprite.scale.setScalar(style.scale + Math.random() * style.jitter);
+    sprite.material.rotation = renderRandom() * Math.PI;
+    sprite.scale.setScalar(style.scale + renderRandom() * style.jitter);
     this.light.intensity = style.light;
     this.lightDecay = style.light / style.life;
   }
@@ -634,13 +638,13 @@ export class WeaponViewmodels {
     if (side.lengthSq() < 1e-6) side.set(1, 0, 0);
     const up = dir.clone().cross(side).normalize();
     for (let i = 0; i < 8; i += 1) {
-      const a = (i / 8) * Math.PI * 2 + Math.random() * 0.6;
-      const r = i === 0 ? 0 : dist * 0.09 * (0.35 + Math.random() * 0.65);
+      const a = (i / 8) * Math.PI * 2 + renderRandom() * 0.6;
+      const r = i === 0 ? 0 : dist * 0.09 * (0.35 + renderRandom() * 0.65);
       const pelletEnd = end
         .clone()
         .addScaledVector(side, Math.cos(a) * r)
         .addScaledVector(up, Math.sin(a) * r);
-      const back = Math.min(dist * 0.4, 2.5 + Math.random());
+      const back = Math.min(dist * 0.4, 2.5 + renderRandom());
       const pelletStart = pelletEnd
         .clone()
         .sub(start)
@@ -688,10 +692,10 @@ export class WeaponViewmodels {
       new THREE.CylinderGeometry(BEAM_CORE_RADIUS, BEAM_CORE_RADIUS, length, 10, 1, true),
       core,
     );
+    beam.add(outer, inner);
     // Children live in beam space, where the axis is +Y: the light sits 2.5 m in from the muzzle.
-    const light = new THREE.PointLight(0xd8b4fe, BEAM_LIGHT, 10, 1.5);
-    light.position.set(0, -length / 2 + Math.min(2.5, length / 2), 0);
-    beam.add(outer, inner, light);
+    const light = this.lights.acquire(beam, 0xd8b4fe, BEAM_LIGHT, 10, 1.5);
+    light?.position.set(0, -length / 2 + Math.min(2.5, length / 2), 0);
     beam.position.copy(mid);
     beam.quaternion.copy(quaternion);
     this.addEffect(
@@ -704,9 +708,10 @@ export class WeaponViewmodels {
         core.opacity = 0.8 * k * k;
         outer.scale.set(1 + t * 0.5, 1, 1 + t * 0.5);
         inner.scale.set(k, 1, k);
-        light.intensity = BEAM_LIGHT * k;
+        if (light) light.intensity = BEAM_LIGHT * k;
       },
       () => {
+        this.lights.release(light);
         outer.geometry.dispose();
         inner.geometry.dispose();
         shell.dispose();
@@ -815,12 +820,12 @@ export class WeaponViewmodels {
     const count = 1 + Math.floor(charge * 3);
     for (let i = 0; i < count; i += 1) {
       const offset = new THREE.Vector3(
-        Math.random() - 0.5,
-        Math.random() - 0.5,
-        Math.random() - 0.5,
+        renderRandom() - 0.5,
+        renderRandom() - 0.5,
+        renderRandom() - 0.5,
       )
         .normalize()
-        .multiplyScalar(0.3 + Math.random() * 0.4);
+        .multiplyScalar(0.3 + renderRandom() * 0.4);
       const life = 0.22;
       this.particles.burst(
         {

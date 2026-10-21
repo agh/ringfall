@@ -10,6 +10,13 @@ and this project adheres to
 
 ### Security
 
+- Fonts are served from this origin (`src/fonts.css`, latin and latin-ext
+  subsets of Chakra Petch and JetBrains Mono under the OFL), so the page
+  makes no third-party request and the Content Security Policy names no
+  other host; the reel cards use the same files (#52, items 5 and 19).
+- `window.ringfallDebug` exists only on the dev server and under `?record`
+  (#52, item 16). The failed-e2e artifact now carries the HTML report and
+  the traces (#52, item 14).
 - Content Security Policy and `no-referrer` meta tags in `index.html`; the
   dev server relaxes only `style-src` and `connect-src` for hot reload.
 - `?seed` is parsed by `parseSeed` (decimal uint32 only) and personal bests
@@ -130,6 +137,41 @@ and this project adheres to
 
 ### Fixed
 
+- Review sweep for #51 and #52, after the owning pull requests merged:
+  - Every point light comes from a fixed pool of twelve in the scene from
+    the first frame (`src/render/lights.ts`), so a bolt, a beam, an
+    explosion or an enemy no longer recompiles every lit material on its
+    way in and out (R2). Each strider has its own eye material and shares
+    the muzzle geometry; rigs release their light and materials when they
+    leave the scene (R7).
+  - The particle pool uploads only the slots born since the last frame and
+    no longer registers its start positions twice (R6); the renderer's hot
+    path writes into scratch objects instead of allocating per frame (R5).
+  - Renderer randomness is seeded (`src/render/random.ts`), grenade spin
+    follows simulation time, and a new arena resets the head-bob baseline,
+    so `?record` captures are reproducible frame for frame (R9).
+  - A player falling onto a cover block lands on its top and is grounded
+    there (C3); a shot is announced before the kill it causes (C6); the
+    playtest counts a wave cleared when the player dies in the pause after
+    it (C7).
+  - A trackpad notch that arrives as several wheel events is one weapon
+    swap (I4); a click on the canvas asks for pointer lock again after a
+    refusal (I6).
+  - The combat pulse rides the audio clock with a short look-ahead and is
+    not scheduled while the context is suspended, so an interruption no
+    longer fires a burst of stacked beats on resume (A2); a brick-wall
+    limiter closes the master bus of the game and of the offline score
+    (A3, set by the numbers, not yet by ear); the score stops on `pagehide`
+    and the context suspends in a hidden tab (A5); the pulse stays down
+    through the death window (A6, not yet listened to). The offline score's
+    comment now lists every way its mix differs from the live bank (A4).
+  - `pnpm test:e2e` builds first (T7); coverage thresholds rise to 97%
+    lines and 90% branches with a test for `recordRound` without storage
+    (T9); the recording scripts share a preview starter with `--strictPort`,
+    a readiness poll and `try/finally`, the score's WAV lives in a
+    temporary directory, and a resumed reel retakes its last frame (T10).
+  - The contributing guide and the issue chooser point at the custom
+    domain (#52, item 18).
 - Documentation sweep of the second audit's deferred findings (#54): the
   VFX rules quoted from a live source, a login-walled course link dropped,
   the ringworld sentence restated from its sources, two journey frames

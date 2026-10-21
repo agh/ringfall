@@ -1,5 +1,6 @@
 import { IDLE_INPUT, type InputFrame } from '../core/game';
 import { clamp } from '../core/vec3';
+import { accumulateWheel } from './wheel';
 
 const MAX_PITCH = Math.PI / 2 - 0.02;
 /** Radians of look per pixel of mouse travel at sensitivity 1 (docs/design-doc.md). */
@@ -19,6 +20,10 @@ export class InputController {
   private grenadeLatched = false;
   private swapLatched = false;
   private sensitivity = BASE_SENSITIVITY;
+  /** Wheel travel carried towards the next swap notch (see wheel.ts). */
+  private wheelDebt = 0;
+  /** True from the first `lock()` until `reset()`: a click on the canvas may ask again. */
+  private wantsLock = false;
   private readonly target: HTMLElement;
 
   constructor(target: HTMLElement) {
@@ -39,6 +44,7 @@ export class InputController {
 
   /** Requests pointer lock; resolves false where the browser refuses (headless, iframes). */
   async lock(): Promise<boolean> {
+    this.wantsLock = true;
     try {
       const result: unknown = this.target.requestPointerLock();
       if (result instanceof Promise) await result;
@@ -57,6 +63,7 @@ export class InputController {
   reset(): void {
     this.yaw = 0;
     this.pitch = 0;
+    this.wantsLock = false;
     this.releaseAll();
   }
 
@@ -112,7 +119,13 @@ export class InputController {
   };
 
   private readonly onMouseDown = (e: MouseEvent): void => {
-    if (!this.locked) return;
+    if (!this.locked) {
+      // A refused or lost lock (headless, an iframe without `allow`, the browser's cool-down
+      // after Esc) left the game running without the mouse; a click on the canvas asks again.
+      // The overlay sits over the canvas, so a click on the card never reaches here.
+      if (this.wantsLock && e.target === this.target) void this.lock();
+      return;
+    }
     if (e.button === 0) this.firing = true;
     if (e.button === 2) this.grenadeLatched = true;
   };
@@ -122,8 +135,13 @@ export class InputController {
   };
 
   private readonly onWheel = (e: WheelEvent): void => {
-    if (!this.locked || e.deltaY === 0) return;
-    this.swapLatched = true;
+    if (!this.locked) {
+      this.wheelDebt = 0;
+      return;
+    }
+    const { debt, notches } = accumulateWheel(this.wheelDebt, e.deltaY, e.deltaMode);
+    this.wheelDebt = debt;
+    if (notches !== 0) this.swapLatched = true;
   };
 
   private readonly releaseAll = (): void => {
@@ -134,5 +152,6 @@ export class InputController {
     this.reloadLatched = false;
     this.grenadeLatched = false;
     this.swapLatched = false;
+    this.wheelDebt = 0;
   };
 }
