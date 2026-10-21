@@ -18,7 +18,7 @@ does not have to for every change.
 | Layer | Tool | What it proves | Where | Gate |
 | ----- | ---- | -------------- | ----- | ---- |
 | Static | Biome, tsc strict, markdownlint, Stylelint, Prettier (CSS), pnpm audit, actionlint, zizmor, gitleaks | Style, types, docs hygiene, CSS conventions, no known high-severity advisories, workflow syntax and permissions, no secrets in the tree or the history | `pnpm lint`, `pnpm typecheck`, `pnpm audit --audit-level=high`, the security job in `.github/workflows/ci.yml` | CI lint job, CI security job |
-| Unit | Vitest, Node | Every core rule: movement, collision, weapons, grenades, enemy AI, bolts, waves, vitality, the whole step | `tests/unit/` | 85% lines on `src/core`, 75% branches |
+| Unit | Vitest, Node | Every core rule: movement, collision, weapons, grenades, enemy AI, bolts, waves, vitality, the whole step | `tests/unit/` | 97% lines on `src/core`, 90% branches |
 | Playtest | Vitest, Node | A scripted player plays whole games; determinism, accuracy, wave clearing, profile differences | `tests/unit/bot.test.ts` | Floors in the test |
 | Balance gate | Vitest, Node | Twenty seeded games per profile stay within baseline-derived bounds; the report is a CI artifact | `tests/balance/` | CI balance job, thresholds in `tests/balance/gate.ts` |
 | Browser | Playwright, Chromium with WebGL | The built page loads, renders, starts, advances the simulation, moves on keys, no page errors | `tests/e2e/` | CI e2e job |
@@ -65,19 +65,30 @@ to the job summary.
 ### Baseline
 
 The run the thresholds are derived from, printed by `pnpm balance` on the
-branch that cut Chapter 1 to five named waves (#8) merged onto the rout
-(#40) and the skimmer temperaments (#47), seeds 100 to 119, 480 s cap:
+branch for issue #93 (the bot holds fire without line of sight and walks at
+a target behind cover) on top of `main` at `cd16454`, seeds 100 to 119,
+480 s cap:
 
 | Profile | Win rate | Mean waves cleared (of 5) | Mean seconds | Accuracy | Shield breaks | Mean clear per wave (s) |
 | ------- | -------- | ------------------------- | ------------ | -------- | ------------- | ----------------------- |
-| Steady | 75% | 4.35 | 152 | 52% | 0.10 | 4, 13, 14, 20 |
-| Reckless | 70% | 4.55 | 127 | 43% | 0.45 | 4, 14, 19, 23 |
+| Steady | 85% | 4.50 | 154 | 83% | 0.10 | 4, 11, 16, 20 |
+| Reckless | 85% | 4.70 | 138 | 83% | 0.20 | 4, 16, 15, 18 |
 
-This supersedes the eight-wave baseline the gate was introduced with
-(steady 15% wins, 5.35 waves of 8, 39% accuracy; reckless 0% wins, 4.20
-waves), the reckless re-derivation at `84a835b` for the temperaments (15%
-wins), both of which could not hold once `FINAL_WAVE` became 5, and the
-earlier table in `docs/journey/README.md` (0% wins, 3.40 waves).
+Accuracy jumped from the fifties because shots fired into cover had been
+counted as misses; from here it measures line of sight as much as aim.
+Holding fire without the walk was measured too and left the gate on its
+limits (steady 70% wins, 4.10 waves, 231 s mean; reckless 65% wins, 4.05
+waves): the bot stood still while a target sat behind a slab, and more
+games ran to the 480 s cap.
+
+This supersedes the five-beat baseline (#8 merged onto the rout #40 and the
+temperaments #47: steady 75% wins, 4.35 waves, 152 s, 52% accuracy;
+reckless 70% wins, 4.55 waves, 127 s, 43% accuracy), the eight-wave
+baseline the gate was introduced with (steady 15% wins, 5.35 waves of 8,
+39% accuracy; reckless 0% wins, 4.20 waves), the reckless re-derivation at
+`84a835b` for the temperaments (15% wins), both of which could not hold
+once `FINAL_WAVE` became 5, and the earlier table in
+`docs/journey/README.md` (0% wins, 3.40 waves).
 
 ### Thresholds
 
@@ -97,17 +108,17 @@ accuracy is not a damage signal). Each margin is about half of that shift.
 The margins have not been re-measured under the five beats; that is open
 in issue #12. The reckless bound's original intent ("never retreating must
 not become the way to win") does not hold under the compositions #8
-specifies: the reckless profile wins 70% of its games. Issue #63 holds
+specifies: the reckless profile wins 85% of its games. Issue #63 holds
 that question.
 
 | Profile | Metric | Bound | Limit | Baseline | Margin |
 | ------- | ------ | ----- | ----- | -------- | ------ |
-| Steady | Win rate | at least | 70% | 75% | one game of twenty |
-| Steady | Mean waves cleared | at least | 3.85 | 4.35 | half a wave of five |
-| Steady | Accuracy | at least | 42% | 52% | ten points |
+| Steady | Win rate | at least | 80% | 85% | one game of twenty |
+| Steady | Mean waves cleared | at least | 4.00 | 4.50 | half a wave of five |
+| Steady | Accuracy | at least | 73% | 83% | ten points |
 | Steady | Slowest mean wave clear | at most | 40 s | 20 s | twice the slowest baseline wave |
-| Reckless | Win rate | at most | 80% | 70% | two games of twenty; drift only, see above and #63 |
-| Reckless | Mean waves cleared | at least | 4.05 | 4.55 | half a wave of five |
+| Reckless | Win rate | at most | 95% | 85% | two games of twenty; drift only, see above and #63 |
+| Reckless | Mean waves cleared | at least | 4.20 | 4.70 | half a wave of five |
 
 The original intent of the reckless row, that never retreating must not
 become the way to win, would be a cross-profile bound (reckless not
@@ -117,7 +128,7 @@ cross-profile metric yet, so that is issue #63 rather than a row.
 The thresholds live in `tests/balance/gate.ts`; the report shape
 (`BalanceReport`, `GateThreshold`, `evaluateGate`) in
 `src/core/playtest.ts`. Issue #12 asked for 60% steady wins and a five to
-nine minute median run; the five beats meet the first (75%) and miss the
+nine minute median run; the five beats meet the first (85%) and miss the
 second (the median won run is under two minutes), so the gate holds what
 the game does today and the run-length target stays with issue #8.
 

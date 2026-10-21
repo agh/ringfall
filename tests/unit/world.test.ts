@@ -54,6 +54,16 @@ describe('world', () => {
     expect(groundHeightAt(arena, vec3(0, 0, 0), 0.4)).toBe(0);
   });
 
+  it('lands on the top of a block it falls onto, so the step can ground there', () => {
+    // Over the 2 m block, falling 1 m from 2.5 m: the cylinder stops on the top, not at 2.5 m.
+    const landed = moveWithCollision(arena, vec3(5, 2.5, 0), 0.4, 1.8, vec3(0, -1, 0));
+    expect(landed.y).toBe(2);
+    expect(groundHeightAt(arena, landed, 0.4)).toBe(2);
+    // Rising into the block from below still stops at the old height.
+    const bumped = moveWithCollision(arena, vec3(5, 0, 0), 0.4, 1.8, vec3(0, 0.5, 0));
+    expect(bumped.y).toBe(0);
+  });
+
   it('finds spawn points on the ring outside cover', () => {
     const rng = createRng(11);
     for (let i = 0; i < 20; i += 1) {

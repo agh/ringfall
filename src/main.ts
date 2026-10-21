@@ -24,6 +24,7 @@ declare global {
     ringfallDebug?: {
       uniforms: () => Record<string, unknown>;
       info: () => unknown;
+      lights: () => { inUse: number };
     };
     /**
      * Recording hook (`?record&bot&seed=N`): the animation loop is suspended and each call steps

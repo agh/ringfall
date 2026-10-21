@@ -3,10 +3,11 @@
 > [Ringfall](README.md) > Security Policy
 
 Ringfall is a static page with no backend, no third-party scripts, and no
-storage beyond personal bests in the browser's local storage. The only
-cross-origin requests are the two Google Fonts hosts named in the Content
-Security Policy in `index.html`. The security surface is the published
-build, the pinned dependencies, and the GitHub Actions workflows.
+storage beyond personal bests in the browser's local storage. Every request
+is same-origin, the fonts included (`src/fonts.css`), and the Content
+Security Policy in `index.html` names no other host. The security surface
+is the published build, the pinned dependencies, and the GitHub Actions
+workflows.
 
 ## Threat model
 
@@ -20,7 +21,7 @@ The full model, with data-flow diagrams, threats per trust boundary, admin items
 6. **Workflows**: every action is pinned to a commit, tokens are read-only except for the Pages deploy job, checkouts do not persist credentials, and no workflow runs on `pull_request_target`.
 7. **Deploy**: only a completed push to `main` publishes; the custom domain is pinned by `public/CNAME`.
 8. **Out of scope**: a player altering their own local storage or query string affects only their own session and personal bests; there is no leaderboard to defraud.
-9. **Residual risk**: a compromised Google Fonts response can inject CSS but not script; self-hosting the fonts removes it.
+9. **Residual risk**: a compromised npm package at install time can alter the build; the pins, lockfile hashes and release cooldown narrow the window, and the fonts are served from this origin so no third-party stylesheet is inside the trust boundary.
 10. **Admin-only controls** (branch rulesets, secret scanning, Pages HTTPS enforcement) are tracked on the review issue and are not enforceable from this repository's files.
 
 ## Supported versions

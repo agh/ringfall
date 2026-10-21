@@ -8,6 +8,5 @@ test-results/
 .DS_Store
 .record-frames/
 *.mp4
-.record-score.wav
 smoke-tmp/
 tests/scratch/
