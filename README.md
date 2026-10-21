@@ -45,7 +45,7 @@ events that happened during the step. Everything else reacts to those events:
 
 - `src/render/` mirrors the state into a three.js scene and plays effects
 - `src/hud/` draws vitals, ammo, wave status, and a motion tracker in the DOM
-- `src/audio/` synthesises every sound with WebAudio oscillators
+- `src/audio/` synthesizes every sound with WebAudio oscillators
 - `src/input/` turns keyboard, mouse, and pointer lock into an `InputFrame`
 
 ```mermaid

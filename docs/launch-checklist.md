@@ -2,7 +2,8 @@
 type: checklist
 title: "Ringfall launch checklist: go or no-go before tagging v2026.10.0"
 status: draft
-authors: ["Ringfall hackathon team"]
+authors:
+  - name: "Ringfall hackathon team"
 created: 2026-10-21
 ---
 
@@ -61,7 +62,7 @@ wave 1 unwinnable or the shield loop irrelevant without anyone noticing.
 
 **The brand checklist is ticked.** Walk the twelve items in
 [brand.md](brand.md) under "Consistency checklist" against the deployed
-page: palette tokens only, warm colours semantic, no Beacon on enemies and
+page: palette tokens only, warm colors semantic, no Beacon on enemies and
 no Rose in the world, Slate borders on every panel, no text under 14 px,
 no exclamation marks, thin trim on the datum, bloom threshold above 1.0
 with ACES tone mapping, no external audio, music ramps rather than cuts,

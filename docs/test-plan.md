@@ -2,10 +2,9 @@
 type: design-doc
 title: "Ringfall test plan"
 status: draft
-authors: ["Ringfall hackathon team"]
-reviewers: []
+authors:
+  - name: "Ringfall hackathon team"
 created: 2026-10-21
-approved: 2026-10-21
 ---
 
 # Ringfall test plan
@@ -25,6 +24,7 @@ does not have to for every change.
 | Browser | Playwright, Chromium with WebGL | The built page loads, renders, starts, advances the simulation, moves on keys, no page errors | `tests/e2e/` | CI e2e job |
 | Visual | Playwright, screenshots | What it looks like on a software GPU, reviewed by a person and filed under `docs/journey/` | manual, recorded | Review |
 | Recording | `scripts/record-demo.mjs` | A deterministic bot run becomes an MP4; the frames are the proof the whole stack renders | manual | Review |
+| Docs | typos, Vale with the vendored crefft rules, markdown-link-check, frontmatter JSON schema | US spelling in code and prose, house prose rules, every internal link and anchor resolves, every document's frontmatter matches `docs/frontmatter.schema.json` | `pnpm lint:docs` | CI docs job; Vale reports without failing until its remaining findings are rewritten; external URLs advisory |
 
 ## The playtest layer, in detail
 

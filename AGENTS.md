@@ -71,6 +71,7 @@ pnpm test:e2e                 # Playwright smoke tests against `vite preview`
 pnpm lint                     # biome ci, markdownlint, then pnpm lint:css
 pnpm lint:css                 # stylelint and prettier --check over CSS
 pnpm lint:fix                 # biome check --write, stylelint --fix, prettier --write
+pnpm lint:docs                # frontmatter schema, typos, Vale (advisory), internal links
 pnpm typecheck                # tsc --noEmit
 
 # Security and workflow hygiene (the CI security job; pins in .github/workflows/ci.yml)

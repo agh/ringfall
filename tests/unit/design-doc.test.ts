@@ -214,7 +214,7 @@ describe('design-doc.md simulation model', () => {
     );
     expectSentence(
       'simulation',
-      /deals (\S+) damage at the centre falling linearly to zero at (\S+) m/,
+      /deals (\S+) damage at the cent(?:re|er) falling linearly to zero at (\S+) m/,
       [GRENADE_MAX_DAMAGE, GRENADE_BLAST_RADIUS],
     );
   });
@@ -262,8 +262,8 @@ describe('design-doc.md enemy archetypes', () => {
     expect(attack, `docs/design-doc.md table "enemies", row "${label}", column "Attack"`).toBe(
       `${stats.ranged ? 'Bolt' : 'Melee zap'}, ${stats.damage} dmg every ${stats.attackInterval} s`,
     );
-    const behaviour = cell(table, label, 'Behaviour');
-    const where = `docs/design-doc.md table "enemies", row "${label}", column "Behaviour"`;
+    const behaviour = cell(table, label, 'Behavior');
+    const where = `docs/design-doc.md table "enemies", row "${label}", column "Behavior"`;
     if (stats.ranged) {
       // Striders back off inside half their attack range (see updateEnemy).
       expect(/^Holds (\S+) to (\S+) m/.exec(behaviour)?.slice(1), where).toEqual([
@@ -383,7 +383,9 @@ describe('design-doc.md wave composition', () => {
   const table = parseTable('waves');
 
   it('quotes the spawn ring and the clear bonus', () => {
-    expectSentence('waves', /on a (\S+) m ring around the arena centre/, [SPAWN_RING_RADIUS]);
+    expectSentence('waves', /on a (\S+) m ring around the arena cent(?:re|er)/, [
+      SPAWN_RING_RADIUS,
+    ]);
     expectSentence('waves', /Clearing a wave is worth (\d+)\./, [WAVE_BONUS]);
     expectSentence('waves', /The roster for the (\w+) waves/, [word(FINAL_WAVE)]);
   });
