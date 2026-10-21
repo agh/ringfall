@@ -1,7 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { ENEMY_STATS, type EnemyKind, SPAWN_DELAY } from '../../src/core/enemy';
+import {
+  ENEMY_STATS,
+  type EnemyKind,
+  FLEE_DURATION,
+  FLEE_RADIUS,
+  FLEE_SPEED_FACTOR,
+  SPAWN_DELAY,
+} from '../../src/core/enemy';
 import {
   GRAVITY,
   PLAYER_EYE_HEIGHT,
@@ -276,6 +283,27 @@ describe('design-doc.md enemy archetypes', () => {
       word(shotsToKill('skimmer', damage)),
       word(shotsToKill('strider', damage)),
     ]);
+  });
+});
+
+describe('design-doc.md rout', () => {
+  const table = parseTable('rout');
+
+  it('quotes the flee radius', () => {
+    expectSentence('rout', /every skimmer within (\S+) m of it \(`FLEE_RADIUS`/, [FLEE_RADIUS]);
+    expectCell(table, 'Radius', 'Value', `${FLEE_RADIUS} m`);
+  });
+
+  it('quotes the flee duration and speed', () => {
+    expectCell(table, 'Duration', 'Value', `${FLEE_DURATION} s (\`FLEE_DURATION\`)`);
+    expectCell(table, 'Second strider death', 'Value', `refreshes the ${FLEE_DURATION} s`);
+    const fleeSpeed = ENEMY_STATS.skimmer.speed * FLEE_SPEED_FACTOR;
+    expectCell(
+      table,
+      'Speed',
+      'Value',
+      `${FLEE_SPEED_FACTOR}x (${Number(fleeSpeed.toFixed(2))} m/s)`,
+    );
   });
 });
 
