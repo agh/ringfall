@@ -49,6 +49,11 @@ footprint and 1.5 to 4 m tall, with a Beacon trim along its top edge. The
 geometry is in `src/core/world.ts`; the trim rule is in
 [brand.md](brand.md).
 
+**Crouch.** Holding C or Ctrl lowers the eye by 0.6 m and nothing else;
+three crouches within 1.5 s over where a strider fell earn a one-word bark
+from a surviving skimmer. Owned by `src/core/game.ts` and explained in
+[design-doc.md](design-doc.md) under "Crouch".
+
 **Datum.** The shared horizontal line, the top edge of every cover slab,
 on which every emissive trim strip sits, so that all the blocks read as
 made by the same people. Defined in [brand.md](brand.md) under "Trim
@@ -106,6 +111,14 @@ and crosses overhead, with a procedural ocean, land, and cloud texture on
 its inner face. Built in `src/render/environment.ts` and justified in
 [brand.md](brand.md); also the name of the palette token used to paint it.
 
+**Secret.** The one hidden switch in an arena: a glyph on the face of a
+cover slab that points away from the centre, 1 m up, worth 1000 points
+when shot once. Placed by `placeSecret` in `src/core/world.ts`; the glyph
+and its chime are renderer and audio work on the `secretFound` event.
+
+**Sector 117.** The arena's designation on the HUD, `ARENA_SECTOR` in
+`src/core/world.ts`. No explanation.
+
 **Seed.** The integer from which `createRng` in `src/core/rng.ts` derives
 every random choice in a run, so that the arena layout and enemy jitter
 are reproducible. Production seeds from the clock; tests, the bot, the
@@ -114,7 +127,13 @@ smoke test, and the recorder fix it, and the demo reel uses seed 7.
 **Skimmer.** The fast melee enemy: 40 health, 7 m/s, a 12 damage zap
 every 0.9 s, closing to 2 m with lateral jitter so packs fan out, worth
 100 points. Its stats are in `src/core/enemy.ts` and its silhouette rules
-in [brand.md](brand.md).
+in [brand.md](brand.md). Each one has a temperament.
+
+**Temperament.** How a skimmer closes: chaser (straight at you), ambusher
+(4 m ahead of your velocity), flanker (your off-hand side), skittish
+(holds at 10 m until a packmate is within 6 m of you). Handed out
+round-robin per wave by `temperamentFor` in `src/core/enemy.ts`; the
+numbers are in [design-doc.md](design-doc.md) under "Skimmer temperaments".
 
 **Step.** One call to `stepGame(state, input, dt, rng)` with `dt` fixed at
 1/60 s, returning the next immutable state and its events. The loop in
