@@ -149,10 +149,21 @@ const main = (): void => {
     };
   }
 
+  let lastIdleRender = 0;
   const frame = (now: number): void => {
     // rAF timestamps can trail performance.now() right after start(); never let dt go negative.
     const frameDt = Math.max(0, Math.min(0.1, (now - last) / 1000));
     last = now;
+    // The title overlay blurs the scene, so idle frames only need a slow refresh. This keeps
+    // the GPU (and software GL in CI) free for the click that starts the game.
+    if (!running && !recordMode) {
+      if (now - lastIdleRender > 250) {
+        lastIdleRender = now;
+        renderer.render(game, now / 1000, frameDt);
+      }
+      requestAnimationFrame(frame);
+      return;
+    }
     if (running) {
       accumulator += frameDt;
       let steps = 0;
