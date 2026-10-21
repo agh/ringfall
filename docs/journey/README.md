@@ -758,19 +758,38 @@ Policy, and two adversarial reviews (software: 40 findings, 19 fixed;
 documentation: 70 findings, 56 fixed, verdict unchanged at two and a half
 of five).
 
-What did not make the stop: the five named wave beats and the dropship
-that rides on them, the design and user-experience review's fixes, the
-threat model and the architecture package, all open as pull requests or
-sessions at the freeze. Two admin items need the owner: GitHub Pages is
-not enabled, so nothing has deployed to the custom domain yet, and main
-has no branch protection.
+## 17:54 Five reviewers, no GPU, one checklist
 
-The coaching lesson of the afternoon, counted: twenty-nine merges in
-seventy minutes meant almost every pull request conflicted with the one
-before it, nearly always in the changelog, the journal and the design
-doc, because every agent was told to document in the same three files.
-Next time the brief gives each stream its own journal page and the
-changelog is assembled at the freeze.
+Issue #53 asked for an adversarial design and user-experience review in
+five dimensions: the first thirty seconds, HUD readability, the feel loop,
+accessibility, and the end of a run. Five reviewer agents ran in parallel
+against the headless capture hook, seed 7, at 1280x720; the 4K captures
+did not finish inside the review window because five Chromiums on
+software GL pushed the load average past thirty, so 4K numbers were
+computed from the stylesheet and are marked as such. The ranked checklist
+of 44 findings is on the issue; 29 are fixed on `fix/issue-53-ux-review`,
+13 deferred to their owners (#8, #9, #37, the renderer), 2 kept.
+
+What the frames showed: seven HUD texts at 9 to 12 px against the brand's
+14 px floor; the top corners on sky at 2.6:1 instead of the 6.5:1 the brand
+table claims against Abyss; a compass that drew no cardinal letters once
+the heading was fractional, because the modulo test ran on the heading
+itself; Tab and Space swallowed on the title card so the Deploy button
+could not be reached by keyboard; no reduced-motion rule; an Esc that
+showed the title screen (or the previous death card) mid-run; and an end
+card that never said Victory or Defeat. The fixes are in the HUD, the
+overlay copy and ARIA, the stylesheet rules the findings name, and the
+lifecycle in `main.ts`, plus one line in the input controller.
+
+![Title card before: controls at 11.5 px, footnote at 10 px](images/1754-ux-title-before.jpg)
+
+![Title card after: 14 px floors, the eight-wave goal, Pause listed](images/1754-ux-title-after.jpg)
+
+![HUD at 10 s before: labels at 9 to 10 px, compass without letters](images/1754-ux-hud-10s-before.jpg)
+
+![HUD at 10 s after: Hull panels on the corners and compass, SW and W drawn, 14 px labels](images/1754-ux-hud-10s-after.jpg)
+
+![HUD at 1 s after: Contact in 2, NW and N on the compass](images/1754-ux-hud-1s-after.jpg)
 
 ## Playtest reviews
 
@@ -778,6 +797,8 @@ Each row is a human or agent watching the game play, not a screenshot.
 
 | When | Seed | What was watched | Verdict |
 | ---- | ---- | ---------------- | ------- |
+| 18:14 | 7 | The final 69 s reel, cut from main at 17:50 (bloom prefilter and explosion rework in), sampled at 3, 15, 33, 40, 50, 56 and 62 s | No whiteout at any sample: the day wave peaks at 66 of 255 and the night kill frame, which was 205 on the 17:04 build, is 11. Night reads as night: stars, purple beam, the ring's glow. Left in: daytime dust discs (#31 still open) and the outro card's old repository name, which #74 renamed after this build. Shipped as the demo reel. |
+| 17:54 | 7 | Frames at 1, 6 and 10 s at 720p, title card at 720p, computed styles and sampled contrast behind each HUD text, for #53 | Seven HUD texts under 14 px, top corners at 2.6:1 on sky, compass drawing no letters, keyboard locked out of Deploy, no reduced-motion rule; all fixed in the #53 PR; 4K and end-card frames did not finish under load. |
 | 17:30 | 7 | The first kill at night (t = 10 s), the launcher kill at 3 m (t = 47 s) and a blast in the open (t = 45.5 s), by day and by night, at 50 ms steps, after the explosion rework | The crest reads as a pressure wave from 3 m and from 19 m (an arc on the floor past the cover); chips and sparks fall where the eye expects them; the smoke column shows by day and against lit walls at night, and is invisible against the night sky, which is right for soot. The scorch is the one thing that is still there a second later. The frame at the first kill is still dominated by the dying skimmer's own core and light, not by the kill effect. |
 | 17:00 | 7 | A 75 s bot run by day, frames every 3 s, and the night kill at 10 s, after the weapon integration | Weapon swaps read (beam at 18 s, scatter at 45 s, launcher at 48 s), pickup columns are visible from across the arena, the night frame keeps its stars and trims. The launcher round the bot fired at its own feet at 48 s still washes the frame pink with the shield-down effect; that is the jolt it should be, but the bot should not do it (issue for the bot: no launcher inside the blast radius). |
 | 15:56 | 7 | The whole 49 s film with its offline score: title, deploy, waves 1 to 4 | Reviewed frame-by-frame at 8 s, 22 s and 46 s and watched end to end at speed: the sun flare and bloom carry the opening, the bot's first kill lands at 4.8 s, wave 2 brings the first strider and bolts, the HUD reads at 720p. Weak points: around 8 s the bot turns into the sun and the frame whites out for about two seconds (this capture predates the exposure and haze reduction and HUD v2), and the bot stands in the open while reloading. Shipped as the first reel; a second capture with the current build was started at 16:00. |
@@ -788,6 +809,10 @@ Each row is a human or agent watching the game play, not a screenshot.
 ![The first film at 22 s](images/1556-film-22s.jpg)
 
 ![The first film at 46 s](images/1556-film-46s.jpg)
+
+![Final reel, wave 1 by day at 40 s](images/1814-reel-final-day.jpg)
+
+![Final reel, wave 2 at night at 50 s](images/1814-reel-final-night.jpg)
 
 ![Wave 1, the sun behind a slab](images/1535-demo-seed7-wave1-sun.jpg)
 
