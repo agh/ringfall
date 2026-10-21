@@ -2,10 +2,9 @@
 type: design-doc
 title: "Ringfall test plan"
 status: draft
-authors: ["Ringfall hackathon team"]
-reviewers: []
+authors:
+  - name: "Ringfall hackathon team"
 created: 2026-10-21
-approved: 2026-10-21
 ---
 
 # Ringfall test plan
@@ -25,6 +24,7 @@ does not have to for every change.
 | Browser | Playwright, Chromium with WebGL | The built page loads, renders, starts, advances the simulation, moves on keys, no page errors | `tests/e2e/` | CI e2e job |
 | Visual | Playwright, screenshots | What it looks like on a software GPU, reviewed by a person and filed under `docs/journey/` | manual, recorded | Review |
 | Recording | `scripts/record-demo.mjs` | A deterministic bot run becomes an MP4; the frames are the proof the whole stack renders | manual | Review |
+| Docs | typos, Vale with the vendored crefft rules, markdown-link-check, frontmatter JSON schema | US spelling in code and prose, house prose rules, every internal link and anchor resolves, every document's frontmatter matches `docs/frontmatter.schema.json` | `pnpm lint:docs` | CI docs job; Vale reports without failing until its remaining findings are rewritten; external URLs advisory |
 
 ## The playtest layer, in detail
 
@@ -64,18 +64,19 @@ to the job summary.
 ### Baseline
 
 The run the thresholds are derived from, printed by `pnpm balance` on the
-branch that cut Chapter 1 to five named waves (#8) on top of the rout
-(#40), seeds 100 to 119, 480 s cap:
+branch that cut Chapter 1 to five named waves (#8) merged onto the rout
+(#40) and the skimmer temperaments (#47), seeds 100 to 119, 480 s cap:
 
 | Profile | Win rate | Mean waves cleared (of 5) | Mean seconds | Accuracy | Shield breaks | Mean clear per wave (s) |
 | ------- | -------- | ------------------------- | ------------ | -------- | ------------- | ----------------------- |
-| Steady | 65% | 4.25 | 159 | 50% | 0.35 | 6, 12, 19, 18 |
-| Reckless | 55% | 4.05 | 257 | 43% | 0.25 | 6, 18, 18, 23 |
+| Steady | 75% | 4.35 | 152 | 52% | 0.10 | 4, 13, 14, 20 |
+| Reckless | 70% | 4.55 | 127 | 43% | 0.45 | 4, 14, 19, 23 |
 
 This supersedes the eight-wave baseline the gate was introduced with
 (steady 15% wins, 5.35 waves of 8, 39% accuracy; reckless 0% wins, 4.20
-waves), which could not hold once `FINAL_WAVE` became 5, and the earlier
-table in `docs/journey/README.md` (0% wins, 3.40 waves).
+waves), the reckless re-derivation at `84a835b` for the temperaments (15%
+wins), both of which could not hold once `FINAL_WAVE` became 5, and the
+earlier table in `docs/journey/README.md` (0% wins, 3.40 waves).
 
 ### Thresholds
 
@@ -93,23 +94,29 @@ formula: there it moved steady wins from 15% to 5%, steady waves from 5.35
 to 4.35, and reckless wins from 0% to 25% (steady accuracy rose to 57%, so
 accuracy is not a damage signal). Each margin is about half of that shift.
 The margins have not been re-measured under the five beats; that is open
-in issue #12, along with the reckless bound, whose original intent ("never
-retreating must not become the way to win") does not hold under the
-compositions #8 specifies: the reckless profile wins 55% of its games.
+in issue #12. The reckless bound's original intent ("never retreating must
+not become the way to win") does not hold under the compositions #8
+specifies: the reckless profile wins 70% of its games. Issue #63 holds
+that question.
 
 | Profile | Metric | Bound | Limit | Baseline | Margin |
 | ------- | ------ | ----- | ----- | -------- | ------ |
-| Steady | Win rate | at least | 60% | 65% | one game of twenty; also the floor issue #8 asks for |
-| Steady | Mean waves cleared | at least | 3.75 | 4.25 | half a wave of five |
-| Steady | Accuracy | at least | 40% | 50% | ten points |
-| Steady | Slowest mean wave clear | at most | 38 s | 19 s | twice the slowest baseline wave |
-| Reckless | Win rate | at most | 65% | 55% | two games of twenty; drift only, see above |
-| Reckless | Mean waves cleared | at least | 3.55 | 4.05 | half a wave of five |
+| Steady | Win rate | at least | 70% | 75% | one game of twenty |
+| Steady | Mean waves cleared | at least | 3.85 | 4.35 | half a wave of five |
+| Steady | Accuracy | at least | 42% | 52% | ten points |
+| Steady | Slowest mean wave clear | at most | 40 s | 20 s | twice the slowest baseline wave |
+| Reckless | Win rate | at most | 80% | 70% | two games of twenty; drift only, see above and #63 |
+| Reckless | Mean waves cleared | at least | 4.05 | 4.55 | half a wave of five |
+
+The original intent of the reckless row, that never retreating must not
+become the way to win, would be a cross-profile bound (reckless not
+exceeding steady by more than two games of twenty); the gate has no
+cross-profile metric yet, so that is issue #63 rather than a row.
 
 The thresholds live in `tests/balance/gate.ts`; the report shape
 (`BalanceReport`, `GateThreshold`, `evaluateGate`) in
 `src/core/playtest.ts`. Issue #12 asked for 60% steady wins and a five to
-nine minute median run; the five beats meet the first (65%) and miss the
+nine minute median run; the five beats meet the first (75%) and miss the
 second (the median won run is under two minutes), so the gate holds what
 the game does today and the run-length target stays with issue #8.
 

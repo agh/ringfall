@@ -1,21 +1,28 @@
 import { describe, expect, it } from 'vitest';
 import { BARK_LINES, createEnemy, FLEE_DURATION } from '../../src/core/enemy';
 import {
+  CROUCH_EYE_DROP,
   createGame,
   type GameEvent,
   type GameState,
   IDLE_INPUT,
   type InputFrame,
   lookDirection,
+  PLAYER_EYE_HEIGHT,
   PLAYER_JUMP_SPEED,
   playerEye,
+  SECRET_SCORE,
   STARTING_GRENADES,
   stepGame,
   TABLEAU_DURATION,
   TABLEAU_SLOW_SECONDS,
   TABLEAU_TIME_SCALE,
+  TAUNT_BARK,
+  TAUNT_RADIUS,
+  TAUNT_WINDOW,
   timeScaleOf,
 } from '../../src/core/game';
+
 import { createPickup, PICKUP_KINDS, WAVE_REWARD_DISTANCE } from '../../src/core/pickups';
 import { createRng } from '../../src/core/rng';
 import { distanceXZ, vec3 } from '../../src/core/vec3';
@@ -25,8 +32,10 @@ import {
   LEADER_STRIDER_DELAY,
   WAVE_COUNTDOWN,
   waveBeat,
+  waveComposition,
 } from '../../src/core/waves';
 import { createWeapon, type WeaponKind } from '../../src/core/weapon';
+import { aabbFromCenter, placeSecret, SECRET_RADIUS } from '../../src/core/world';
 
 const DT = 1 / 60;
 
@@ -623,5 +632,169 @@ describe('game', () => {
     const breaks = events.filter((e) => e.type === 'shieldBroken').length;
     expect(breaks).toBeGreaterThan(0);
     expect(state.shieldBreaks).toBe(breaks);
+  });
+
+  describe('easter eggs', () => {
+    const rng = createRng(1);
+
+    it('hands skimmers the four temperaments round-robin per wave', () => {
+      const { state } = run(createGame({ seed: 2 }), IDLE_INPUT, WAVE_COUNTDOWN + 0.1);
+      const skimmers = state.enemies.filter((e) => e.kind === 'skimmer');
+      expect(skimmers.length).toBe(waveComposition(1).filter((k) => k === 'skimmer').length);
+      expect(skimmers.map((e) => e.temperament)).toEqual(['chaser', 'ambusher', 'flanker']);
+      expect(state.enemies.every((e) => e.kind === 'skimmer' || e.temperament === 'chaser')).toBe(
+        true,
+      );
+    });
+
+    it('tracks the player velocity the ambusher leads', () => {
+      const { state } = run(openGame(), { ...IDLE_INPUT, forward: 1 }, 0.5);
+      expect(state.player.velocity.z).toBeCloseTo(-6);
+      expect(state.player.velocity.x).toBeCloseTo(0);
+      const stopped = stepGame(state, IDLE_INPUT, DT, rng);
+      expect(stopped.player.velocity.z).toBeCloseTo(0);
+    });
+
+    it('crouching lowers the eye by 0.6 m and standing restores it', () => {
+      const crouched = stepGame(openGame(), { ...IDLE_INPUT, crouch: true }, DT, rng);
+      expect(crouched.player.crouching).toBe(true);
+      expect(playerEye(crouched.player).y).toBeCloseTo(PLAYER_EYE_HEIGHT - CROUCH_EYE_DROP);
+      expect(playerEye(crouched.player).y).toBeCloseTo(1.1);
+      expect(crouched.player.position.y).toBe(0);
+      const stood = stepGame(crouched, IDLE_INPUT, DT, rng);
+      expect(stood.player.crouching).toBe(false);
+      expect(playerEye(stood.player).y).toBeCloseTo(PLAYER_EYE_HEIGHT);
+    });
+
+    it('shots leave from the crouched eye', () => {
+      const armed = armedWith('rifle', []);
+      const s = stepGame(armed, { ...IDLE_INPUT, crouch: true, fire: true }, DT, rng);
+      const shot = s.events.find((e) => e.type === 'shot');
+      expect(shot?.type === 'shot' && shot.from.y).toBeCloseTo(1.1);
+    });
+
+    /** Steps `state` through `pattern`, one entry per step, crouching where it is true. */
+    const crouchPattern = (
+      state: GameState,
+      pattern: readonly boolean[],
+    ): { state: GameState; events: GameEvent[] } => {
+      const events: GameEvent[] = [];
+      let s = state;
+      for (const crouch of pattern) {
+        s = stepGame(s, { ...IDLE_INPUT, crouch }, DT, rng);
+        events.push(...s.events);
+      }
+      return { state: s, events };
+    };
+    /** `n` crouch toggles spread over `seconds`, as step-by-step input. */
+    const toggles = (n: number, seconds: number): boolean[] => {
+      const steps = Math.round(seconds / DT);
+      const gap = Math.floor(steps / n);
+      return Array.from({ length: steps }, (_, i) => Math.floor(i / gap) < n && i % gap < gap / 2);
+    };
+    const graveSide = (skimmerAt: ReturnType<typeof vec3>): GameState => {
+      const base = armedWith('rifle', [awake(7, 'skimmer', skimmerAt)]);
+      return { ...base, graves: [vec3(1, 0, 0)] };
+    };
+
+    it('three crouches within 1.5 s over a fallen strider earn a bark from a survivor', () => {
+      const { state, events } = crouchPattern(graveSide(vec3(0, 0, -20)), toggles(3, 1.2));
+      const barks = events.filter((e) => e.type === 'enemyBark');
+      expect(barks).toEqual([{ type: 'enemyBark', id: 7, line: TAUNT_BARK }]);
+      expect(TAUNT_BARK).toBe('DISRESPECTFUL');
+      // The history resets: holding the crouch afterwards does not bark again.
+      expect(state.player.crouchStarts).toEqual([]);
+      const more = crouchPattern(state, toggles(2, 0.8));
+      expect(more.events.some((e) => e.type === 'enemyBark')).toBe(false);
+    });
+
+    it('stays quiet with too few toggles, too slow, away from a grave, or with no witness', () => {
+      expect(crouchPattern(graveSide(vec3(0, 0, -20)), toggles(2, 1.2)).events).not.toContainEqual(
+        expect.objectContaining({ type: 'enemyBark' }),
+      );
+      const slow = crouchPattern(graveSide(vec3(0, 0, -20)), toggles(3, TAUNT_WINDOW * 2.2));
+      expect(slow.events.some((e) => e.type === 'enemyBark')).toBe(false);
+      const far: GameState = {
+        ...graveSide(vec3(0, 0, -20)),
+        graves: [vec3(TAUNT_RADIUS + 1, 0, 0)],
+      };
+      expect(crouchPattern(far, toggles(3, 1.2)).events.some((e) => e.type === 'enemyBark')).toBe(
+        false,
+      );
+      const noGrave: GameState = { ...graveSide(vec3(0, 0, -20)), graves: [] };
+      expect(
+        crouchPattern(noGrave, toggles(3, 1.2)).events.some((e) => e.type === 'enemyBark'),
+      ).toBe(false);
+      const witnessless: GameState = { ...graveSide(vec3(0, 0, -20)), enemies: [] };
+      const quiet = crouchPattern(witnessless, toggles(3, 1.2));
+      expect(quiet.events.some((e) => e.type === 'enemyBark')).toBe(false);
+      // The taunt is spent even without a witness; it is the act that counts.
+      expect(quiet.state.player.crouchStarts).toEqual([]);
+    });
+
+    it('records where striders fall', () => {
+      const strider = awake(5, 'strider', vec3(0, 0, -8));
+      const armed = armedWith('laser', [{ ...strider, health: 1 }]);
+      const pitch = pitchTo(1.3, 8);
+      const { state } = run(armed, { ...IDLE_INPUT, fire: true, pitch }, 0.2);
+      expect(state.graves).toEqual([vec3(0, 0, -8)]);
+      // Skimmer deaths leave no grave.
+      const skim = armedWith('laser', [{ ...awake(6, 'skimmer', vec3(0, 0, -8)), health: 1 }]);
+      const after = run(skim, { ...IDLE_INPUT, fire: true, pitch: pitchTo(0.6, 8) }, 0.2).state;
+      expect(after.kills).toBe(1);
+      expect(after.graves).toEqual([]);
+    });
+
+    it('shooting the hidden switch scores 1000 once and announces it', () => {
+      const block = aabbFromCenter(0, -12, 2, 3, 2);
+      const secret = placeSecret([block], createRng(1));
+      expect(secret).toEqual({ at: vec3(0, 1, -13), normal: vec3(0, 0, -1) });
+      const base = armedWith('laser', []);
+      const armed: GameState = {
+        ...base,
+        arena: { ...base.arena, obstacles: [block], secret },
+        player: { ...base.player, position: vec3(0, 0, -18), yaw: Math.PI },
+      };
+      // The player stands on the far side of the block, looking back at its hidden face.
+      const pitch = Math.atan2(1 - 1.7, 5);
+      const look = { ...IDLE_INPUT, fire: true, pitch, yaw: Math.PI };
+      const { state, events } = run(armed, look, 1);
+      const found = events.filter((e) => e.type === 'secretFound');
+      expect(found).toEqual([{ type: 'secretFound', at: vec3(0, 1, -13), score: SECRET_SCORE }]);
+      expect(state.secretsFound).toBe(1);
+      expect(state.score).toBeGreaterThanOrEqual(SECRET_SCORE);
+      expect(events.filter((e) => e.type === 'shot').length).toBeGreaterThan(1);
+    });
+
+    it('the switch does not trip through its block, past the glyph, or in an open arena', () => {
+      const block = aabbFromCenter(0, -12, 2, 3, 2);
+      const secret = placeSecret([block], createRng(1));
+      const base = armedWith('laser', []);
+      const withSecret: GameState = {
+        ...base,
+        arena: { ...base.arena, obstacles: [block], secret },
+      };
+      // From the centre the glyph is behind the block; the block stops the shot first.
+      const pitch = Math.atan2(1 - 1.7, 13);
+      const blocked = run(withSecret, { ...IDLE_INPUT, fire: true, pitch }, 0.5);
+      expect(blocked.state.secretsFound).toBe(0);
+      expect(blocked.state.score).toBeLessThan(SECRET_SCORE);
+      // Just wide of the glyph's radius from behind: a miss.
+      const behind: GameState = {
+        ...withSecret,
+        player: { ...withSecret.player, position: vec3(0, 0, -18), yaw: Math.PI },
+      };
+      const wide = Math.atan2(SECRET_RADIUS * 1.6, 5);
+      const miss = run(behind, { ...IDLE_INPUT, fire: true, pitch, yaw: Math.PI + wide }, 0.5);
+      expect(miss.state.secretsFound).toBe(0);
+      // No cover, no switch.
+      const bare = armedWith('rifle', []);
+      const open = run(
+        { ...bare, arena: { ...bare.arena, secret: null } },
+        { ...IDLE_INPUT, fire: true },
+        0.2,
+      );
+      expect(open.state.secretsFound).toBe(0);
+    });
   });
 });

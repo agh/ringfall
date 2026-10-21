@@ -17,7 +17,7 @@ import {
 import { vec3 } from '../../src/core/vec3';
 import { type Arena, aabbFromCenter } from '../../src/core/world';
 
-const arena: Arena = { halfSize: 30, obstacles: [aabbFromCenter(0, 6, 2, 3, 2)] };
+const arena: Arena = { halfSize: 30, obstacles: [aabbFromCenter(0, 6, 2, 3, 2)], secret: null };
 
 describe('grenade', () => {
   it('arms with a fuse and inherits the throw direction', () => {

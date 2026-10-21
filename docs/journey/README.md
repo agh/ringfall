@@ -1,3 +1,12 @@
+---
+type: readme
+title: "The journey"
+status: draft
+authors:
+  - name: "Ringfall hackathon team"
+created: 2026-10-21
+---
+
 # The journey
 
 A time-indexed log of how Ringfall was built in one hackathon session,
@@ -136,7 +145,7 @@ brand system. Their reports are under [`../research/`](../research/) and
 ## 14:34 to 15:05 Renderer v2 and three bugs
 
 The brief said "10x more sophisticated". The second renderer added a
-scattering sky, a ring you actually stand on (six kilometres in radius,
+scattering sky, a ring you actually stand on (six kilometers in radius,
 sunk below the horizon so it rises on both sides and crosses overhead),
 rolling terrain with mountains at the rim, image-based lighting from the
 sky, a GPU particle pool, an HDR composer with bloom, a custom feel pass
@@ -157,8 +166,8 @@ flags and headless screenshots:
    in the code.
 3. **Terrain fighting the floor.** The terrain under the arena sat 0.6 m
    below the floor, but with a 0.08 m near plane and a 40 km far plane the
-   depth buffer could not separate them at ten metres. Fix: sink the inner
-   terrain six metres.
+   depth buffer could not separate them at ten meters. Fix: sink the inner
+   terrain six meters.
 
 ![Renderer v2 before terrain, direct path](images/1450-renderer-v2-first-light.png)
 
@@ -169,7 +178,7 @@ flags and headless screenshots:
 ## 15:05 Procedural score
 
 A choir drone in D minor (three detuned oscillators per voice, vowel
-formant filters drifting between "ah", "oh" and "oo", a synthesised
+formant filters drifting between "ah", "oh" and "oo", a synthesized
 cathedral impulse response) with calm and combat buses that crossfade on
 wave state. No samples anywhere.
 
@@ -189,7 +198,7 @@ drives balance measurement, browser smoke tests, and the demo film.
 ## 15:17 Backlog landed
 
 Seventeen GitHub issues: an MLP epic with eleven children (shield-break
-event, enemy theatre, grenade dives, firing points, five named waves,
+event, enemy theater, grenade dives, firing points, five named waves,
 stingers and title choreography, brand compliance, frame budget, playtest
 gate, demo pipeline, easter eggs) and a Later epic with four explicitly
 deferred items. Each child has context, scope, acceptance criteria, and an
@@ -265,7 +274,7 @@ checking frames, running the gates and writing commits. Two things went
 wrong with that. A checkpoint commit made to satisfy the stop hook swept
 an agent's scratch harness into the tree and broke CI lint for one run.
 And a brief that said both "wave 1 unchanged" and "day: sun at 35
-degrees" was resolved by the agent in favour of the first; the right
+degrees" was resolved by the agent in favor of the first; the right
 call, flagged in its report, and the kind of ambiguity a coach should not
 write.
 
@@ -293,8 +302,8 @@ was still white. The agent ran out of budget and handed back an honest
 that moment (a skimmer kill 8.3 m away and the wave clear, nothing else)
 and then read the particle shader: a sprite's size is `size * 300 /
 depth`, so each of the forty size-10 sparks was 375 px wide, additive,
-with a three-times colour boost at the centre. Nobody had tuned a light
-that mattered. Sprites are now capped at 64 px and fade within two metres
+with a three-times color boost at the center. Nobody had tuned a light
+that mattered. Sprites are now capped at 64 px and fade within two meters
 of the eye, blasts scale with distance from the camera, and the death
 burst is sixteen motes. Mean frame brightness at that moment went from
 204 to 61 on a scale of 255.
@@ -458,7 +467,7 @@ dust discs, and two browser deaths recovered by the resume logic.
 Issue #37 asked for the four things a demo on a borrowed laptop needs:
 mouse sensitivity, field of view, and switches for screen shake and the hit
 flash, all kept between visits. The values live in a pure module,
-`src/core/settings.ts`, modelled on the personal-bests store: missing,
+`src/core/settings.ts`, modeled on the personal-bests store: missing,
 blocked or corrupt storage yields the defaults, and the defaults are
 exactly what the game did before the panel existed. The panel itself is a
 collapsed "Settings" strip under the controls list so the title card stays
@@ -473,12 +482,195 @@ overlay now scrolls and the label column is wider.
 
 ![The title overlay with the settings panel open](images/1726-settings-panel.jpg)
 
+## 17:29 Brand compliance
+
+The stylesheet had thirty-odd literal colors that predated the brand doc
+(an `rgba` of Beacon here, a lime grenade pip there, a sky-blue hover
+borrowed from a utility palette). Every one is now a token or a
+`color-mix()` of a token, the shield arc gradient lost its two hex stops,
+and the brand doc gained a type scale with a 14 px floor, because at 720p
+the HUD unit is 3.24 px and "3.2 units" had quietly been a 10 px label.
+Low ammo moved from Rose to Flare (the player's own state, per the
+palette rule), and the title card and HUD got short entrance animations
+with a reduced-motion opt-out. Checking the doc against the code turned
+up the usual drift: the sun is `#ffe2b8` not `#ffc18d`, the hemisphere is
+pale and green-grounded rather than the deep blue first proposed, the
+sprint FOV approach is exponential rather than a 150 ms tween, and the
+shake toggle does not exist. The doc now says what the code does and its
+status moved from draft to approved. Frames: title and 10 s of seed 7,
+before (`1724-*`) and after (`1729-*`), at 1280 by 720.
+
+![Title card after the pass](images/1729-title-after.jpg)
+
+## 17:30 An explosion, not a glowing blob
+
+Issue #26 asked for an explosion that reads at any distance and a frame
+budget to prove it: mean luminance under 150 by day and 110 at night at a
+grenade kill within 10 m, measured with the `?record&bot&seed=7&post` hook.
+The timeline for seed 7 was pulled from the headless harness first (the
+same seeds the browser uses), which put the useful moments at t = 9.95 s
+(a skimmer kill 8.4 m away, by night the frame the earlier fix was judged
+on), t = 46.95 s (a launcher round 3.0 m away that kills a skimmer at
+1.9 m) and t = 47.92 s (a round at the player's own feet, the `near`
+case). The old effect was a flash sphere, a flat disc and three big additive
+bursts; the grey "smoke" burst added light to the frame because the pool
+could only add. The pool now blends premultiplied alpha, which keeps the
+spark path byte-for-byte and lets a `smoke` puff or a `shard` chip lay its
+colour over the frame instead. The explosion became five things on their
+own clocks: a 120 ms sprite flash, a thin crest torus that flattens as it
+expands, 32 sparks and 22 chips under gravity, a 56-puff column that rises
+and thins over 1.5 s, and a scorch disc that holds for four seconds. A
+kill now reads its colours off the rig that died: the light for the ring,
+the shell for the debris. Two things were learned on the way: the 64 px
+sprite cap means a smoke puff at 7 m is half a metre wide at most, so a
+column needs count rather than size; and a torus scaled up to the blast
+radius thickens its tube with it, so the crest tube is 22 mm at unit
+radius. Frame means at 720p, HUD included, before and after, on a scale of
+255:
+
+| Moment (seed 7) | Day before | Day after | Night before | Night after |
+| --------------- | ---------- | --------- | ------------ | ----------- |
+| First kill, t = 10.0 s | 100 | 83 | 59 | 32 |
+| Launcher kill at 3 m, t = 47.0 s | 119 | 106 | 121 | 101 |
+| Peak over the 0.4 s after that kill | 125 | 128 | 121 | 105 |
+
+The day peak after the kill is the bot turning towards the sun with the
+shield lattice up; the same frame measured 125 before the change.
+
+![Night kill, before: the kill is a blob](images/1730-issue26-night-kill-before.jpg)
+
+![Night kill, after: ring, sparks, and the skimmer's own glow](images/1730-issue26-night-kill-after.jpg)
+
+![Launcher kill at 3 m by night, before](images/1730-issue26-grenade-kill-before.jpg)
+
+![Launcher kill at 3 m by night, after: crest, chips, and the shield lattice](images/1730-issue26-grenade-kill-after.jpg)
+
+![A blast in the open by day, 0.45 s on: smoke by the slab, the scorch under the pickup](images/1730-issue26-day-blast-smoke.jpg)
+
+## 17:39 Weapon flashes under the HDR stack (issue #28)
+
+The viewmodels had been tuned without bloom or the environment map, and
+under the post stack the scatter's flash was a solid disc, the launcher's
+near-camera smoke painted orange arcs over the lower third of the frame,
+and the beam was a white bar. Rather than wait on wall-clock in a
+software-GL browser, the shots were found first: a headless run of the
+bot at seed 7 lists the tick of every `shot` event by kind (rifle at tick
+263, beam at 1036, scatter at 2606, launcher at 2718, 2812 and 2874; the
+laser and minigun never come up in that run, so seed 3 supplies them at
+1443 and 3270). The capture hook then stepped straight to each tick and
+rendered once, with the tick before and five ticks after for comparison.
+
+What changed in `src/render/weapons.ts`: every flash sprite shrank (the
+scatter from 0.52 m to 0.3 m, the beam from 0.48 m to 0.28 m) and the
+table now carries a life in seconds instead of a decay rate, 35 to 75 ms,
+so sprite and light are gone within 80 ms by construction; the muzzle
+lights are a third to a half of what they were; the beam is a 3.5 cm white
+core in a 14 cm sheath at 0.18 opacity with a 24 cd light instead of a
+0.12 m cylinder at 0.55 with a 40 cd light; the laser is a 1.5 cm
+cylinder instead of a 1 px line; the launcher's smoke moved a meter out,
+past the particle shader's near-eye fade that had been turning it into
+64 px motes on the lens, and it gained a muzzle ring that opens to 0.6 m.
+
+Measured on the frames (connected region of pixels at or above 200/255
+brightness around the muzzle, with the frame before the shot as the
+control): the scatter's flash went from 331 px across to 133 px; the beam's
+muzzle region from 291 px to 175 px, of which 142 px is the capacitor ring
+that is lit in the control frame too; the rifle and minigun flashes no
+longer reach 200/255 at all, so the test finds only the gun's own trims.
+The launcher frame from seed 7 is the bot firing at a pickup under its own
+feet, so the frame is dominated by the round and the pickup's emblem, not
+the muzzle; the frame filed is from seed 3 at 50.9 s, where the bot fires
+level. Frames, one per kind, from the deterministic runs:
+
+![Rifle, seed 7 at 4.4 s](images/1739-flash-rifle.jpg)
+
+![Laser, seed 3 at 24.1 s: a cylinder bolt, not a line](images/1739-flash-laser.jpg)
+
+![Scatter, seed 7 at 43.4 s](images/1739-flash-scatter.jpg)
+
+![Beam, seed 7 at 17.3 s, at night: hot core, soft sheath](images/1739-flash-beam.jpg)
+
+![Launcher, seed 3 at 50.9 s](images/1739-flash-launcher.jpg)
+
+![Minigun, seed 3 at 54.5 s](images/1739-flash-minigun.jpg)
+
+## 17:40 Bloom and flare pass, measured
+
+Issue #25 asked for bloom numbers chosen from frames, not taste. Before
+touching anything, seed 7 was stepped headlessly with the capture hook at
+t = 4, 10 and 18 s by day and 8.5, 10 and 18 s at night, plus two frames
+the bot never gives: standing still looking into the dawn sun, and pitched
+up at the moon. Each frame was scored two ways: the mean luminance of a
+64 by 36 area downscale, and the largest 4-connected blob of saturated
+pixels (every channel at 245 or more). The sun-facing frame explained the
+complaint on its own: a 354 by 158 px saturated blob, 22% of the frame
+height, and a mean of 136. The cause was not the bloom strength but the
+prefilter: `UnrealBloomPass` passes the whole HDR texel once it is over
+the threshold, and the sky's sun disc is in the hundreds, so it bloomed
+hundreds of times harder than a trim at 1.0; the dust motes, with their
+centre boost, did the same in miniature as fist-sized discs. The
+prefilter now keeps only the excess over the threshold, with a quadratic
+knee that starts at 1.0 and a cap of 1.5 per pixel, and the strength and
+radius came down (0.35 to 0.3, 0.6 to 0.35). The flare ghosts, which
+were already 5%, 8% and 3.5% of the frame height, are now sized as those
+fractions explicitly and drawn at 0.6 opacity; core and ghosts are hidden
+when `sunDisc` is 0. The moon's texel is under the threshold and was never
+blooming: its 3 px disc carries a 6 px halo from its own sprite gradient,
+unchanged. Every budget in the issue holds: no day frame over 150, no
+night frame over 110.
+
+| Frame (seed 7) | Mean before | Mean after | Saturated blob before | Saturated blob after |
+| -------------- | ----------- | ---------- | --------------------- | -------------------- |
+| Title (overlay up) | 41 | 38 | none | none |
+| Day, 4 s | 105 | 86 | 188 by 168 px (23% of height) | none |
+| Day, 10 s (kill flash) | 100 | 67 | 76 by 67 px (9%) | 56 by 38 px (5%) |
+| Day, 18 s | 23 | 23 | none | none |
+| Night, 8.5 s | 10 | 10 | none | none |
+| Night, 10 s (kill flash) | 60 | 19 | 78 by 70 px (10%) | 58 by 43 px (6%) |
+| Night, 18 s (beam) | 14 | 14 | none | none |
+| Day, facing the sun, no bot | 136 | 106 | 354 by 158 px (22%) | 237 by 100 px (14%) |
+| Night, facing the moon, no bot | 6 | 6 | none (disc 3 px, halo 6 px) | none (same) |
+
+The 14% blob that remains when staring into the sun is the sky shader's
+own forward-scattering aureole under ACES at exposure 0.38, not bloom;
+it belongs to the environment rig and was left alone.
+
+![Day, 4 s, before: the sun and the dust bloom into discs](images/1715-bloom-before-day-04s.jpg)
+
+![Day, 4 s, after: trims glow, the sky is a sky](images/1740-bloom-after-day-04s.jpg)
+
+![Facing the sun, before: a quarter of the frame is white](images/1715-bloom-before-sun.jpg)
+
+![Facing the sun, after: the aureole stays, the flood goes](images/1740-bloom-after-sun.jpg)
+
+![Night, 10 s, before: the kill flash fills the frame](images/1715-bloom-before-night-10s.jpg)
+
+![Night, 10 s, after: a flash you can see past](images/1740-bloom-after-night-10s.jpg)
+
+The remaining pairs (day 10 s and 18 s, night 8.5 s and 18 s, the moon)
+are filed beside them as `1715-bloom-before-*.jpg` and
+`1740-bloom-after-*.jpg`.
+
+## 17:40 The hero is a frame, not a drawing
+
+Seven moments of seed 7 were rendered headless at 3840x1600 with the post
+stack on and the HUD hidden (new `?nohud` dev flag): night at 10 s and 18 s,
+dawn at 2 s and 95 s, day at 10 s, dusk at 45 s, rain at 18 s. About 30 s a
+frame on software GL. The night kill at 10 s won the banner: dark sky for
+the wordmark, a warm skimmer burst between the slabs, the ring overhead.
+Dawn 95 s (sun flare), night 18 s (beam) and dusk 45 s (laser) make the
+README strip. The contact sheet is `images/1740-hero-contact.jpg`; the
+recipe is the "Hero and social" section of `docs/brand.md`.
+
+![Contact sheet of the seven candidate hero frames](images/1740-hero-contact.jpg)
+
 ## Playtest reviews
 
 Each row is a human or agent watching the game play, not a screenshot.
 
 | When | Seed | What was watched | Verdict |
 | ---- | ---- | ---------------- | ------- |
+| 17:30 | 7 | The first kill at night (t = 10 s), the launcher kill at 3 m (t = 47 s) and a blast in the open (t = 45.5 s), by day and by night, at 50 ms steps, after the explosion rework | The crest reads as a pressure wave from 3 m and from 19 m (an arc on the floor past the cover); chips and sparks fall where the eye expects them; the smoke column shows by day and against lit walls at night, and is invisible against the night sky, which is right for soot. The scorch is the one thing that is still there a second later. The frame at the first kill is still dominated by the dying skimmer's own core and light, not by the kill effect. |
 | 17:00 | 7 | A 75 s bot run by day, frames every 3 s, and the night kill at 10 s, after the weapon integration | Weapon swaps read (beam at 18 s, scatter at 45 s, launcher at 48 s), pickup columns are visible from across the arena, the night frame keeps its stars and trims. The launcher round the bot fired at its own feet at 48 s still washes the frame pink with the shield-down effect; that is the jolt it should be, but the bot should not do it (issue for the bot: no launcher inside the blast radius). |
 | 15:56 | 7 | The whole 49 s film with its offline score: title, deploy, waves 1 to 4 | Reviewed frame-by-frame at 8 s, 22 s and 46 s and watched end to end at speed: the sun flare and bloom carry the opening, the bot's first kill lands at 4.8 s, wave 2 brings the first strider and bolts, the HUD reads at 720p. Weak points: around 8 s the bot turns into the sun and the frame whites out for about two seconds (this capture predates the exposure and haze reduction and HUD v2), and the bot stands in the open while reloading. Shipped as the first reel; a second capture with the current build was started at 16:00. |
 | 15:29 | 7 | Frames 100 to 225 of the first capture (wave 1, 24 fps) | Bot kills two skimmers by 8 s, loses the third behind cover and reloads in the open; the sun behind a slab blooms hard enough to hide the reticle for a second. Readable, dramatic, slightly over-bright. Exposure left as is for the reel; a bloom radius reduction is a candidate. |

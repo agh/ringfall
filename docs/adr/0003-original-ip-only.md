@@ -1,10 +1,10 @@
 ---
 type: adr
-adr: "ADR-0003"
 title: "Ship only original names, assets, and audio"
-status: accepted
-date: 2026-10-21
-deciders: ["Ringfall hackathon team"]
+status: approved
+created: 2026-10-21
+authors:
+  - name: "Ringfall hackathon team"
 ---
 
 # ADR-0003: Ship only original names, assets, and audio
@@ -25,7 +25,7 @@ redistributed.
 ## Decision
 
 Use original names throughout (Ringfall, skimmer, strider). Generate every
-visual from three.js primitives and procedural textures. Synthesise every
+visual from three.js primitives and procedural textures. Synthesize every
 sound with WebAudio. Do not load, vendor, or link to third-party game assets.
 Describe the inspiration in prose without naming the franchise in code,
 metadata, or marketing copy.
@@ -45,13 +45,13 @@ metadata, or marketing copy.
 ### Neutral
 
 - Future contributors who want higher-fidelity art must bring assets with a
-  compatible licence and record them in a `THIRD_PARTY_NOTICES.md`.
+  compatible license and record them in a `THIRD_PARTY_NOTICES.md`.
 
 ## Alternatives Considered
 
 ### Fan-made asset packs
 
-Rejected: most are derivative works of the franchise and carry no licence
+Rejected: most are derivative works of the franchise and carry no license
 that permits redistribution.
 
 ### Commercial CC0 packs

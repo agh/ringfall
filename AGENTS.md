@@ -70,6 +70,7 @@ pnpm test:e2e                 # Playwright smoke tests against `vite preview`
 # Linting & Formatting
 pnpm lint                     # biome ci .
 pnpm lint:fix                 # biome check --write .
+pnpm lint:docs                # frontmatter schema, typos, Vale (advisory), internal links
 pnpm typecheck                # tsc --noEmit
 
 # Everything CI runs

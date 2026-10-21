@@ -53,6 +53,8 @@ export const SILENT = [
   'enemyFled',
   // The pod's fall and landing are the renderer's streak and dust for now (#56).
   'dropPod',
+  // The hidden switch's seven-note chime is a follow-up; the score tick is the only reaction here.
+  'secretFound',
 ] as const satisfies readonly GameEvent['type'][];
 export type SilentEvent = (typeof SILENT)[number];
 

@@ -1,8 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="1200" height="400" role="img" aria-label="Ringfall: a ring arcing over a dawn horizon">
+  <!-- Palette tokens from docs/brand.md: Abyss #0b1a2e, Beacon #7dd3fc, Dawn #f6b26b, Ring #b8d8ea, Bone #e8e4d8, Slate #8aa0b8. -->
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#0b1a2e"/>
-      <stop offset="0.72" stop-color="#1e3a5c"/>
+      <stop offset="0.62" stop-color="#0b1a2e"/>
       <stop offset="1" stop-color="#f6b26b"/>
     </linearGradient>
     <linearGradient id="ring" x1="0" y1="0" x2="1" y2="0">
@@ -26,5 +27,5 @@
   </g>
   <line x1="0" y1="331" x2="1200" y2="331" stroke="#7dd3fc" stroke-width="2"/>
   <text x="600" y="300" text-anchor="middle" fill="#e8e4d8" font-family="Chakra Petch, Rajdhani, Bahnschrift, sans-serif" font-size="88" font-weight="700" letter-spacing="12">RINGFALL</text>
-  <text x="600" y="370" text-anchor="middle" fill="#7dd3fc" font-family="JetBrains Mono, ui-monospace, monospace" font-size="18" letter-spacing="4">BROWSER-NATIVE ARENA · ZERO ASSETS</text>
+  <text x="600" y="370" text-anchor="middle" fill="#7dd3fc" font-family="JetBrains Mono, ui-monospace, monospace" font-size="18" letter-spacing="1">One ring, one dawn. TypeScript + three.js, zero assets.</text>
 </svg>
