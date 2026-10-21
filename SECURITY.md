@@ -11,7 +11,7 @@ build, the pinned dependencies, and the GitHub Actions workflows.
 ## Threat model
 
 1. **Assets**: the published build at the custom domain, the `main` branch, and the player's local storage; there are no accounts, secrets, or server-side data.
-2. **Untrusted input**: the query string (`?seed`, `?atmo`, `?weather`, `?bot`, `?record`, `?nopost`) and the `ringfall.records.v1` local storage value; both are parsed by allow-list in `src/core` and never reach markup.
+2. **Untrusted input**: the query string (`?seed`, `?atmo`, `?weather`, `?bot`, `?record`, `?nopost`, `?nohud`) and the `ringfall.records.v1` local storage value; both are parsed by allow-list in `src/core` and never reach markup.
 3. **Browser surface**: a strict Content Security Policy meta tag (same-origin scripts, no inline script, no `eval`, no workers, no objects) and `no-referrer`; GitHub Pages cannot set headers, so `frame-ancestors` and `Permissions-Policy` are unavailable.
 4. **Supply chain**: every dependency is an exact pin with a lockfile integrity hash, lifecycle scripts are disabled, releases younger than a day are not resolved, and `pnpm audit --prod` must be clean.
 5. **Build output**: content-hashed assets with hidden source maps; the bundle contains no environment variables and makes no network calls.

@@ -77,14 +77,17 @@ pinned to a commit SHA.
 One repository setting must be made once by hand, because a workflow
 cannot make it: under Settings, Pages, Build and deployment, the Source
 must be set to GitHub Actions. Until that is done the deploy job fails at
-`configure-pages` and the site at <https://agh.github.io/ringfall/> does not
-exist. The `github-pages` environment is created by the first successful
+`configure-pages`, and with the branch source the site at
+<https://agh.github.io/ringfall/> serves the repository's raw `index.html`
+rather than the build (observed 2026-10-21). The `github-pages` environment is created by the first successful
 run.
 
-To redeploy without a code change, dispatch the workflow by hand.
+To redeploy without a code change, re-run the last `CI` run on `main`
+(the workflow has no `workflow_dispatch` trigger).
 
 ```bash
-gh workflow run "Deploy to GitHub Pages" --ref main
+gh run list --workflow CI --branch main --limit 1
+gh run rerun <run-id>
 gh run watch
 ```
 
