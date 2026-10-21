@@ -6,8 +6,9 @@ const MAX_PITCH = Math.PI / 2 - 0.02;
 const BASE_SENSITIVITY = 0.0022;
 
 /**
- * Collects keyboard and mouse state between simulation steps. Held actions (move, fire, jump)
- * are read live; one-shot actions (reload, grenade, swap) are latched until the next `take()`.
+ * Collects keyboard and mouse state between simulation steps. Held actions (move, fire, jump,
+ * crouch) are read live; one-shot actions (reload, grenade, swap) are latched until the next
+ * `take()`.
  */
 export class InputController {
   private readonly keys = new Set<string>();
@@ -66,6 +67,7 @@ export class InputController {
       strafe: Number(this.down('KeyD', 'ArrowRight')) - Number(this.down('KeyA', 'ArrowLeft')),
       jump: this.down('Space'),
       sprint: this.down('ShiftLeft', 'ShiftRight'),
+      crouch: this.down('KeyC', 'ControlLeft', 'ControlRight'),
       fire: this.firing,
       reload: this.reloadLatched,
       throwGrenade: this.grenadeLatched,

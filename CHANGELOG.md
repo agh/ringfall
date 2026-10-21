@@ -25,6 +25,14 @@ and this project adheres to
 
 ### Added
 
+- Four skimmer temperaments handed out round-robin per wave: chaser,
+  ambusher (leads the player's velocity by 4 m), flanker (swings to the
+  off-hand side) and skittish (holds at 10 m until a packmate is within
+  6 m of the player). The HUD names the arena Sector 117 from a core
+  constant. A crouch on C or Ctrl lowers the eye by 0.6 m; three crouches
+  within 1.5 s over a fallen strider earn a one-word bark from a surviving
+  skimmer. One cover block per arena hides a switch on its outward face;
+  shooting it once scores 1000 and the end card counts secrets found.
 - Enemy theatre: when a strider dies, every skimmer within 25 m breaks and
   runs for 4 s at 1.3x speed without attacking, then returns to the chase.
   New enemy state `flee` and two events for the presentation layers,

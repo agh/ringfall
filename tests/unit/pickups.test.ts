@@ -94,7 +94,7 @@ describe('pickups', () => {
   });
 
   it('places the wave reward ahead of the player, pulling back from cover and the edge', () => {
-    const open: Arena = { halfSize: 30, obstacles: [] };
+    const open: Arena = { halfSize: 30, obstacles: [], secret: null };
     const ahead = rewardPosition(open, vec3(0, 0, 0), 0);
     expect(ahead.x).toBeCloseTo(0);
     expect(ahead.z).toBeCloseTo(-WAVE_REWARD_DISTANCE);
@@ -102,7 +102,11 @@ describe('pickups', () => {
     expect(turned.x).toBeCloseTo(1 - WAVE_REWARD_DISTANCE);
     expect(turned.z).toBeCloseTo(1);
 
-    const covered: Arena = { halfSize: 30, obstacles: [aabbFromCenter(0, -6, 2, 3, 2)] };
+    const covered: Arena = {
+      halfSize: 30,
+      obstacles: [aabbFromCenter(0, -6, 2, 3, 2)],
+      secret: null,
+    };
     const pulled = rewardPosition(covered, vec3(), 0);
     expect(pulled.z).toBeCloseTo(-WAVE_REWARD_DISTANCE / 2);
 
