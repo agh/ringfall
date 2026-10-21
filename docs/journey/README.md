@@ -791,22 +791,6 @@ lifecycle in `main.ts`, plus one line in the input controller.
 
 ![HUD at 1 s after: Contact in 2, NW and N on the compass](images/1754-ux-hud-1s-after.jpg)
 
-## 17:50 The watcher, held at the gate
-
-What did not make the stop: the five named wave beats and the dropship
-that rides on them, the design and user-experience review's fixes, the
-threat model and the architecture package, all open as pull requests or
-sessions at the freeze. Two admin items need the owner: GitHub Pages is
-not enabled, so nothing has deployed to the custom domain yet, and main
-has no branch protection.
-
-The coaching lesson of the afternoon, counted: twenty-nine merges in
-seventy minutes meant almost every pull request conflicted with the one
-before it, nearly always in the changelog, the journal and the design
-doc, because every agent was told to document in the same three files.
-Next time the brief gives each stream its own journal page and the
-changelog is assembled at the freeze.
-
 ## Playtest reviews
 
 Each row is a human or agent watching the game play, not a screenshot.
