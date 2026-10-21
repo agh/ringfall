@@ -41,6 +41,13 @@ and this project adheres to
   kills and shield breaks, the survivors flee off the arena, and the state
   holds a 5 s tableau before the run is won. `scripts/wave-table.mjs`
   generates the design doc's composition table from the constants.
+
+- An architecture package under `docs/architecture/`: C4 context and
+  container diagrams, component diagrams and a module map generated from the
+  import graph, an event catalogue generated from the `GameEvent` union and
+  its consumers, the frame and tick data flows, the build and delivery view,
+  a decision index and the invariants, with `pnpm docs:architecture` to
+  regenerate and render and a unit test that fails on drift (#79).
 - A unit test that fails if the pre-rename repository path reappears outside
   `docs/journey/`, and a runbook note on the rename order (#70).
 
