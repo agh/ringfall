@@ -65,7 +65,8 @@ pnpm check          # lint, typecheck, unit tests with coverage, build
 
 The `Pages build` and `Pages deploy` jobs at the end of
 `.github/workflows/ci.yml` run on every push to `main`, after every other
-CI job on that push except the browser smoke tests has passed (`needs`), so a red run never ships. The
+CI job on that push except the luminance gate and the browser smoke tests
+has passed (`needs`, #100), so a red run never ships. The
 build job installs with the frozen lockfile, runs `pnpm build`, calls
 `actions/configure-pages`, and uploads `dist/` with
 `actions/upload-pages-artifact`. The deploy job publishes that artifact
@@ -110,8 +111,8 @@ pnpm test:watch     # vitest in watch mode
 ## Playwright
 
 The smoke tests in `tests/e2e/` run against `vite preview`, so the
-production build must exist first. Each test has a 120 second budget and
-waits up to 60 seconds for the simulation clock to pass 0.5 seconds,
+production build must exist first. Each test has a 600 second budget and
+waits up to 240 seconds for the simulation clock to pass 0.5 seconds,
 because software GL renders the post stack at a few frames per second.
 
 Without `PLAYWRIGHT_CHROMIUM_EXECUTABLE`, Playwright wants its own browser

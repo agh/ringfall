@@ -12,7 +12,7 @@ flowchart LR
     docs["Docs hygiene<br/>pnpm lint:docs: frontmatter, typos, Vale, links"]
     security["Security and workflow hygiene<br/>pnpm audit, actionlint, zizmor, gitleaks"]
   end
-  subgraph pagewf["ci.yml: push to main only, needs every gate but the smoke tests"]
+  subgraph pagewf["ci.yml: push to main only, needs every gate but the luminance gate and the smoke tests"]
     direction TB
     pbuild["Pages build (contents: read)<br/>pnpm build, upload-pages-artifact"]
     pdeploy["Pages deploy (pages: write, id-token: write)<br/>deploy-pages"]

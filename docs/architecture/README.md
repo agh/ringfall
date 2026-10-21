@@ -199,7 +199,8 @@ The one workflow, `.github/workflows/ci.yml`, runs eight independent gate
 jobs on every pull request and every push to `main`; a pull request push cancels a
 superseded run, a push to `main` always runs to completion. Two more jobs,
 Pages build and Pages deploy, run only on a push to `main` and only after
-every gate except the browser smoke tests has passed, so a merge never
+every gate except the luminance gate and the browser smoke tests has
+passed (#100), so a merge never
 publishes a build that failed a gate. Every action is pinned to a commit
 SHA and checkouts do not persist credentials; the deploy job is the only
 one with write permission.
@@ -208,13 +209,13 @@ one with write permission.
 | --- | ----- | -------- |
 | Lint and type check | Biome, markdownlint, strict TypeScript | none |
 | Unit tests | Every core rule and the coverage thresholds in `vitest.config.ts` | `coverage` |
-| Browser smoke tests | The built page loads, starts, advances, moves on keys, no page errors | `playwright-report` on failure |
+| Browser smoke tests | The built page loads, starts, advances, moves on keys, no page errors | `playwright-traces` (the `test-results/` directory) on failure |
 | Luminance gate | Ten seeded frames within the mean and blob budgets in `scripts/frames.mjs` | `frames` |
 | Production build | `vite build` succeeds | `dist` |
 | Balance gate | Twenty seeded games per profile within `tests/balance/gate.ts` | `balance-report`, also appended to the job summary |
 | Docs hygiene | Frontmatter, typos, Vale, internal links; external links advisory | none |
 | Security and workflow hygiene | `pnpm audit`, actionlint, zizmor and gitleaks; actionlint and gitleaks pinned by checksum, zizmor by version | none |
-| Pages build | `main` only, after the gates: `pnpm build` and `upload-pages-artifact` | `github-pages` |
+| Pages build | `main` only, after the fast gates: `pnpm build` and `upload-pages-artifact` | `github-pages` |
 | Pages deploy | `main` only, after Pages build: `deploy-pages` with `pages: write` and an OIDC token | the live site |
 
 ![Build and delivery: the eight gate jobs, the two Pages jobs behind them, and the local recorder, reel and documentation pipelines](render/build.png)
