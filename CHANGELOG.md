@@ -161,6 +161,11 @@ and this project adheres to
 
 ### Fixed
 
+- Audio block of the quality pass (#105): noise buffers are built once per
+  context and warmed at unlock, so a wave start with nine drop pods no
+  longer spends about 20 ms filling them in one step; the combat pulse
+  looks two ticks ahead, so a timer tick a whole tick late no longer drops
+  a beat and shifts the grid.
 - The dropship and its pods borrow their lights from the pool too (#103).
 - Weapon muzzle flashes, tracers and the beam re-tuned under the HDR
   composer so they read without blooming out (#28).
