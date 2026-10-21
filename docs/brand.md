@@ -145,6 +145,10 @@ Anything smaller is decoration and must not carry gameplay meaning.
   emissive ring. Attack telegraph: core brightens.
 - Strider: vertical, tall, four legs. One Rose lens on the head; charge
   telegraph: muzzle swells and the lens goes white.
+- Watcher: a tripod mast, taller and far narrower than the strider (height
+  over width above 2.5, asserted in `tests/unit/watcher-rig.test.ts`). One
+  Rose lens on top; charge telegraph: the lens swells and goes from Rose to
+  white over 1.2 s and a thin Rose aiming line runs to the player.
 - Enemies carry no Beacon cyan anywhere; the world carries no Rose anywhere.
   Color tells you what is hostile before shape does.
 

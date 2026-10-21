@@ -1,8 +1,9 @@
 import type { Rng } from './rng';
 import { add, distanceXZ, normalize, scale, sub, type Vec3, vec3, ZERO } from './vec3';
+import { updateWatcher, WATCHER_STATS, type WatcherAction } from './watcher';
 import { type Arena, moveWithCollision, pointInsideAabbXZ } from './world';
 
-export type EnemyKind = 'skimmer' | 'strider';
+export type EnemyKind = 'skimmer' | 'strider' | 'watcher';
 export type EnemyState = 'spawning' | 'chase' | 'attack' | 'flee' | 'dead';
 
 /** Skimmers this close (XZ metres) to a strider when it dies break and run. */
@@ -126,6 +127,7 @@ export const ENEMY_STATS: Readonly<Record<EnemyKind, EnemyStats>> = {
     score: 300,
     ranged: true,
   },
+  watcher: WATCHER_STATS,
 };
 
 export interface Enemy {
@@ -188,7 +190,8 @@ export type EnemyAction =
       readonly origin: Vec3;
       readonly direction: Vec3;
       readonly damage: number;
-    };
+    }
+  | WatcherAction;
 
 export interface EnemyUpdate {
   readonly enemy: Enemy;
@@ -292,6 +295,7 @@ export const updateEnemy = (
   rng: Rng,
   tracking: Tracking = STILL_TRACKING,
 ): EnemyUpdate => {
+  if (e.kind === 'watcher') return updateWatcher(e, arena, playerFeet, playerEye, dt, now, rng);
   if (e.state === 'dead') return { enemy: e, action: null };
   if (e.state === 'spawning') {
     return { enemy: now >= e.activeAt ? { ...e, state: 'chase' } : e, action: null };

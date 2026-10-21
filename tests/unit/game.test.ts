@@ -21,6 +21,7 @@ import {
 import { createPickup, PICKUP_KINDS, WAVE_REWARD_DISTANCE } from '../../src/core/pickups';
 import { createRng } from '../../src/core/rng';
 import { distanceXZ, vec3 } from '../../src/core/vec3';
+import { WATCHER_CHARGE, WATCHER_COOLDOWN, WATCHER_STATS } from '../../src/core/watcher';
 import { WAVE_COUNTDOWN, waveComposition } from '../../src/core/waves';
 import { createWeapon, type WeaponKind } from '../../src/core/weapon';
 import { aabbFromCenter, placeSecret, SECRET_RADIUS } from '../../src/core/world';
@@ -446,6 +447,45 @@ describe('game', () => {
     expect(events.some((e) => e.type === 'playerDamaged')).toBe(true);
   });
 
+  it('a watcher kills a stationary player in the open in the expected time, and cover saves them', () => {
+    const base = openGame();
+    const watcher = { ...createEnemy(8, 'watcher', vec3(0, 0, -28), 0), state: 'chase' as const };
+    const exposed: GameState = {
+      ...base,
+      enemies: [watcher],
+      wave: { ...base.wave, phase: 'active' },
+    };
+    // 200 points of shield and health at 35 per beam is at least six beams: the first lands
+    // after the spawn-set attack delay plus the 1.2 s charge, the rest every charge-plus-cooldown.
+    // The cycle is longer than the shield's recharge delay, so the shield claws back part of each
+    // beam and a lone watcher needs more beams than the floor; it still gets there.
+    const floorBeams = Math.ceil(200 / WATCHER_STATS.damage);
+    const cycle = WATCHER_CHARGE + WATCHER_COOLDOWN;
+    const earliest = watcher.nextAttackAt + WATCHER_CHARGE + (floorBeams - 1) * cycle;
+    const { state, events } = run(exposed, IDLE_INPUT, 90);
+    expect(state.status).toBe('dead');
+    const fired = events.filter((e) => e.type === 'watcherFired');
+    expect(fired.length).toBeGreaterThanOrEqual(floorBeams);
+    expect(fired.every((e) => e.type === 'watcherFired' && e.hit)).toBe(true);
+    expect(events.filter((e) => e.type === 'watcherCharging')).toHaveLength(fired.length);
+    // The beam borrows the strider bolt sound until it has its own.
+    expect(events.filter((e) => e.type === 'boltFired')).toHaveLength(fired.length);
+    const damage = events.filter((e) => e.type === 'playerDamaged');
+    expect(damage).toHaveLength(fired.length);
+    expect(events.some((e) => e.type === 'playerDied')).toBe(true);
+    expect(state.time).toBeGreaterThanOrEqual(earliest);
+    expect(state.time).toBeLessThan(90);
+
+    // Wide enough that the watcher's slow orbit cannot find a line past it inside the run.
+    const wall = aabbFromCenter(0, -4, 30, 4, 1);
+    const sheltered: GameState = { ...exposed, arena: { ...exposed.arena, obstacles: [wall] } };
+    const safe = run(sheltered, IDLE_INPUT, 30);
+    expect(safe.state.status).toBe('playing');
+    expect(safe.events.some((e) => e.type === 'playerDamaged')).toBe(false);
+    expect(safe.events.some((e) => e.type === 'watcherCharging')).toBe(false);
+    expect(safe.state.player.vitality.shield).toBe(100);
+  });
+
   it('clears a wave, awards the bonus, and advances', () => {
     const base = openGame();
     const started = run(base, IDLE_INPUT, WAVE_COUNTDOWN + 0.1).state;
@@ -483,6 +523,34 @@ describe('game', () => {
     const { state, events } = run(final, IDLE_INPUT, 0.1);
     expect(state.status).toBe('won');
     expect(events.some((e) => e.type === 'victory')).toBe(true);
+  });
+
+  it('keeps a death that lands in the same step as the last kill', () => {
+    // A grenade at the player's feet kills the last wave-8 skimmer and the one-health player
+    // in one step. The wave stage runs last; without a guard it overwrote dead with won.
+    const base = armedWith('rifle', [awake(1, 'skimmer', vec3(0, 0, -3))]);
+    const doomed: GameState = {
+      ...base,
+      wave: { number: 8, phase: 'active', phaseEndsAt: 0 },
+      player: { ...base.player, vitality: { ...base.player.vitality, shield: 0, health: 1 } },
+      grenades: [{ id: 99, position: vec3(0, 0, -2), velocity: vec3(0, 0, 0), explodeAt: 0 }],
+    };
+    const { state, events } = run(doomed, IDLE_INPUT, DT);
+    expect(events.map((e) => e.type)).toContain('playerDied');
+    expect(events.map((e) => e.type)).not.toContain('victory');
+    expect(state.status).toBe('dead');
+  });
+
+  it('blasts spare a spawning enemy, as shots do', () => {
+    const base = armedWith('rifle', [createEnemy(1, 'skimmer', vec3(0, 0, -3), 0)]);
+    expect(base.enemies[0]?.state).toBe('spawning');
+    const primed: GameState = {
+      ...base,
+      grenades: [{ id: 99, position: vec3(0, 0, -3), velocity: vec3(0, 0, 0), explodeAt: 0 }],
+    };
+    const { state } = run(primed, IDLE_INPUT, DT);
+    expect(state.enemies[0]?.health).toBe(base.enemies[0]?.health);
+    expect(state.enemies[0]?.state).toBe('spawning');
   });
 
   describe('easter eggs', () => {
