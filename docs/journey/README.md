@@ -473,6 +473,24 @@ overlay now scrolls and the label column is wider.
 
 ![The title overlay with the settings panel open](images/1726-settings-panel.jpg)
 
+## 18:00 The dropship moment
+
+Issue #58 asked for the wave to arrive visibly instead of appearing on the
+ring. `src/render/dropship.ts` listens for the `dropPod` event that #57
+fires 1.5 s before each enemy goes active: the first pod of a wave sends a
+dark Hull craft with a Rose underlight across the arena in 4 s, in over the
+wall behind that pod, over the centre and out the far side; every pod falls
+as a capsule from the craft's altitude to its landing point over that lead
+and raises a Slate dust ring on touchdown. The simulation is untouched, so
+`pnpm balance` prints the same six lines as #57. The frame below is seed 7
+at 13.6 s, wave 2's pods on the way down under the ring arc, captured
+headless with the post stack on. The craft itself crossed behind the bot,
+which was looking at the nearest skimmer; a frame with the craft in view
+needs a camera the bot does not provide and is the open item on the pull
+request.
+
+![A drop pod with its Rose band falling toward the spawn ring under the ring arc](images/1800-dropship.jpg)
+
 ## Playtest reviews
 
 Each row is a human or agent watching the game play, not a screenshot.

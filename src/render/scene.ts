@@ -5,6 +5,7 @@ import { GRENADE_BLAST_RADIUS } from '../core/grenade';
 import type { Vec3 } from '../core/vec3';
 import { WAVE_COUNTDOWN, waveAtmosphere } from '../core/waves';
 import { ARENA_HALF_SIZE, type Arena } from '../core/world';
+import { Dropship } from './dropship';
 import { type EnemyRig, makeEnemyRig } from './enemies';
 import { createEnvironment, type Environment } from './environment';
 import { ParticleSystem } from './particles';
@@ -102,6 +103,7 @@ export class SceneRenderer {
   /** Wave whose atmosphere the environment was last told to blend towards. */
   private lastAtmosphereWave = 0;
   private readonly particles = new ParticleSystem();
+  private readonly dropship = new Dropship(this.dynamic);
   private readonly environment: Environment;
   private readonly enemies = new Map<number, EnemyRig>();
   private readonly bolts = new Map<number, THREE.Group>();
@@ -316,6 +318,7 @@ export class SceneRenderer {
   handle(events: readonly GameEvent[], now: number): void {
     this.weaponViewmodels.handle(events, now, this.camera);
     this.pickupMeshes.handle(events, now);
+    this.dropship.handle(events, now);
     for (const e of events) {
       switch (e.type) {
         case 'shot':
@@ -374,6 +377,7 @@ export class SceneRenderer {
     this.syncGrenades(state, now);
     this.pickupMeshes.sync(state, now);
     this.weaponViewmodels.update(now, state);
+    this.dropship.update(now);
     this.updateEffects(now);
     this.particles.update(now);
 
