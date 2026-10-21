@@ -145,6 +145,11 @@ const main = (): void => {
       stats.textContent = `${summarize(game)} ${describeComparison(round, comparison)}`;
       stats.hidden = false;
       startButton.textContent = won ? 'Run it back' : 'Redeploy';
+    } else {
+      // A pause, not an ending: the card must not keep the previous round's death copy.
+      tagline.textContent = 'Paused. Esc released the mouse; click to take it back.';
+      stats.hidden = true;
+      startButton.textContent = 'Resume';
     }
     if (document.pointerLockElement) document.exitPointerLock();
   };

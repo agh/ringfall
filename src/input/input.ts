@@ -62,9 +62,6 @@ export class InputController {
   /** Resume after a pause: keep the look direction, drop every held or latched action. */
   release(): void {
     this.releaseAll();
-    this.reloadLatched = false;
-    this.grenadeLatched = false;
-    this.swapLatched = false;
   }
 
   /** Snapshot for one simulation step; clears latched one-shot actions. */
@@ -129,5 +126,10 @@ export class InputController {
   private readonly releaseAll = (): void => {
     this.keys.clear();
     this.firing = false;
+    // A G or R pressed on the title screen, or a right click in the death window, must not
+    // fire on the first step of the next game.
+    this.reloadLatched = false;
+    this.grenadeLatched = false;
+    this.swapLatched = false;
   };
 }
