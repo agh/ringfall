@@ -23,6 +23,9 @@ and this project adheres to
   the `?record&bot&seed=N` capture hook.
 - Specification, brand system, test plan, two research reports, a journey
   log with captured frames, and a README banner.
+- Personal bests kept in the browser's local storage: the end card compares
+  the round with the previous best score, deepest wave, runs and clears.
+  Storage that is missing, blocked, or corrupt yields a clean slate.
 
 ### Fixed
 

@@ -2,6 +2,7 @@ import { AudioBank } from './audio/audio';
 import { renderScore } from './audio/offline';
 import { type BotMemory, createBotMemory, decideBot, STEADY_BOT } from './core/bot';
 import { createGame, type GameState, stepGame } from './core/game';
+import { describeComparison, recordRound } from './core/records';
 import { createRng } from './core/rng';
 import { Hud, summarize } from './hud/hud';
 import { InputController } from './input/input';
@@ -76,7 +77,22 @@ const main = (): void => {
       tagline.textContent = won
         ? 'The arena is quiet. The ring still turns.'
         : 'Shields down. Health gone. The ring does not care.';
-      stats.textContent = summarize(game);
+      const round = {
+        score: game.score,
+        wave: game.wave.number,
+        kills: game.kills,
+        won,
+        at: new Date().toISOString(),
+      };
+      // Personal bests live only in this browser; storage may be blocked, and that is fine.
+      let storage: Storage | null = null;
+      try {
+        storage = window.localStorage;
+      } catch {
+        storage = null;
+      }
+      const comparison = recordRound(storage, round);
+      stats.textContent = `${summarize(game)} ${describeComparison(round, comparison)}`;
       stats.hidden = false;
       startButton.textContent = won ? 'Run it back' : 'Redeploy';
     }

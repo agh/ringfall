@@ -61,6 +61,7 @@ a friend. Each MLP item names that moment.
 | 12 | Playtest bot as a CI gate | We know it is fair | Harness done; gate not | #12 |
 | 13 | Demo recording pipeline | The awards reel | Capture hook done; score not | #13 |
 | 14 | Easter eggs: temperaments, sector number, crouch, switch | "IYKYK." | Not started | #14 |
+| 15 | Personal bests in the browser: this round against your previous best score, deepest wave, runs and clears | "I got further." | Done (`src/core/records.ts`, localStorage, nothing leaves the device) | n/a |
 
 ## Later (explicit choices)
 

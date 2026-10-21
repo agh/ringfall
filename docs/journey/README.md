@@ -6,6 +6,67 @@ Each entry says what was tried, what was seen, and what was decided, so a
 reader can follow the reasoning and not just the result. Images live in
 `images/` and are named by the time they were captured.
 
+## The story, not the straight line
+
+The morning had three acts, and the second one started with a correction.
+
+**Act one: a working game in forty minutes.** The first decisions were
+made fast and have held: TypeScript on the house toolchain, three.js on
+WebGL, a simulation written as a pure function so it could be tested in
+Node, original names and procedural art only. The core (collision, rifle,
+grenades, two enemies, waves, shields) was written and tested before a
+single triangle was drawn. The first renderer was deliberately plain: flat
+boxes, a dark sky, a torus on the horizon. It shipped as a draft PR at
+14:30 with CI, a Pages deploy, and ninety-nine percent line coverage.
+
+**The correction.** The brief that followed was blunt: the graphics were
+not pushing boundaries, and the project needed a product backlog, a brand,
+a journey log, a demo film, and a way for the agent to play the game rather
+than screenshot it. The first renderer had been a call made for speed; it
+was the wrong level of ambition for the demo, and that was named plainly.
+Rather than polish the v1 scene, it was rewritten.
+
+**Act two: the renderer rewrite, and three bugs in a black frame.** The
+second renderer (scattering sky, a ring you stand on, terrain, image-based
+lighting, GPU particles, an HDR composer with bloom and a feel pass) came
+up black. It took forty minutes and a dozen headless captures with URL
+flags to split that one symptom into three unrelated faults: the camera was
+inside the ring's tube; the first animation frame after Deploy carried a
+negative delta that made every decay term grow until the lights blew out;
+and the terrain under the arena was fighting the floor in the depth buffer
+at range. Each fix was small. Finding them was the work. The flags were
+removed afterwards; the uniform probe that exposed the second bug stayed.
+
+**Act three: the game plays itself.** Determinism paid off. The same seeded
+`stepGame` that a person drives became a bot's playground: a headless
+harness measures win rate and wave clear times in seconds, a Playwright run
+proves the real stack in a real browser, and a recorder steps the sim once
+per captured frame so the film plays at the right speed on a software GPU
+that renders at under one frame per second. The soundtrack is rendered
+offline from the same event timeline, which is why audio recorded minutes
+later lines up with the frames.
+
+Meanwhile three research agents ran in parallel and came back with sourced
+reports on the design philosophy being borrowed, the browser prior art, and
+a brand system. Their findings became the specification, the brand doc,
+and seventeen GitHub issues, each with acceptance criteria a person can
+check.
+
+### Calls that were made, then overruled
+
+- **A plain first renderer.** Chosen for speed; judged insufficient for the
+  demo. Rewritten in act two. The lesson recorded in the spec: the first
+  thirty seconds are the product.
+- **Eight uniform waves.** A formula was faster to write than a composition
+  table. The research on pacing says five named beats with a late
+  spectacle. Deferred to issue #8 rather than done in the window; the
+  constant is one line.
+- **Screenshots as proof of play.** Replaced by the bot, the harness, and
+  the recorder. Screenshots remain as evidence, not as the test.
+- **One squashed commit for act two.** Everything from the renderer to the
+  docs landed in a single commit because the clock mattered more than
+  history. Later changes went back to one concern per commit.
+
 ## 14:08 Kick-off
 
 The brief: a WebGL game inspired by a classic console shooter, in a
