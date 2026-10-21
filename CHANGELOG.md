@@ -130,6 +130,16 @@ and this project adheres to
 
 ### Fixed
 
+- Merge seams between features that landed from different branches (#97,
+  pass C), each pinned by a deterministic test that runs both in one go:
+  a skimmer already leaving after the final leader fell is no longer
+  downgraded to a timed rout by a strider a late blast kills, so it keeps
+  leaving and the tableau ends with an empty arena; an exiting watcher
+  flees instead of holding the perimeter and charging through the
+  tableau; the loop applies the core's `timeScaleOf`, so the tableau opens
+  in slow motion as the design doc says; the `dropPod` sound plays once per
+  launch step in the live bank and the offline score, one engine sweep for
+  the one craft the renderer draws, instead of once per pod.
 - Documentation sweep of the second audit's deferred findings (#54): the
   VFX rules quoted from a live source, a login-walled course link dropped,
   the ringworld sentence restated from its sources, two journey frames

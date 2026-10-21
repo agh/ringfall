@@ -203,8 +203,9 @@ export type GameEvent =
   /**
    * An enemy broke and ran: it is now in state `flee`. Fired for every skimmer within
    * `FLEE_RADIUS` of a strider when it dies, after that strider's `enemyKilled` in the same step,
-   * and again for a skimmer whose rout is refreshed by a second death. The enemy's `fleeUntil`
-   * says when it ends; posture and sound layers key on `id` and `kind`.
+   * and again for a skimmer whose rout is refreshed by a second death, but not for one already
+   * leaving for good after the final leader fell. The enemy's `fleeUntil` says when it ends;
+   * posture and sound layers key on `id` and `kind`.
    */
   | { readonly type: 'enemyFled'; readonly id: number; readonly kind: EnemyKind }
   /**

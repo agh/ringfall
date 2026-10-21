@@ -1,7 +1,7 @@
 import { AudioBank } from './audio/audio';
 import { renderScore } from './audio/offline';
 import { type BotMemory, createBotMemory, decideBot, STEADY_BOT } from './core/bot';
-import { createGame, type GameState, stepGame } from './core/game';
+import { createGame, type GameState, stepGame, timeScaleOf } from './core/game';
 import { describeComparison, recordRound } from './core/records';
 import { createRng, parseSeed } from './core/rng';
 import { loadSettings, type Settings, saveSettings } from './core/settings';
@@ -286,13 +286,16 @@ const main = (): void => {
       return;
     }
     if (running) {
+      // The tableau opens in slow motion (core: timeScaleOf); hit-stop multiplies with it, so
+      // the leader's kill still pops inside the slow opening.
+      const tableauScale = timeScaleOf(game);
       // Hit-stop: time slows to a crawl for a few frames on a kill or a shield break.
       if (hitStop > 0) {
         hitStop = Math.max(0, hitStop - frameDt);
         // A time-scale, not a freeze (brand.md): frames still step, so the marker stays framed.
-        accumulator += frameDt * HIT_STOP_SCALE;
+        accumulator += frameDt * tableauScale * HIT_STOP_SCALE;
       } else {
-        accumulator += frameDt;
+        accumulator += frameDt * tableauScale;
       }
       // Anything past the per-frame cap is dropped, not deferred: a deferred backlog would
       // fast-forward the game at five steps a frame once the frame rate recovers.
@@ -303,7 +306,8 @@ const main = (): void => {
         accumulator -= FIXED_DT;
         steps += 1;
         if (game.status !== 'playing') {
-          // A win gets its four-second tableau before the card; a death gets the 1.6 s sink.
+          // The core has already held the win's 5 s tableau; the card follows 4 s after `won`,
+          // and a death's after the 1.6 s sink.
           window.setTimeout(() => showOverlay(true), game.status === 'won' ? 4000 : 1600);
           running = false;
           break;
