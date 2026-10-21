@@ -4,7 +4,7 @@
 
 A browser-native arena shooter. One ring, one dawn, two kinds of thing that
 want you dead. TypeScript + three.js, zero assets. Built in four hours on
-2026-10-21 by one person coaching thirty cloud agents; the
+2026-10-21 by one person coaching thirty-three cloud agents; the
 [journey](docs/journey/README.md) has the clock.
 
 <p align="center"><sub>The banner is the game itself: seed 7 at night, t = 10 s, 3840x1600 with the post stack on. Recipe in <a href="docs/brand.md#hero-and-social">docs/brand.md</a>.</sub></p>

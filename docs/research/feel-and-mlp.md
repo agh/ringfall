@@ -160,7 +160,7 @@ mode, long cathedral tail, then strings and a drum pulse.
 
 - Chant voice: detuned sawtooths through parallel bandpass formants. Male
   "oo" is roughly 300 / 870 / 2240 Hz; "ah" is 730 / 1090 / 2440 Hz
-  ([Peterson and Barney][formants]).
+  ([Peterson and Barney][formants]; the same table at [CCRMA][ccrma]).
 - Melody: an original four-phrase Dorian line in D, unison, stepwise.
 - Space: a `ConvolverNode` with a synthesized impulse response (exponentially
   decaying noise, 4 to 6 s, low-passed over time)
@@ -205,6 +205,7 @@ mode, long cathedral tail, then strings and a drum pulse.
 [itwire]: https://itwire.com/opinion-and-analysis-sp-481/radioactive-it/designing-halo-reach-was-like-filming-titanic
 [hook]: https://www.gamedeveloper.com/design/the-30-second-hook
 [formants]: https://www.cs.princeton.edu/courses/archive/spr99/cs325/formants.html
+[ccrma]: https://ccrma.stanford.edu/~kglee/m220c/formant.html
 [convolver]: https://developer.mozilla.org/docs/Web/API/ConvolverNode
 
 - <https://www.engadget.com/2011-07-14-half-minute-halo-an-interview-with-jaime-griesemer.html>
@@ -228,6 +229,7 @@ mode, long cathedral tail, then strings and a drum pulse.
 - <https://github.com/N8python/n8ao>
 - <https://review.firstround.com/dont-serve-burnt-pizza-and-other-lessons-in-building-minimum-lovable-products>
 - <https://www.cs.princeton.edu/courses/archive/spr99/cs325/formants.html>
+- <https://ccrma.stanford.edu/~kglee/m220c/formant.html>
 - <https://developer.mozilla.org/docs/Web/API/ConvolverNode>
 
 Caveat: the frame-budget numbers are engineering targets, not published

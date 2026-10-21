@@ -63,8 +63,8 @@ acceptance criteria that name the test layer, and a traceability table.
 
 ## Storyboards
 
-Beat sheets list beats in order; thumbnails come before an animatic
-([UW CSE 456][uw]; [Gnomon][gnomon]). Trailer structure per presskit.gg's
+A beatboard workflow runs "from the initial thumbnail sketches all the way
+through to a rendered beatboard" ([Gnomon][gnomon]). Trailer structure per presskit.gg's
 field guide (which quotes Derek Lieu on "burying your hook"):
 hook in the first five seconds, core loop to twenty-five, escalation to
 forty-five, title last ([presskit.gg][lieu]; [PC Gamer][pcgamer]). The
@@ -83,9 +83,12 @@ color per character" ([makko survey][makko]); the mood, palette and VFX
 sections below are this project's additions. Valve's TF2 paper is the primary source for
 silhouette rules: "Even when viewed only in silhouette with no internal
 shading at all, the characters are readily identifiable"
-([Valve][tf2]). Riot's VFX style guide sets the effects rules: emphasize
-focus, scale matches importance, anticipation then payoff
-([Riot][riot]). Overwatch's art direction was fixed early around a diverse
+([Valve][tf2]). Riot's VFX style guide sets the effects rules, quoted here from VFX
+Apprentice's summary because Riot's article and PDF both redirect to the
+League homepage: "clearly define areas of focus with primary and secondary
+elements", "accurately represent the level of importance of an attack or
+spell", and "lead the brain with anticipation and then overload the brain"
+([VFX Apprentice][riot]). Overwatch's art direction was fixed early around a diverse
 cast, a hopeful future and a vibrant world ([Game Developer][overwatch]).
 Procedural art still needs "artistic control" ([No Man's Sky][nms]) and is
 "a form of language, where we view the world through rules"
@@ -148,7 +151,6 @@ documentation commits is lint only.
 [nygard]: https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions
 [osmani]: https://addyosmani.com/blog/good-spec/
 [spec-driven]: https://github.blog/ai-and-ml/generative-ai/spec-driven-development-using-markdown-as-a-programming-language-when-building-with-ai/
-[uw]: https://courses.cs.washington.edu/courses/cse456/15su/assignments/assignment_3
 [gnomon]: https://w.thegnomonworkshop.com/blog/creating-beatboards-for-pre-production
 [lieu]: https://presskit.gg/field-guides/game-trailers-screenshots-guide
 [pcgamer]: https://pcgamer.com/the-art-of-making-effective-game-trailers
@@ -157,7 +159,7 @@ documentation commits is lint only.
 [storyboarder]: https://wonderunit.com/storyboarder/
 [makko]: https://blog.makko.ai/what-public-game-art-bibles-say/
 [tf2]: https://www.advances.realtimerendering.com/s2007/Mitchell-IllustrativeRenderingInTF2(Siggraph07%20Course%20Notes).pdf
-[riot]: https://nexus.leagueoflegends.com/en-us/2017/10/dev-leagues-vfx-style-guide/
+[riot]: https://www.vfxapprentice.com/blog/10-league-of-legends-vfx-design-tips
 [overwatch]: https://gamedeveloper.com/art/video-defining-and-evolving-the-art-direction-of-i-overwatch-i-
 [nms]: https://www.nomanssky.com/2015/02/no-mans-sky-at-gdc/
 [seed]: https://www.ea.com/seed/amp/news/seed-gdc-2018-presentation-slides-creativity-of-rules-and-patterns
@@ -175,11 +177,13 @@ documentation commits is lint only.
 - <https://addyosmani.com/blog/good-spec/>
 - <https://presskit.gg/field-guides/game-trailers-screenshots-guide>
 - <https://www.advances.realtimerendering.com/s2007/Mitchell-IllustrativeRenderingInTF2(Siggraph07%20Course%20Notes).pdf>
-- <https://nexus.leagueoflegends.com/en-us/2017/10/dev-leagues-vfx-style-guide/>
+- <https://www.vfxapprentice.com/blog/10-league-of-legends-vfx-design-tips>
 - <https://sre.google/sre-book/reliable-product-launches/>
 - <https://martinfowler.com/bliki/UbiquitousLanguage.html>
 
 Unverified in the session: GDC Vault pages redirected to maintenance, so
 Schreiber's and Saltsman's abstracts come from gdconf.com news and search
-snippets; Riot's style guide PDF now redirects, so it is cited through the
-article.
+snippets. Checked again on 2026-10-21: Riot's style guide PDF and its Nexus
+article both redirect to the League homepage, so the three rules are quoted
+from VFX Apprentice's summary of the guide; the UW CSE 456 assignment page
+redirects to a university login and is no longer cited.

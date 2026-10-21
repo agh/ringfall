@@ -130,6 +130,11 @@ and this project adheres to
 
 ### Fixed
 
+- Documentation sweep of the second audit's deferred findings (#54): the
+  VFX rules quoted from a live source, a login-walled course link dropped,
+  the ringworld sentence restated from its sources, two journey frames
+  renamed to the minute captured, and the freeze counts re-read after the
+  last merges.
 - Design and UX review (#53): HUD labels and card copy never below 14 px and
   scale to 4K; the card is a dialog that names Victory, Defeat or Paused and
   takes focus when it returns; low ammo, an empty magazine and a kill are
