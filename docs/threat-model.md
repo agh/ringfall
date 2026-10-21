@@ -22,7 +22,7 @@ and pull request #68. It names what is worth protecting, draws the two
 systems that touch it (the running game and the chain that delivers it),
 and lists every threat per trust boundary with the control that exists in
 the tree today, the gap if there is one, and the issue that tracks the gap.
-Every control is cited by file path as of `main` at `105ff4f`
+Every control is cited by file path as of `main` at `6fb2608`
 (2026-10-21). Where a row says "Fn", it means finding n in the ranked
 checklist on #52, applied by #68; the index at the end lists all 22 with
 their current status.
@@ -90,7 +90,7 @@ flowchart LR
 ```mermaid
 flowchart TB
   owner(["Repository owner<br/>one GitHub account, one token"])
-  agents["Coding agents<br/>22 sessions on 2026-10-21<br/>push branches with the owner's token"]
+  agents["Coding agents<br/>26 sessions on 2026-10-21<br/>push branches with the owner's token"]
   dependabot["Dependabot<br/>npm and github-actions, weekly,<br/>7-day cooldown"]
 
   subgraph repo["Repository agh/ringfall (GitHub)"]
@@ -111,10 +111,10 @@ flowchart TB
     security["Security and workflow hygiene<br/>pnpm audit, actionlint,<br/>zizmor, gitleaks"]
   end
 
-  subgraph deploy["GitHub Actions: deploy-pages.yml (permissions: {})"]
+  subgraph deploy["ci.yml Pages jobs: push to main only, needs every job above"]
     direction LR
-    dbuild["build<br/>contents: read"]
-    ddeploy["deploy<br/>pages: write, id-token: write<br/>environment github-pages"]
+    dbuild["Pages build<br/>contents: read"]
+    ddeploy["Pages deploy<br/>pages: write, id-token: write<br/>environment github-pages,<br/>concurrency pages"]
   end
 
   registries["npm registry (three.js, tooling)<br/>GitHub release tarballs (typos, Vale, actionlint, gitleaks)<br/>PyPI via uvx (zizmor)<br/>SHA-pinned actions"]
@@ -128,9 +128,10 @@ flowchart TB
   branches -->|"B7: pull_request, read-only token"| ci
   registries -->|"B8: frozen lockfile, integrity, checksums, pins"| ci
   registries -->|"B8"| dbuild
-  ci -.->|"status checks, not required"| main
+  ci -.->|"status checks, not required to merge"| main
   branches -->|"owner merges"| main
-  main -->|"B9: push to main"| dbuild --> ddeploy
+  main -->|"B9: push to main"| ci
+  ci -->|"B9: needs, all green"| dbuild --> ddeploy
   ddeploy -->|"B9: OIDC"| pagesHost
   pagesHost -->|"B10: custom domain, HTTPS"| dns --> player
 ```
@@ -140,7 +141,7 @@ flowchart TB
 | B6 | the owner, the agents the owner runs, Dependabot | the repository | commits and pull requests | twenty agent sessions pushed with one token in one afternoon; the repository has no rules about what a token may do to `main` |
 | B7 | the repository | GitHub Actions runners | workflow files, the `GITHUB_TOKEN`, third-party actions | a pull request runs third-party code from `node_modules` on a runner holding a token |
 | B8 | npm, PyPI, GitHub releases, the actions marketplace | the runner and the developer's machine | packages, binaries, actions | the build runs whatever those hosts serve; pins and checksums are the only defense |
-| B9 | `main` | GitHub Pages | the built `dist/` through an OIDC deployment | the one write path to the site |
+| B9 | `main` | GitHub Pages | the built `dist/` through an OIDC deployment, from the `pages-build` and `pages-deploy` jobs at the end of `ci.yml` | the one write path to the site |
 | B10 | GitHub Pages | DNS and the player | the custom domain `ringfall.alexhowells.com` | a dangling or wrongly set record points players somewhere else |
 
 ## 2. Assets
@@ -165,7 +166,7 @@ Each row is one threat, classified with STRIDE (Spoofing, Tampering,
 Repudiation, Information disclosure, Denial of service, Elevation of
 privilege). Likelihood and impact are low, medium or high on the same
 three-point scale as [risks.md](risks.md). "Control today" cites the file
-that implements it at `105ff4f`; "Gap" is what the control does not cover;
+that implements it at `6fb2608`; "Gap" is what the control does not cover;
 "Issue" is where the gap is tracked. A row with no gap has no issue.
 
 ### 3.1 Running game: B1 to B5
@@ -186,24 +187,24 @@ that implements it at `105ff4f`; "Gap" is what the control does not cover;
 
 | ID | Boundary | STRIDE | Threat | Likelihood | Impact | Control today (file, finding) | Gap | Issue |
 | -- | -------- | ------ | ------ | ---------- | ------ | ----------------------------- | --- | ----- |
-| T10 | B6 | Elevation, Tampering | An agent session, or a person holding the owner's token, pushes directly to `main`, force-pushes over history, deletes the branch, or merges a pull request whose checks are red. See "Agent-built supply chain" below. | Medium | High | Every merge on 2026-10-21 was made by the owner; `CONTRIBUTING.md` closes external pull requests; `.github/CODEOWNERS` names `@agh`; `ci.yml` runs on every push to `main` to completion (`cancel-in-progress` only on pull requests, F10), so a bad merge is at least visible. | `main` has no ruleset or branch protection, so none of this is enforced: force push, deletion and merge on red are all one command away (F2). CODEOWNERS is inert without a rule. | #85 |
-| T11 | B6 | Repudiation | It is not possible to tell afterwards which agent or person authored a change, or a trailer is forged. | Medium | Low | 88 of the 137 commits at `105ff4f` carry a `Co-Authored-By` or `Claude-Session` trailer naming the session (`git log`); `AGENTS.md` "Agency and sessions" forbids agents speaking as a person and requires verification evidence; the pull request template demands a transcript for every claim. | Trailers are self-asserted. 28 commits are signed and 109 are not (`git log --format=%G?` at `105ff4f`); nothing requires signatures. A ruleset can require signed commits once one exists. | #85 |
+| T10 | B6 | Elevation, Tampering | An agent session, or a person holding the owner's token, pushes directly to `main`, force-pushes over history, deletes the branch, or merges a pull request whose checks are red. See "Agent-built supply chain" below. | Medium | High | Every merge on 2026-10-21 was made by the owner; `CONTRIBUTING.md` closes external pull requests; `.github/CODEOWNERS` names `@agh`; `ci.yml` runs on every push to `main` and is meant to run to completion (`cancel-in-progress` only on pull requests, F10), so a bad merge is at least visible. | `main` has no ruleset or branch protection, so none of this is enforced: force push, deletion and merge on red are all one command away (F2). CODEOWNERS is inert without a rule. It happened: CI run 102 on `main` (the merge of #75) concluded failure on 2026-10-21 and four more pull requests merged on top of it; runs 104, 105 and 111 on `main` ended cancelled when the next push arrived, so F10's expression is to be re-checked (#86). | #85, #86 |
+| T11 | B6 | Repudiation | It is not possible to tell afterwards which agent or person authored a change, or a trailer is forged. | Medium | Low | 110 of the 180 commits at `6fb2608` carry a `Co-Authored-By` or `Claude-Session` trailer naming the session (`git log`); `AGENTS.md` "Agency and sessions" forbids agents speaking as a person and requires verification evidence; the pull request template demands a transcript for every claim. | Trailers are self-asserted. 36 commits are signed and 144 are not (`git log --format=%G?` at `6fb2608`); nothing requires signatures. A ruleset can require signed commits once one exists. | #85 |
 | T12 | B6 | Information disclosure | A token, key or password is committed. | Low | High | `ci.yml` job `Security and workflow hygiene`: gitleaks 8.30.1 (SHA-256 verified download) over the working tree and the pushed commits with `.gitleaks.toml`, plus a self-test that the allowlist still catches a realistic `ghp_` and `sk_live_` token; `.pre-commit-config.yaml` runs gitleaks and `detect-private-key`; #68's sweep of the tree and `git log --all -p` found nothing (F22). | GitHub-side secret scanning and push protection are repository settings not yet confirmed on (F22). | #85 |
 | T13 | B6 | Tampering | A commit breaks an invariant that no reviewer would catch by eye: a `three` import or a clock in the pure core, a franchise term, a self-reference to the old repository name, a gameplay number that no longer matches the design document. | High | Medium | `tests/unit/purity.test.ts` and Biome restrict `src/core` to no `three`, `window`, `document`, `Date.now`, `Math.random`; `tests/unit/originality.test.ts` greps every tracked file outside `docs/research/` for the term list in `tests/unit/originality.terms.ts` (ADR-0003); `tests/unit/repo-name.test.ts` rejects the old repository path; `tests/unit/design-doc.test.ts` ties constants to `docs/design-doc.md`; `tests/balance/` and the `Luminance gate` job bound behavior and brightness. | None. These are the tests that did the stopping on 2026-10-21; see below. | none |
-| T14 | B7 | Elevation | A pull request workflow steals the `GITHUB_TOKEN`, writes to the repository, or runs an action whose upstream was replaced. | Low | High | `ci.yml` top-level `permissions: contents: read`; every `actions/checkout` has `persist-credentials: false`; no `pull_request_target` or `workflow_run` trigger; no `${{ }}` expression inside a `run:` (verified by #68); every `uses:` is pinned to a commit SHA with its tag in a comment, and #68 confirmed each SHA resolves to that tag; `deploy-pages.yml` has `permissions: {}` with `contents: read` on `build` and `pages: write`, `id-token: write` only on `deploy`, which checks nothing out (F9). actionlint 1.7.12 and zizmor 1.31.1 at `--persona=pedantic` run on every pull request (`ci.yml` security job); Dependabot proposes action bumps weekly after a 7-day cooldown (`.github/dependabot.yml`, F12). | The repository-level Actions defaults (read-only token, approval for fork pull requests, allowed actions) could not be read (F20). They matter the day the repository is public. | #85 |
+| T14 | B7 | Elevation | A pull request workflow steals the `GITHUB_TOKEN`, writes to the repository, or runs an action whose upstream was replaced. | Low | High | `ci.yml` top-level `permissions: contents: read`; every `actions/checkout` has `persist-credentials: false`; `ci.yml` is the only workflow and has no `pull_request_target` or `workflow_run` trigger (#76 added a `workflow_run` deploy trigger and #89 removed it the same hour because zizmor rejects it); no `${{ }}` expression inside a `run:` (verified by #68); every `uses:` is pinned to a commit SHA with its tag in a comment, and #68 confirmed each SHA resolves to that tag; the `pages-deploy` job alone holds `pages: write` and `id-token: write`, checks nothing out, and runs only after `pages-build`, which has `contents: read` (F9, moved from `deploy-pages.yml` into `ci.yml` by #89). actionlint 1.7.12 and zizmor 1.31.1 at `--persona=pedantic` run on every pull request (`ci.yml` security job); Dependabot proposes action bumps weekly after a 7-day cooldown (`.github/dependabot.yml`, F12). | The repository-level Actions defaults (read-only token, approval for fork pull requests, allowed actions) could not be read (F20). They matter the day the repository is public. | #85 |
 | T15 | B7 | Repudiation | Evidence of a failing browser run is lost: the `playwright-report` artifact is uploaded on failure but is always empty. | High | Low | `ci.yml` uploads an artifact on e2e failure; `playwright.config.ts` writes traces on first retry to `test-results/`. | The artifact path is `playwright-report`, which the `github` reporter never writes (F14). | #86 |
 | T16 | B7, B8 | Tampering | A tool downloaded at CI time is substituted. | Low | Medium | typos, Vale, actionlint and gitleaks are fetched from GitHub releases at pinned versions and checked with `sha256sum --check --strict` before use (`ci.yml` docs and security jobs); `astral-sh/setup-uv` is SHA-pinned; Chromium comes from Playwright's own pinned distribution. | zizmor is run through `uvx --from zizmor==1.31.1` with a version pin only, no checksum; a PyPI compromise of that exact release would run on the runner with a read-only token. Accepted: the runner holds nothing to steal and the job runs no project code afterwards. | none (accepted) |
-| T17 | B7 | Tampering | A workflow regression goes unnoticed because a finding is suppressed. | Medium | Low | `.github/zizmor.yml` documents every ignore with the change that removes it. | Two of the three ignores for `deploy-pages.yml` describe a workflow-level `pages: write` grant that #68 already moved under the `deploy` job; they should be removed so a regression there is reported again. | #86 |
+| T17 | B7 | Tampering | A workflow regression goes unnoticed because a finding is suppressed. | Medium | Low | `.github/zizmor.yml` carries no ignores (`rules: {}` since #89); every zizmor finding at `--persona=pedantic` fails the security job. | None. | none |
 | T18 | B8 | Tampering | A hijacked or typosquatted npm release is installed on a developer machine or the runner; a lifecycle script runs on install. | Medium | High | `package.json` pins every dependency exactly, `pnpm-lock.yaml` carries sha512 integrity for each, every workflow job runs `pnpm install --frozen-lockfile`; `pnpm-workspace.yaml` `minimumReleaseAge: 1440` (nothing younger than a day resolves) and `onlyBuiltDependencies: []` (no dependency runs an install script); `.npmrc` `engine-strict=true` (F11); `.github/dependabot.yml` `versioning-strategy: increase`, `cooldown: 7 days`, grouped dev tooling (F12); `pnpm audit --audit-level=high` gates every pull request (`ci.yml` security job, from #62) with `pnpm.overrides` lifting the advisories that have fixes (F4). The one runtime dependency is `three@0.186.1`. | `GHSA-vfj7-8cjw-p6xm` (`braces`, high, reached only through `markdownlint-cli2` expanding the repository's own glob) is ignored under `pnpm.auditConfig` because no fixed release exists; the ignore is to be removed when one ships (recorded in #62). Dependency review on pull requests needs the dependency graph enabled by an admin. | #85 (dependency review); the `braces` ignore is residual risk, see section 5 |
-| T19 | B9 | Elevation, Tampering | Something other than a completed push to `main` deploys to the site, or a broken `main` deploys. | Low | High | `deploy-pages.yml` runs on `push` to `main` and `workflow_dispatch` only; the OIDC token is minted only in the `deploy` job inside the `github-pages` environment (F9); `concurrency: pages` with `cancel-in-progress: false`; CI on `main` runs to completion so a red `main` is visible (F10); the launch checklist refuses a tag unless CI is green on the exact commit. | The `github-pages` environment has no deployment-branch restriction (F21), and the deploy workflow does not wait for CI: a merge on red deploys. Required status checks on `main` (T10) close the second half by construction. | #85 |
+| T19 | B9 | Elevation, Tampering | Something other than a completed push to `main` deploys to the site, or a broken `main` deploys. | Low | High | The `pages-build` job in `ci.yml` runs only on `push` to `refs/heads/main` and `needs` every other job (lint, unit, frames, build, balance, docs, security), so a red `main` does not deploy (#89); the OIDC token is minted only in `pages-deploy` inside the `github-pages` environment (F9); `concurrency: pages` with `cancel-in-progress: false` keeps deploys in order; the launch checklist refuses a tag unless CI is green on the exact commit. | The `github-pages` environment has no deployment-branch restriction (F21). A run on `main` that is cancelled rather than failed (see T10) deploys nothing, which is safe, but leaves the site behind `main` with no signal. | #85 |
 | T20 | B10 | Spoofing | Players are sent to a host that does not serve the game: the links in `README.md`, `CONTRIBUTING.md`, `.github/ISSUE_TEMPLATE/config.yml` and `docs/launch-checklist.md`. | High (today) | Low | #74 pointed every self-reference at `agh/ringfall`; `README.md` names the custom domain and the interim Pages URL (F18). | Both hosts return 404 until Pages is enabled (T1). | #85 |
-| T21 | B6 | Repudiation, Tampering | A film, a frame or a balance number describes a build other than the one in the tree, or a claim in a document is not backed by a run. | Medium | Medium | The recorder steps the simulation deterministically from a seed (`?record&bot&seed=N`, `src/main.ts`); `pnpm balance` and `pnpm frames` run in CI and upload their reports as artifacts (`ci.yml`); `AGENTS.md` requires every verification claim to link execution evidence; `.github/PULL_REQUEST_TEMPLATE.md` demands transcripts; `docs/launch-checklist.md` requires the film to be regenerated from the tagged commit and screenshots from a clean profile. | `scripts/record-demo.mjs` accepts a frame rate that does not divide 60 and labels the film with a seed it then plays at the wrong speed (F15); two documentation audits (#54) found present-tense claims about features that did not exist and corrected them, which is a process the tree cannot enforce. | #87 (scripts); #54 (documentation) |
+| T21 | B6 | Repudiation, Tampering | A film, a frame or a balance number describes a build other than the one in the tree, or a claim in a document is not backed by a run. | Medium | Medium | The recorder steps the simulation deterministically from a seed (`?record&bot&seed=N`, `src/main.ts`); `pnpm balance` and `pnpm frames` run in CI and upload their reports as artifacts (`ci.yml`); `AGENTS.md` requires every verification claim to link execution evidence; `.github/PULL_REQUEST_TEMPLATE.md` demands transcripts; `docs/launch-checklist.md` requires the film to be regenerated from the tagged commit and screenshots from a clean profile. | `scripts/reel.mjs` derives the web encode name from `--out` without checking its extension, and `record-demo.mjs` and `render-score.mjs` leave a preview server behind on failure (F15; the frame-rate guard half of F15 landed in #76, `scripts/record-demo.mjs` lines 30 to 34); two documentation audits (#54) found present-tense claims about features that did not exist and corrected them, which is a process the tree cannot enforce. | #87 (scripts); #54 (documentation) |
 
 ### 3.3 Agent-built supply chain
 
-On 2026-10-21, between 14:30 and 18:02 UTC, 22 distinct coding-agent
-sessions (counted from `Claude-Session` trailers in `git log` at `105ff4f`)
-and two Copilot branches pushed to this repository, and 26 pull requests
+On 2026-10-21, between 14:30 and 18:15 UTC, 26 distinct coding-agent
+sessions (counted from `Claude-Session` trailers in `git log` at `6fb2608`)
+and two Copilot branches pushed to this repository, and 34 pull requests
 were merged, all with the owner's account. That is boundary B6 at its widest,
 and it deserves its own account of what stopped a bad commit and what did
 not.
@@ -238,7 +239,8 @@ What did not, and would not have:
   because the repository required it.
 - **CODEOWNERS and the status checks were advisory.** No check was
   required, so a merge with the Luminance gate still running or red was
-  one click.
+  one click, and CI run 102 on `main` did fail with merges continuing on
+  top of it (T10).
 - **One token for twenty sessions.** A prompt-injected agent (a fetched
   page or an issue comment that redirected it) would have had the owner's
   full write access. The mitigations are rulesets on `main` and, when the
@@ -348,7 +350,7 @@ ticked only with the date of that reading.
 
 ## Appendix: the 22 findings from #52 and #68
 
-Status at `105ff4f`. "Fixed" means the control is in the tree and cited in
+Status at `6fb2608`. "Fixed" means the control is in the tree and cited in
 the row named; "Admin" means only the owner can set it; "Open" means an
 issue tracks it; "Accepted" means the residual risk is stated in section 5.
 
@@ -362,13 +364,13 @@ issue tracks it; "Accepted" means the residual risk is stated in section 5.
 | 6 | Medium | Full source maps shipped | Fixed (`vite.config.ts`) | T9 |
 | 7 | Low | Personal bests parsed without validation | Fixed (`src/core/records.ts`) | T7 |
 | 8 | Low | `?seed` aliasing through `Number()` | Fixed (`src/core/rng.ts`) | T5 |
-| 9 | Low | Deploy workflow over-privileged | Fixed (`.github/workflows/deploy-pages.yml`) | T14, T19 |
-| 10 | Low | CI on `main` cancelled by the next push | Fixed (`.github/workflows/ci.yml`) | T10, T19 |
+| 9 | Low | Deploy workflow over-privileged | Fixed (#68 in `deploy-pages.yml`; carried into the `pages-deploy` job of `.github/workflows/ci.yml` by #89) | T14, T19 |
+| 10 | Low | CI on `main` cancelled by the next push | Fixed in `.github/workflows/ci.yml`; cancellations of runs on `main` observed again on 2026-10-21, re-check tracked | T10, #86 |
 | 11 | Low | No pnpm hardening | Fixed (`pnpm-workspace.yaml`, `.npmrc`) | T18 |
 | 12 | Low | Dependabot without pin strategy, cooldown or grouping | Fixed (`.github/dependabot.yml`) | T14, T18 |
 | 13 | Low | Script arguments unvalidated | Fixed (`scripts/lib/args.mjs`) | T21 |
 | 14 | Low | `playwright-report` artifact always empty | Open | T15, #86 |
-| 15 | Low | Recorder frame-rate and cleanup nits | Open | T21, #87 |
+| 15 | Low | Recorder frame-rate and cleanup nits | Partly fixed (frame-rate guard, #76); rest open | T21, #87 |
 | 16 | Info | `window.ringfallDebug` ungated | Open | T6, #84 |
 | 17 | Info | Page is framable | Accepted | T4 |
 | 18 | Info | Stale links to the Pages URL | Superseded by #74; the host answers once A1 is done | T20, #85 |
