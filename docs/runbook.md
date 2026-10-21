@@ -167,6 +167,18 @@ is the quickest way to see that the bot is fighting. Films, frames, and
 the WAV are ignored by git. Each review of a film is logged in
 [journey/README.md](journey/README.md) with the seed and the frame range.
 
+### The Playwright ffmpeg cannot assemble the film
+
+The ffmpeg that Playwright bundles (`/opt/pw-browsers/ffmpeg-*/ffmpeg-linux`)
+is built for screencasts only: VP8 and WebM, no JPEG decoder, no H.264, no
+audio encoder. Point `FFMPEG` at a full build instead. The static binary
+from `pip install imageio-ffmpeg` (`imageio_ffmpeg/binaries/ffmpeg-linux-*`)
+or a system `ffmpeg` both work. A 24 fps capture made before the frame-rate
+guard was added holds three simulation ticks per frame; encode it at
+`-framerate 20` so it plays in real time, and render the score for the
+simulated length (48 s for 960 frames) with a lead-in equal to the title
+frames divided by 20.
+
 ## Known faults and their fixes
 
 ### Pointer lock is refused, or Deploy does nothing after Esc
