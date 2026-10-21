@@ -74,6 +74,10 @@ pnpm typecheck                # tsc --noEmit
 
 # Everything CI runs
 pnpm check                    # lint, typecheck, unit tests, production build
+
+# Playing the game without a person
+pnpm balance                  # headless bot games with balance assertions
+pnpm demo                     # film seed 7 and score it: demo.mp4 (needs ffmpeg)
 ```
 
 ## Structure

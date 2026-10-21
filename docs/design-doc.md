@@ -149,13 +149,30 @@ clock in production and is fixed in tests.
 
 ### Presentation
 
-- **Renderer.** three.js `WebGLRenderer` with ACES tone mapping, a hemisphere
-  light, one shadow-casting directional light, and linear fog from 45 to
-  170 m. The sky holds a ringworld arc (a torus 1.9 km away), a planet, a
-  sun, and 1,200 points for stars, all excluded from fog so they stay crisp.
-- **Enemies.** Skimmers are flattened icosahedra hovering with a sine bob;
-  striders are capsules. Each carries an emissive eye and a point light.
-  Dead enemies squash and widen for 1.2 s, then despawn.
+- **Renderer.** three.js `WebGLRenderer` into an HDR, multisampled
+  `EffectComposer`: render pass, `UnrealBloomPass` with its threshold above
+  1.0 so only emitters bloom, a custom feel pass (vignette, chromatic
+  aberration that grows with damage, a hexagonal shield lattice that flares
+  on hits, grain), then `OutputPass` for ACES tone mapping at exposure 0.38.
+  Lighting is a 3500 K sun at 11 degrees elevation, a hemisphere fill, and
+  image-based lighting baked from the sky itself with `PMREMGenerator`.
+  Exponential fog at density 0.0032.
+- **Environment.** A scattering sky (three.js `Sky`, turbidity 4). The ring
+  is a 6 km torus with a 360 m tube, centred 5.2 km overhead so its near
+  side is buried and the arc rises from both horizons; its inner face is a
+  procedural ocean, land, and cloud texture with a bright metal rim. Rolling
+  terrain (flat-shaded, vertex-coloured by height) with mountains from 500 m
+  out. 1,600 stars that survive daylight at low opacity.
+- **Particles.** One `Points` draw call with 12,000 slots; the CPU writes
+  birth state once and the vertex shader integrates position, drag, and
+  gravity, so sparks, smoke, bolt trails, and explosions cost nothing per
+  frame on the CPU.
+- **Enemies.** Skimmers are flattened octahedra with a spinning emissive
+  ring and a warm core that pulses when attacking; striders are
+  four-legged capsule walkers with a cannon, a Rose lens that goes white
+  while charging, and a walk cycle. Spawning enemies descend from six
+  metres over one second. Dead enemies squash and tilt for 1.2 s, then
+  despawn with a kill ring and a spark burst.
 - **Effects.** Tracers (70 ms), impact sparks, a muzzle point light, recoil
   on the viewmodel, grenade explosions (expanding sphere with a 300 cd point
   light over 450 ms), kill rings, and camera shake on damage and blasts.
@@ -202,8 +219,15 @@ round cover convincingly enough for an arena with convex blocks.
 
 - **Unit (Vitest, Node).** Every module in `src/core/` has a test file.
   Coverage thresholds: 85 % lines, functions, and statements, 75 % branches.
-  Current run: 45 tests, 99.75 % lines, 95.88 % branches
-  ([run output](../README.md#develop) via `pnpm test`).
+  Current run: 49 tests, 99.8 % lines, 97.9 % branches via `pnpm test`.
+- **Playtest (Vitest, Node).** A scripted player (`src/core/bot.ts`) plays
+  whole games through `src/core/playtest.ts`; tests assert determinism per
+  seed, first-wave clearance, accuracy, and that the steady and reckless
+  profiles differ. See [test-plan.md](test-plan.md).
+- **Recording.** `scripts/record-demo.mjs` films a seeded bot run frame by
+  frame and `scripts/render-score.mjs` renders its soundtrack offline from
+  the same event timeline; the film is reviewed and logged in
+  [journey/](journey/README.md).
 - **End-to-end (Playwright, Chromium).** Loads the built page, asserts the
   title and overlay, starts a game, waits for the first wave to spawn, checks
   the simulation clock advances, and confirms no page errors. A second test
