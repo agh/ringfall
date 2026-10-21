@@ -93,9 +93,13 @@ body {
   margin-top: calc(var(--u) * 0.5);
 }
 
+/* The corners sit on sky, not Abyss: they get the Hull panel and Slate border the brand prescribes. */
 .hud__corner {
   position: absolute;
   top: calc(var(--safe-y) + var(--u) * 4);
+  padding: calc(var(--u) * 1.5) calc(var(--u) * 2.5);
+  background: var(--hull);
+  box-shadow: 0 0 0 1px var(--slate);
 }
 
 .hud__corner--tl {
@@ -128,8 +132,9 @@ body {
   top: calc(var(--safe-y) + var(--u) * 2);
   left: 50%;
   transform: translateX(-50%);
-  width: clamp(240px, 36vw, 560px);
+  width: clamp(240px, 36vw, 900px);
   height: calc(var(--u) * 9);
+  background: var(--hull);
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
   mask-image: linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
 }
@@ -146,7 +151,7 @@ body {
   position: absolute;
   left: calc(var(--safe-x) + var(--u) * 5);
   bottom: calc(var(--safe-y) + var(--u) * 5);
-  width: clamp(120px, 17vmin, 240px);
+  width: clamp(120px, 17vmin, 400px);
   aspect-ratio: 1;
   border-radius: 50%;
   background: var(--hull);
@@ -158,10 +163,11 @@ body {
 .hud__radar-label {
   position: absolute;
   left: 50%;
-  bottom: calc(var(--u) * -5);
+  bottom: calc(var(--u) * -6);
   transform: translateX(-50%);
   white-space: nowrap;
   font-family: var(--font-display);
+  font-weight: 600;
   font-size: max(var(--text-min), calc(var(--u) * 2.8));
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -320,7 +326,7 @@ body {
   text-align: center;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: clamp(22px, 5.5vmin, 64px);
+  font-size: clamp(22px, 5.5vmin, 120px);
   letter-spacing: 0.32em;
   text-indent: 0.32em;
   text-transform: uppercase;
@@ -423,6 +429,7 @@ body {
   display: block;
   margin-top: calc(var(--u) * 0.8);
   font-family: var(--font-display);
+  font-weight: 600;
   font-size: max(var(--text-min), calc(var(--u) * 2.8));
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -444,10 +451,26 @@ body {
   gap: calc(var(--u) * 2);
 }
 
+/* The draw: the ammo block dips and returns over the 250 ms the viewmodel takes to come up. */
+.hud__ammo.is-drawing {
+  animation: draw 250ms ease-out;
+}
+
+@keyframes draw {
+  0% {
+    opacity: 0.2;
+    transform: translateY(calc(var(--u) * 2));
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .hud__ammo-mag {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: clamp(36px, 8vmin, 96px);
+  font-size: clamp(36px, 8vmin, 160px);
   line-height: 0.9;
 }
 
@@ -467,6 +490,7 @@ body {
 
 .hud__ammo-name {
   font-family: var(--font-display);
+  font-weight: 600;
   font-size: max(var(--text-min), calc(var(--u) * 2.8));
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -534,6 +558,7 @@ body {
 .hud__offhand {
   margin-top: calc(var(--u) * 1.2);
   font-family: var(--font-display);
+  font-weight: 600;
   font-size: max(var(--text-min), calc(var(--u) * 2.8));
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -542,7 +567,7 @@ body {
 }
 
 .hud__offhand.is-empty {
-  opacity: 0.45;
+  opacity: 0.7;
 }
 
 .hud__grenades {
@@ -672,6 +697,7 @@ body {
 .overlay__stats {
   margin: 0 0 clamp(14px, 2.4vmin, 44px);
   font-family: var(--font-display);
+  white-space: pre-line;
   font-size: clamp(16px, 2.2vmin, 40px);
   letter-spacing: 0.06em;
   line-height: 1.5;
@@ -726,6 +752,12 @@ body {
   color: var(--bone);
 }
 
+/* After a run the controls are known and the footnote names a button that is not there. */
+.overlay.is-finished .overlay__controls,
+.overlay.is-finished .overlay__footnote {
+  display: none;
+}
+
 .overlay__footnote {
   margin: clamp(14px, 2.4vmin, 48px) 0 0;
   font-size: clamp(14px, 1.4vmin, 24px);
@@ -736,7 +768,8 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .overlay__button,
   .hud__vitals.is-recharging .hud__arc-shield,
-  .hud__damage-seg {
+  .hud__damage-seg,
+  .hud__ammo.is-drawing {
     animation: none;
   }
 

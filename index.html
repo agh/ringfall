@@ -19,7 +19,7 @@
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
-    <canvas id="scene" aria-label="Ringfall game view"></canvas>
+    <canvas id="scene" role="img" aria-label="Ringfall game view"></canvas>
 
     <section id="hud" class="hud" aria-label="Heads-up display" hidden>
       <div class="hud__frame" aria-hidden="true"></div>
@@ -40,7 +40,7 @@
       </div>
 
       <div class="hud__radar">
-        <canvas id="radar" aria-label="Motion tracker"></canvas>
+        <canvas id="radar" role="img" aria-label="Motion tracker"></canvas>
         <div class="hud__radar-label">Tracker · 28 m</div>
       </div>
 
@@ -85,7 +85,7 @@
           </div>
         </div>
         <div class="hud__charge" id="charge" role="progressbar" aria-label="Charge" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0"><i></i></div>
-        <div class="hud__magazine" id="magazine" role="img" aria-label="Rounds in magazine"></div>
+        <div class="hud__magazine" id="magazine" aria-hidden="true"></div>
         <div class="hud__offhand" id="offhand"></div>
         <div class="hud__grenades" id="grenades" role="img" aria-label="Grenades"></div>
       </div>
@@ -103,7 +103,7 @@
           The ring is lit. Hold the arena through eight waves, until the sun clears the rim.
         </p>
         <p class="overlay__stats" id="overlay-stats" role="status" hidden></p>
-        <button id="start" class="overlay__button" type="button">Deploy</button>
+        <button id="start" class="overlay__button" type="button" aria-describedby="overlay-tagline overlay-stats">Deploy</button>
         <dl class="overlay__controls">
           <dt>Move</dt><dd>W A S D</dd>
           <dt>Look</dt><dd>Mouse</dd>

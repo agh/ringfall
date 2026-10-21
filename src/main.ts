@@ -10,6 +10,8 @@ import { SceneRenderer } from './render/scene';
 
 const FIXED_DT = 1 / 60;
 const MAX_STEPS_PER_FRAME = 5;
+/** Simulation speed during hit-stop: slow enough to read as a pop, fast enough to keep stepping. */
+const HIT_STOP_SCALE = 0.2;
 
 declare global {
   interface Window {
@@ -89,8 +91,10 @@ const main = (): void => {
     audio.setMusic('title');
     hud.hide();
     overlay.hidden = false;
+    overlay.classList.toggle('is-finished', finished);
     // Esc mid-run is a pause, and the card says so; the run is still there behind the blur.
-    if (!finished && game.status === 'playing' && game.time > 0) {
+    if (!finished) {
+      stats.hidden = true;
       showOutcome('paused');
       startButton.textContent = 'Resume';
     }
@@ -112,7 +116,8 @@ const main = (): void => {
         storage = null;
       }
       const comparison = recordRound(storage, round);
-      stats.textContent = `${summarize(game)} ${describeComparison(round, comparison)}`;
+      // One line per fact: the comparison already carries score and wave, so no repeat.
+      stats.textContent = `${summarize(game)}\n${describeComparison(round, comparison).replace(/\. /g, '.\n')}`;
       stats.hidden = false;
       startButton.textContent = won ? 'Run it back' : 'Redeploy';
     }
@@ -136,9 +141,11 @@ const main = (): void => {
 
   const start = async (): Promise<void> => {
     audio.unlock();
-    if (!recordMode) requestFullscreen();
+    // Fullscreen on a fresh deploy only; a resume after Esc should not replay the transition.
+    if (!recordMode && game.status !== 'playing') requestFullscreen();
     if (game.status !== 'playing') {
-      const next = Date.now() >>> 0;
+      // An explicit ?seed= is a rematch of the same arena; otherwise every run is new.
+      const next = seedParam > 0 ? seed : Date.now() >>> 0;
       game = createGame({ seed: next });
       rng = createRng(next ^ 0x9e3779b9);
       botRng = createRng(next ^ 0x7f4a7c15);
@@ -166,7 +173,7 @@ const main = (): void => {
     if (!input.locked && running && game.status === 'playing') showOverlay(false);
   });
 
-  /** Seconds of hit-stop remaining; the loop runs the sim at 5% speed while it is positive. */
+  /** Seconds of hit-stop remaining; the loop runs the sim at 20% speed while it is positive. */
   let hitStop = 0;
 
   /** One simulation step from either the human or the bot, plus event fan-out. */
@@ -230,7 +237,8 @@ const main = (): void => {
       // Hit-stop: time slows to a crawl for a few frames on a kill or a shield break.
       if (hitStop > 0) {
         hitStop = Math.max(0, hitStop - frameDt);
-        accumulator += frameDt * 0.05;
+        // A time-scale, not a freeze (brand.md): frames still step, so the marker stays framed.
+        accumulator += frameDt * HIT_STOP_SCALE;
       } else {
         accumulator += frameDt;
       }
@@ -240,7 +248,8 @@ const main = (): void => {
         accumulator -= FIXED_DT;
         steps += 1;
         if (game.status !== 'playing') {
-          window.setTimeout(() => showOverlay(true), 1600);
+          // A win gets its four-second tableau before the card; a death gets the 1.6 s sink.
+          window.setTimeout(() => showOverlay(true), game.status === 'won' ? 4000 : 1600);
           running = false;
           break;
         }
