@@ -86,6 +86,8 @@ the events to the renderer, HUD, and audio bank, then renders.
 `GameState` is immutable. A step creates a mutable draft, runs these stages
 in order, and freezes the result:
 
+<!-- design-check: simulation -->
+
 1. **Player movement.** Wish direction from yaw and WASD, speed 6 m/s (9 when
    sprinting forward), gravity 18 m/s², jump impulse 6 m/s. The player is a
    vertical cylinder (radius 0.4 m, height 1.8 m, eye at 1.7 m). Each axis is
@@ -113,7 +115,11 @@ in order, and freezes the result:
 7. **Vitality.** Damage hits the shield first (100), then health (100). The
    shield recharges at 35/s after 4 s without damage. Health never recharges.
 
+<!-- /design-check: simulation -->
+
 ### Enemy archetypes
+
+<!-- design-check: enemies -->
 
 | Archetype | Health | Speed  | Attack                          | Behaviour                                        | Score |
 | --------- | ------ | ------ | ------------------------------- | ------------------------------------------------ | ----- |
@@ -125,7 +131,11 @@ contact strip a full shield in about four seconds; one strider's volley is
 dodgeable by strafing because the bolt takes roughly half a second to cross
 its range.
 
+<!-- /design-check: enemies -->
+
 ### Rout
+
+<!-- design-check: rout -->
 
 The first "the AI is thinking" moment: when a strider dies, every skimmer
 within 25 m of it (`FLEE_RADIUS`, XZ distance from the strider) breaks and
@@ -162,7 +172,11 @@ the issue: no more than 10 % slower for the steady profile.
 | steady   | 15 s                | 16 s               | 15 %            | 30 %           |
 | reckless | 13 s                | 14 s               | 0 %             | 10 %           |
 
+<!-- /design-check: rout -->
+
 ### Weapons
+
+<!-- design-check: weapons -->
 
 Values are `WEAPON_SPECS` in `src/core/weapon.ts`; spread is in radians,
 standing / moving. Damage falls linearly from full at the falloff start to
@@ -194,7 +208,11 @@ of its full rate (`MINIGUN_IDLE_RATE`) until it has spun up.
   until it has spun up for half a second; it is borrowed firepower that runs
   out.
 
+<!-- /design-check: weapons -->
+
 ### Wave composition
+
+<!-- design-check: waves -->
 
 Wave *n* spawns `2 + n` skimmers and `floor(n / 2)` striders on a 26 m ring
 around the arena centre, avoiding cover. Clearing a wave is worth 500. The
@@ -211,12 +229,18 @@ roster for the eight waves:
 | 7    | 9        | 3        |
 | 8    | 10       | 4        |
 
+<!-- /design-check: waves -->
+
 ### Arena
+
+<!-- design-check: arena -->
 
 A 60 m square with transparent boundary walls and 16 procedurally placed
 cover blocks (2 to 6 m footprint, 1.5 to 4 m tall), none within 6 m of the
 centre so the spawn point is open. Layout is seeded; the seed comes from the
 clock in production and is fixed in tests.
+
+<!-- /design-check: arena -->
 
 ### Presentation
 
