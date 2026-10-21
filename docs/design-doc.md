@@ -288,7 +288,7 @@ Clearing a wave is worth 500. The roster for the eight waves:
 
 A 60 m square with transparent boundary walls and 16 procedurally placed
 cover blocks (2 to 6 m footprint, 1.5 to 4 m tall), none within 6 m of the
-centre so the spawn point is open. Layout is seeded; the seed comes from the
+center so the spawn point is open. Layout is seeded; the seed comes from the
 clock in production and is fixed in tests. The HUD calls it Sector 117
 (`ARENA_SECTOR`); there is no explanation and none is planned.
 
@@ -296,7 +296,7 @@ clock in production and is fixed in tests. The HUD calls it Sector 117
 
 One block per arena carries a glyph (`Arena.secret`, placed by
 `placeSecret` with the arena's own seed) on the face that points away from
-the centre, so it is never visible from the spawn. The glyph sits 1 m up
+the center, so it is never visible from the spawn. The glyph sits 1 m up
 (`SECRET_HEIGHT`, or half the block's height if lower): level with a
 crouched eye. A hitscan ray from any weapon that reaches a 0.35 m sphere
 (`SECRET_RADIUS`) around the glyph before any other surface trips it: 1000
@@ -336,15 +336,15 @@ clock in production and is fixed in tests.
   frame; the dust motes did the same in miniature. `src/render/post.ts`
   replaces it with a prefilter that keeps only the excess over the
   threshold, with a quadratic knee that starts at 1.0, capped at 1.5 per
-  pixel: strength 0.3, radius 0.35, threshold 1.3, knee 0.3, cap 1.5. The
+  pixel: strength 0.15, radius 0.25, threshold 1.3, knee 0.3, cap 1.5 (issue #71 halved the strength and radius again from 0.3 and 0.35). The
   values come from measured seed-7 frames (`docs/journey/README.md`,
   17:40): looking into the dawn sun the mean luminance of a 64 by 36
   downscale went from 136 to 106 of 255 and the saturated blob from 22% to
   14% of the frame height; at the first kill at night from 60 to 19. The
   budget is a mean under 150 by day and 110 at night.
-- **Sun flare.** An additive core sprite at the sun (scale 520 at 9 km,
-  about 4% of the frame height) and three ghosts on the sun-to-centre axis,
-  sized as fractions of the frame height (5%, 8%, 3.5%) at opacity 0.6, so
+- **Sun flare.** An additive core sprite at the sun (scale 347 at 9 km,
+  about 2.7% of the frame height) and three ghosts on the sun-to-center axis,
+  sized as fractions of the frame height (5%, 8%, 3.5%) at opacity 0.3, so
   no ghost can reach the third of the frame the budget allows. Core and
   ghosts follow `sunDisc`, which is 0 at night, and are hidden rather than
   drawn transparent when it is. The moon is a 420-unit disc sprite whose
@@ -388,10 +388,18 @@ clock in production and is fixed in tests.
 - **Weapons on screen.** `src/render/weapons.ts` builds one viewmodel rig
   per kind under the camera and draws the active one in 0.25 s
   (`DRAW_TIME`); each has its own accent color, muzzle flash sprite and
-  light, and tracer: a 1 px line for the laser, eight pellet traces for the
-  scatter, a glowing cylinder with sparks along it for the beam, a smoking
-  round and a drum that turns a notch per shot for the launcher, a spinning
-  barrel cluster for the minigun. Pickups (`src/render/pickups.ts`) are an
+  light, and tracer. Flash sprites are 0.12 to 0.3 m wide at the muzzle
+  (under 160 px at 1280x720) and fade with their light in 35 to 75 ms
+  (`FLASH`), so a shot reads as a pop under bloom rather than a disc. The
+  laser fires a 1.5 cm cylinder bolt (`LASER_RADIUS`) rather than a 1 px
+  line so it survives 4K; the scatter throws eight pellet traces at half
+  opacity; the beam is a 3.5 cm white core (`BEAM_CORE_RADIUS`) inside a
+  14 cm violet sheath at 0.18 opacity (`BEAM_RADIUS`) with a 24 cd light
+  (`BEAM_LIGHT`) riding 2.5 m in from the muzzle; the launcher opens a
+  muzzle ring to 0.6 m across (`LAUNCHER_RING_DIAMETER`) in 0.1 s, puffs
+  smoke a meter out (past the particle shader's near-eye fade) and turns
+  its drum a notch per shot; the minigun spins its barrel cluster.
+  Pickups (`src/render/pickups.ts`) are an
   emissive emblem over a post with a kind-colored billboard halo and a 2 m
   column whose alpha fades to nothing at the top, no light of their own (so
   the scene's light count, and with it every compiled material, is the same
@@ -425,7 +433,7 @@ clock in production and is fixed in tests.
   to 32. Hit-stop of 50 ms (skimmer kill), 90 ms (strider kill) and
   120 ms (shield break) slows the simulation to 5 % in `src/main.ts`.
 - **HUD.** DOM elements updated every frame: the sector designation, wave and enemies left, score,
-  shield and health bars, ammo with a low-ammo colour, grenade pips, centre
+  shield and health bars, ammo with a low-ammo color, grenade pips, center
 
 - **HUD.** DOM elements updated every frame: wave and enemies left, score,
   shield and health bars, ammo with a low-ammo color, grenade pips, center

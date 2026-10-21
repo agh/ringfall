@@ -13,8 +13,9 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "lint": "biome ci . && markdownlint-cli2 \"**/*.md\"",
-    "lint:fix": "biome check --write .",
+    "lint": "biome ci . && markdownlint-cli2 \"**/*.md\" && pnpm lint:css",
+    "lint:css": "stylelint \"**/*.css\" && prettier --check \"**/*.css\"",
+    "lint:fix": "biome check --write . && stylelint \"**/*.css\" --fix && prettier --write \"**/*.css\"",
     "lint:docs": "pnpm docs:frontmatter && pnpm docs:typos && pnpm docs:vale && pnpm docs:links",
     "docs:frontmatter": "node scripts/check-frontmatter.mjs",
     "docs:typos": "typos --config _typos.toml .",
@@ -26,6 +27,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "frames": "node scripts/frames.mjs",
+    "audit": "pnpm audit --prod --audit-level=high",
     "demo": "node scripts/record-demo.mjs --seed 7 --seconds 40 --fps 30 --out demo-silent.mp4 && node scripts/render-score.mjs --seed 7 --seconds 40 --lead-in 1 --video demo-silent.mp4 --out demo.mp4",
     "balance": "vitest run tests/balance --coverage.enabled=false --silent=false --reporter=verbose"
   },
@@ -40,7 +43,10 @@
     "@vitest/coverage-v8": "5.0.0",
     "ajv": "8.20.0",
     "markdown-link-check": "3.15.0",
-    "markdownlint-cli2": "0.23.2",
+    "markdownlint-cli2": "0.24.0",
+    "prettier": "3.9.10",
+    "stylelint": "16.1.0",
+    "stylelint-config-standard": "36.0.0",
     "typescript": "6.0.3",
     "vite": "8.3.5",
     "vitest": "5.0.0",
@@ -48,7 +54,17 @@
   },
   "pnpm": {
     "overrides": {
-      "basic-ftp": "6.2.3"
+      "basic-ftp": "6.2.3",
+      "js-yaml@>=5.0.0 <5.4.1": "5.5.0",
+      "katex@<0.18.2": "0.19.0",
+      "markdown-it@<14.3.3": "14.3.3",
+      "postcss-selector-parser@<7.1.6": "7.1.7",
+      "smol-toml@<1.9.0": "1.9.1"
+    },
+    "auditConfig": {
+      "ignoreGhsas": [
+        "GHSA-vfj7-8cjw-p6xm"
+      ]
     }
   }
 }

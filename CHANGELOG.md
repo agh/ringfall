@@ -8,7 +8,25 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Security
+
+- Content Security Policy and `no-referrer` meta tags in `index.html`; the
+  dev server relaxes only `style-src` and `connect-src` for hot reload.
+- `?seed` is parsed by `parseSeed` (decimal uint32 only) and personal bests
+  are re-validated field by field with a 1 KB cap before `JSON.parse`, so
+  hostile query strings and storage values cannot stall or corrupt the end
+  card (`src/core/rng.ts`, `src/core/records.ts`).
+- Hidden production source maps, a 24 h release cooldown and no lifecycle
+  scripts for pnpm, `engine-strict`, a `pnpm audit --prod` script, grouped
+  Dependabot updates with a seven-day cooldown, `markdownlint-cli2` 0.24.0.
+- Per-job least-privilege tokens in the Pages deploy workflow; CI runs on
+  `main` are no longer cancelled by the next push.
+- Threat model in `SECURITY.md`.
+
 ### Added
+
+- A unit test that fails if the pre-rename repository path reappears outside
+  `docs/journey/`, and a runbook note on the rename order (#70).
 
 - The watcher, a third enemy archetype (#17): a tall perimeter sentinel
   that holds 24 to 32 m, orbits the player and fires a telegraphed hitscan
@@ -65,8 +83,22 @@ and this project adheres to
   colours. The particle pool gains `spark`, `smoke` and `shard` shapes with
   premultiplied blending so smoke can darken the frame (#26).
 
+### Changed
+
+- The repository no longer names the console shooter franchise it was
+  inspired by outside the cited titles and URLs under `docs/research/`
+  (ADR-0003). The research note on feel and the MLP cut dropped the name
+  from its file name (`docs/research/feel-and-mlp.md`), and
+  `tests/unit/originality.test.ts` greps the tree for the term list in
+  `tests/unit/originality.terms.ts`.
+
 ### Fixed
 
+- Still too much flare after the bloom prefilter: bloom strength and radius
+  halved again (0.15, 0.25), the flare ghosts at 0.3 opacity and the core
+  sprite at two thirds of its size, and the day and dawn skies given a
+  thinner, tighter mie lobe so the sun reads as a disc; facing the sun the
+  saturated blob went from 13% to 3% of the frame height (#71).
 - The frame bloomed and flared too much: the bloom prefilter passed the
   whole HDR texel, so the sky's sun disc and the dust motes flooded the
   frame with halos. The prefilter now keeps only the excess over the
@@ -106,4 +138,4 @@ and this project adheres to
 - GitHub Actions CI (lint, type check, unit, e2e, build) and GitHub Pages
   deployment, all actions pinned to commit SHAs.
 
-[Unreleased]: https://github.com/agh/hack/commits/main
+[Unreleased]: https://github.com/agh/ringfall/commits/main

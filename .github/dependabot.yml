@@ -4,7 +4,18 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Every dependency is an exact pin; keep bumps exact instead of widening to a range.
+    versioning-strategy: increase
+    open-pull-requests-limit: 10
+    # A week between publication and a proposal keeps a hijacked release from landing on day one.
+    cooldown:
+      default-days: 7
+    groups:
+      dev-tooling:
+        dependency-type: development
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
