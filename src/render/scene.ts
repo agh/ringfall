@@ -8,7 +8,9 @@ import { ARENA_HALF_SIZE, type Arena } from '../core/world';
 import { type EnemyRig, makeEnemyRig } from './enemies';
 import { createEnvironment, type Environment } from './environment';
 import { ParticleSystem } from './particles';
+import { PickupMeshes } from './pickups';
 import { PostStack } from './post';
+import { WeaponViewmodels } from './weapons';
 
 const FOG_DENSITY = 0.0032;
 /** Hard cap on camera shake in radians (docs/brand.md). */
@@ -92,10 +94,8 @@ export class SceneRenderer {
   private readonly post: PostStack;
   private readonly world = new THREE.Group();
   private readonly dynamic = new THREE.Group();
-  private readonly viewmodel = new THREE.Group();
-  private readonly viewSway = new THREE.Group();
-  private readonly muzzleLight: THREE.PointLight;
-  private readonly muzzleFlash: THREE.Sprite;
+  private readonly weaponViewmodels: WeaponViewmodels;
+  private readonly pickupMeshes: PickupMeshes;
   private sunLight: THREE.DirectionalLight | null = null;
   private hemisphere: THREE.HemisphereLight | null = null;
   private flareCore: THREE.Sprite | null = null;
@@ -164,20 +164,12 @@ export class SceneRenderer {
     this.scene.environmentIntensity = 0.35;
     pmrem.dispose();
 
-    this.muzzleLight = new THREE.PointLight(0xffd27a, 0, 9, 1.5);
-    this.muzzleFlash = new THREE.Sprite(
-      new THREE.SpriteMaterial({
-        map: SceneRenderer.makeFlashTexture(),
-        color: 0xffe9b0,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-        transparent: true,
-        opacity: 0,
-      }),
-    );
     this.buildLights();
     this.buildFlare();
-    this.buildViewmodel();
+    this.scene.add(this.camera);
+    this.weaponViewmodels = new WeaponViewmodels(this.camera, this.particles);
+    this.dynamic.add(this.weaponViewmodels.effects);
+    this.pickupMeshes = new PickupMeshes(this.dynamic, this.particles);
     this.post = new PostStack(this.renderer, this.scene, this.camera);
     window.ringfallDebug = {
       uniforms: () => this.post.debugUniforms(),
@@ -185,33 +177,6 @@ export class SceneRenderer {
     };
     this.resize();
     window.addEventListener('resize', () => this.resize());
-  }
-
-  private static makeFlashTexture(): THREE.Texture {
-    const size = 128;
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-      g.addColorStop(0, 'rgba(255,255,255,1)');
-      g.addColorStop(0.25, 'rgba(255,220,140,0.9)');
-      g.addColorStop(0.6, 'rgba(255,140,40,0.35)');
-      g.addColorStop(1, 'rgba(255,100,0,0)');
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, size, size);
-      ctx.strokeStyle = 'rgba(255,240,200,0.9)';
-      ctx.lineWidth = 3;
-      for (let i = 0; i < 6; i += 1) {
-        const a = (i / 6) * Math.PI * 2;
-        ctx.beginPath();
-        ctx.moveTo(size / 2, size / 2);
-        ctx.lineTo(size / 2 + Math.cos(a) * size * 0.5, size / 2 + Math.sin(a) * size * 0.5);
-        ctx.stroke();
-      }
-    }
-    return new THREE.CanvasTexture(canvas);
   }
 
   /** (Re)builds the static arena when a new game starts. */
@@ -331,15 +296,16 @@ export class SceneRenderer {
   }
 
   handle(events: readonly GameEvent[], now: number): void {
+    this.weaponViewmodels.handle(events, now, this.camera);
+    this.pickupMeshes.handle(events, now);
     for (const e of events) {
       switch (e.type) {
         case 'shot':
           this.recoil = 1;
-          this.muzzleLight.intensity = 60;
-          this.muzzleFlash.material.opacity = 1;
-          this.muzzleFlash.material.rotation = Math.random() * Math.PI;
-          this.muzzleFlash.scale.setScalar(0.35 + Math.random() * 0.15);
-          this.spawnTracer(e.from, e.to, now, e.hitEnemy);
+          break;
+        case 'weaponSwapped':
+        case 'pickupTaken':
+          this.weaponViewmodels.setActive(e.kind, now);
           break;
         case 'explosion':
           this.spawnExplosion(e.at, now);
@@ -388,6 +354,8 @@ export class SceneRenderer {
     this.syncEnemies(state.enemies, state.time);
     this.syncBolts(state, now);
     this.syncGrenades(state, now);
+    this.pickupMeshes.sync(state, now);
+    this.weaponViewmodels.update(now, state);
     this.updateEffects(now);
     this.particles.update(now);
 
@@ -395,12 +363,15 @@ export class SceneRenderer {
     if (Math.random() < 0.6) {
       const e = playerEye(state.player);
       const dust = this.environment.lighting().dust;
+      // Never closer than 2.5 m: a size-3 mote a metre away would be a 900 px disc.
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 2.5 + Math.random() * 5;
       this.particles.burst(
         {
           at: {
-            x: e.x + (Math.random() - 0.5) * 14,
+            x: e.x + Math.cos(angle) * radius,
             y: e.y + (Math.random() - 0.3) * 5,
-            z: e.z + (Math.random() - 0.5) * 14,
+            z: e.z + Math.sin(angle) * radius,
           },
           count: 1,
           color: new THREE.Color(0xe8e4d8).multiplyScalar(dust),
@@ -469,22 +440,12 @@ export class SceneRenderer {
       THREE.MathUtils.clamp(-pitchDelta * 2.5, -0.05, 0.05),
       1 - Math.exp(-frameDt * 12),
     );
+    this.recoil = Math.max(this.recoil, this.weaponViewmodels.recoilRequest);
+    this.weaponViewmodels.recoilRequest = 0;
     this.recoil = Math.max(0, this.recoil - frameDt * 10);
-    this.viewSway.position.set(
-      this.swayX + bobX * 0.6,
-      this.swayY + bobY * 0.8,
-      this.recoil * 0.09,
-    );
-    this.viewSway.rotation.set(
-      this.recoil * 0.08 - this.swayY * 0.8,
-      this.swayX * 1.2,
-      this.swayX * 0.6,
-    );
-    this.muzzleLight.intensity = Math.max(0, this.muzzleLight.intensity - frameDt * 900);
-    this.muzzleFlash.material.opacity = Math.max(
-      0,
-      this.muzzleFlash.material.opacity - frameDt * 18,
-    );
+    const sway = this.weaponViewmodels.group;
+    sway.position.set(this.swayX + bobX * 0.6, this.swayY + bobY * 0.8, this.recoil * 0.09);
+    sway.rotation.set(this.recoil * 0.08 - this.swayY * 0.8, this.swayX * 1.2, this.swayX * 0.6);
 
     const targetFov = BASE_FOV + (speed > 7.5 && state.player.onGround ? 6 : 0);
     if (Math.abs(this.camera.fov - targetFov) > 0.01) {
@@ -626,55 +587,6 @@ export class SceneRenderer {
     this.scene.add(sun.target);
   }
 
-  private buildViewmodel(): void {
-    const body = new THREE.MeshStandardMaterial({
-      color: 0x4b5664,
-      roughness: 0.42,
-      metalness: 0.8,
-    });
-    const dark = new THREE.MeshStandardMaterial({
-      color: 0x1d242c,
-      roughness: 0.6,
-      metalness: 0.7,
-    });
-    const accent = new THREE.MeshStandardMaterial({
-      color: 0x7dd3fc,
-      emissive: 0x7dd3fc,
-      emissiveIntensity: 1.5,
-    });
-    const receiver = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.13, 0.52), body);
-    const upper = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.05, 0.6), dark);
-    upper.position.set(0, 0.09, -0.08);
-    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.024, 0.42, 12), dark);
-    barrel.rotation.x = Math.PI / 2;
-    barrel.position.set(0, 0.03, -0.46);
-    const shroud = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.08, 0.3), body);
-    shroud.position.set(0, 0.02, -0.38);
-    const sight = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.03, 0.12), accent);
-    sight.position.set(0, 0.125, -0.02);
-    const indicator = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.012, 0.1), accent);
-    indicator.position.set(-0.052, 0.02, 0.05);
-    const magazine = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.2, 0.1), dark);
-    magazine.position.set(0, -0.14, -0.02);
-    magazine.rotation.x = 0.1;
-    const grip = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.17, 0.08), dark);
-    grip.position.set(0, -0.13, 0.14);
-    grip.rotation.x = 0.3;
-    const stock = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.09, 0.24), body);
-    stock.position.set(0, -0.01, 0.36);
-    for (const part of [receiver, upper, barrel, shroud, sight, indicator, magazine, grip, stock]) {
-      part.castShadow = true;
-      this.viewmodel.add(part);
-    }
-    this.muzzleLight.position.set(0, 0.03, -0.7);
-    this.muzzleFlash.position.set(0, 0.03, -0.72);
-    this.viewmodel.add(this.muzzleLight, this.muzzleFlash);
-    this.viewmodel.position.set(0.3, -0.27, -0.5);
-    this.viewSway.add(this.viewmodel);
-    this.camera.add(this.viewSway);
-    this.scene.add(this.camera);
-  }
-
   private syncEnemies(enemies: readonly Enemy[], simTime: number): void {
     const seen = new Set<number>();
     for (const enemy of enemies) {
@@ -794,54 +706,25 @@ export class SceneRenderer {
     }
   }
 
-  private spawnTracer(from: Vec3, to: Vec3, now: number, hitEnemy: boolean): void {
-    const start = toVector(from).lerp(toVector(to), 0.04);
-    const end = toVector(to);
-    const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
-    const material = new THREE.LineBasicMaterial({
-      color: 0xfff3b0,
-      transparent: true,
-      opacity: 0.9,
-      blending: THREE.AdditiveBlending,
-    });
-    const line = new THREE.Line(geometry, material);
-    this.addEffect(line, now, 0.06, (t) => {
-      material.opacity = 0.9 * (1 - t);
-    });
-    const dir = end.clone().sub(start).normalize().negate();
-    this.particles.burst(
-      {
-        at: to,
-        count: hitEnemy ? 22 : 10,
-        color: hitEnemy ? 0xffd166 : 0xfff1c4,
-        colorEnd: hitEnemy ? 0xff5a1f : 0x7a6a4a,
-        speed: hitEnemy ? 5 : 3,
-        spread: 0.9,
-        direction: { x: dir.x, y: dir.y, z: dir.z },
-        life: 0.5,
-        size: 7,
-        gravity: 9,
-      },
-      now,
-    );
-  }
-
   private spawnExplosion(at: Vec3, now: number): void {
     // A readable pop, not a whiteout: the flash stays under the bloom threshold and the light
-    // is gone in a quarter second, so the frame survives at night as well as by day.
+    // is gone in a quarter second, so the frame survives at night as well as by day. A blast
+    // under the player's feet (a launcher round, a bad grenade) is scaled down with distance so
+    // the point light does not blind the camera.
+    const near = THREE.MathUtils.clamp(toVector(at).distanceTo(this.camera.position) / 6, 0.2, 1);
     const flashMaterial = new THREE.MeshBasicMaterial({
       color: 0xffd27a,
       transparent: true,
-      opacity: 0.55,
+      opacity: 0.55 * near,
     });
     const flash = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), flashMaterial);
     flash.position.copy(toVector(at));
-    const light = new THREE.PointLight(0xffb347, 140, GRENADE_BLAST_RADIUS * 3, 1.4);
+    const light = new THREE.PointLight(0xffb347, 140 * near, GRENADE_BLAST_RADIUS * 3, 1.4);
     flash.add(light);
     this.addEffect(flash, now, 0.35, (t) => {
       flash.scale.setScalar(0.4 + t * 2);
-      flashMaterial.opacity = 0.55 * (1 - t) ** 2;
-      light.intensity = 140 * Math.max(0, 1 - t / (0.25 / 0.35));
+      flashMaterial.opacity = 0.55 * near * (1 - t) ** 2;
+      light.intensity = 140 * near * Math.max(0, 1 - t / (0.25 / 0.35));
     });
     const waveMaterial = new THREE.MeshBasicMaterial({
       color: 0xffd27a,
@@ -906,7 +789,7 @@ export class SceneRenderer {
     const material = new THREE.MeshBasicMaterial({
       color: 0xffd166,
       transparent: true,
-      opacity: 0.7,
+      opacity: 0.5,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
@@ -915,24 +798,24 @@ export class SceneRenderer {
     ring.rotation.x = Math.PI / 2;
     this.addEffect(ring, now, 0.4, (t) => {
       ring.scale.setScalar(1 + t * 3.5);
-      material.opacity = 0.7 * (1 - t);
+      material.opacity = 0.5 * (1 - t);
     });
     this.particles.burst(
       {
         at,
-        count: 120,
+        count: 70,
         color: 0xffd166,
         colorEnd: 0xb45309,
         speed: 6,
         life: 0.9,
-        size: 9,
+        size: 6,
         gravity: 7,
         drag: 1,
       },
       now,
     );
     this.particles.burst(
-      { at, count: 40, color: 0xffffff, colorEnd: 0xffa040, speed: 2, life: 0.5, size: 10 },
+      { at, count: 16, color: 0xffe9b0, colorEnd: 0xffa040, speed: 2, life: 0.5, size: 4 },
       now,
     );
   }

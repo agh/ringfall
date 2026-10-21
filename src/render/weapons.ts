@@ -53,16 +53,16 @@ const FLASH: Readonly<Record<WeaponKind, FlashStyle>> = {
   laser: { color: 0xffffff, scale: 0.16, jitter: 0.04, light: 40, lightColor: 0xdbeafe, decay: 30 },
   scatter: {
     color: 0xffc98a,
-    scale: 0.7,
-    jitter: 0.25,
+    scale: 0.52,
+    jitter: 0.2,
     light: 90,
     lightColor: 0xf6b26b,
     decay: 14,
   },
-  beam: { color: 0xf3e8ff, scale: 0.6, jitter: 0.1, light: 120, lightColor: 0xd8b4fe, decay: 10 },
+  beam: { color: 0xf3e8ff, scale: 0.48, jitter: 0.1, light: 120, lightColor: 0xd8b4fe, decay: 10 },
   launcher: {
     color: 0xffb070,
-    scale: 0.5,
+    scale: 0.42,
     jitter: 0.1,
     light: 70,
     lightColor: 0xffa040,
@@ -342,7 +342,7 @@ const buildLauncher = (m: Materials, texture: THREE.Texture): Rig => {
   root.add(
     box(0.1, 0.12, 0.3, m.body, 0, 0.02, 0.14),
     tube(0.045, 0.045, 0.42, m.dark, 0, 0.02, -0.34),
-    tube(0.075, 0.048, 0.1, m.body, 0, 0.02, -0.58, 14),
+    tube(0.048, 0.075, 0.1, m.body, 0, 0.02, -0.58, 14),
     box(0.016, 0.03, 0.08, accentMaterial('launcher'), 0, 0.11, 0.04),
     drum,
   );
@@ -642,7 +642,7 @@ export class WeaponViewmodels {
       core,
     );
     // Children live in beam space, where the axis is +Y: the light sits 2.5 m in from the muzzle.
-    const light = new THREE.PointLight(0xd8b4fe, 90, 14, 1.5);
+    const light = new THREE.PointLight(0xd8b4fe, 40, 10, 1.5);
     light.position.set(0, -length / 2 + Math.min(2.5, length / 2), 0);
     beam.add(outer, inner, light);
     beam.position.copy(mid);
@@ -657,7 +657,7 @@ export class WeaponViewmodels {
         core.opacity = 0.95 * k * k;
         outer.scale.set(1 + t * 0.8, 1, 1 + t * 0.8);
         inner.scale.set(k, 1, k);
-        light.intensity = 90 * k;
+        light.intensity = 40 * k;
       },
       () => {
         outer.geometry.dispose();
@@ -671,6 +671,7 @@ export class WeaponViewmodels {
     const span = end.clone().sub(origin);
     for (let i = 0; i < hits; i += 1) {
       const at = origin.clone().addScaledVector(span, (i + 1) / (hits + 1));
+      if (at.distanceTo(origin) < 2) continue;
       this.particles.burst(
         {
           at: toVec3(at),
@@ -679,7 +680,7 @@ export class WeaponViewmodels {
           colorEnd: 0x7c3aed,
           speed: 5,
           life: 0.5,
-          size: 9,
+          size: 4,
           gravity: 5,
         },
         now,
@@ -691,20 +692,20 @@ export class WeaponViewmodels {
   private onLauncher(now: number, camera: THREE.Camera): void {
     this.flash('launcher');
     this.recoilRequest = Math.max(this.recoilRequest, 2);
-    const muzzle = this.muzzleWorldPosition();
     const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-    const at = toVec3(muzzle);
+    // Particle `size` is pixels at 300 m, so anything this close to the camera must be tiny.
+    const at = toVec3(this.muzzleWorldPosition().addScaledVector(forward, 0.15));
     this.particles.burst(
       {
         at,
-        count: 40,
+        count: 24,
         color: 0x8a8a8a,
         colorEnd: 0x2a2a2a,
         speed: 1.8,
         spread: 0.6,
         direction: toVec3(forward),
         life: 1.1,
-        size: 14,
+        size: 0.6,
         gravity: -0.5,
         drag: 1.6,
       },
@@ -720,7 +721,7 @@ export class WeaponViewmodels {
         spread: 0.5,
         direction: toVec3(forward),
         life: 0.3,
-        size: 6,
+        size: 0.5,
         gravity: 3,
       },
       now,
@@ -750,7 +751,7 @@ export class WeaponViewmodels {
           spread: 0,
           direction: toVec3(offset.clone().negate()),
           life,
-          size: 3 + charge * 3,
+          size: 0.12 + charge * 0.12,
         },
         now,
       );

@@ -48,7 +48,10 @@ const VERTEX = /* glsl */ `
     vStretch = aStretch;
     float shrink = aStretch > 0.0 ? 1.0 : 1.0 - 0.6 * t;
     vec4 mv = modelViewMatrix * vec4(pos, 1.0);
-    gl_PointSize = aParams.z * shrink * (300.0 / -mv.z);
+    // A mote passing through the eye would otherwise cover the frame: fade anything inside
+    // two metres and cap the sprite so a single point can never white out the screen.
+    vAlpha *= smoothstep(0.5, 2.0, -mv.z);
+    gl_PointSize = min(aParams.z * shrink * (300.0 / -mv.z), 64.0);
     gl_Position = projectionMatrix * mv;
   }
 `;
@@ -62,7 +65,7 @@ const FRAGMENT = /* glsl */ `
     uv.x *= max(1.0, vStretch);
     float d = length(uv) * 2.0;
     float soft = smoothstep(1.0, 0.2, d);
-    gl_FragColor = vec4(vColor * (1.0 + 2.0 * soft), soft * vAlpha);
+    gl_FragColor = vec4(vColor * (1.0 + 1.2 * soft), soft * vAlpha);
   }
 `;
 
