@@ -25,6 +25,14 @@ and this project adheres to
 
 ### Added
 
+- The dropship moment (#58): when a wave's first pod launches, a dark
+  Hull craft with a Rose underlight crosses the arena in 4 s, in over the
+  wall behind that pod, over the centre and out the far side. Each
+  `dropPod` falls as a capsule from the craft's altitude to its landing
+  point over the 1.5 s lead and raises a Slate dust ring on touchdown.
+  New `src/render/dropship.ts`, one hook in `scene.ts`, and a low pass-by
+  sweep for `dropPod` in the sound table. Presentation only: spawn times
+  and positions per seed are unchanged.
 - Five named wave beats (Scouts, The Leader, Fallback, The Push, Last
   Stand) replace the eight-wave formula; `waveStarted` carries the name and
   the HUD announces it. Enemies arrive by drop pod (`dropPod` event 1.5 s

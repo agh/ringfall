@@ -2,6 +2,7 @@
 flowchart LR
   subgraph render["src/render/ (three.js)"]
     render_dispose["dispose.ts"]
+    render_dropship["dropship.ts"]
     render_enemies["enemies.ts"]
     render_environment["environment.ts"]
     render_particles["particles.ts"]
@@ -16,6 +17,7 @@ flowchart LR
   render_pickups -.-> render_particles
   render_pickups --> render_weapons
   render_scene --> render_dispose
+  render_scene --> render_dropship
   render_scene --> render_enemies
   render_scene --> render_environment
   render_scene --> render_particles
@@ -28,6 +30,8 @@ flowchart LR
   core(["src/core/"])
   three(["three.js"])
   render_dispose -.->|"three"| three
+  render_dropship -->|"three"| three
+  render_dropship -->|"game, vec3, waves, world"| core
   render_enemies -->|"three"| three
   render_enemies -->|"enemy"| core
   render_environment -->|"Sky, three"| three

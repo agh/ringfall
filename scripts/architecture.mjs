@@ -75,6 +75,8 @@ const RESPONSIBILITIES = {
     'GPU particle pool: one `Points` draw call, birth state written once, integrated in the vertex shader',
   'src/render/watcher-rig.ts':
     'The watcher rig: a tall tripod with a lens that brightens over the charge, and the beam layer',
+  'src/render/dropship.ts':
+    'The dropship: a Hull craft that crosses the arena on the first dropPod of a wave, and the pods that fall from it',
   'src/render/dispose.ts':
     '`disposeTree`: frees geometry, materials and textures under an object before it is dropped',
   'src/render/post.ts': 'HDR composer: render pass, capped bloom prefilter, feel pass, ACES output',
@@ -108,6 +110,7 @@ const CONSUMERS = [
   { file: 'src/render/weapons.ts', column: 'Renderer' },
   { file: 'src/render/pickups.ts', column: 'Renderer' },
   { file: 'src/render/watcher-rig.ts', column: 'Renderer' },
+  { file: 'src/render/dropship.ts', column: 'Renderer' },
   { file: 'src/hud/hud.ts', column: 'HUD' },
   { file: 'src/core/playtest.ts', column: 'Playtest' },
   { file: 'src/core/bot.ts', column: 'Bot' },
