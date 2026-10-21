@@ -44,6 +44,7 @@ const EVENT_TYPES = Object.keys({
   waveCleared: true,
   playerDied: true,
   victory: true,
+  secretFound: true,
 } satisfies Record<GameEvent['type'], true>) as GameEvent['type'][];
 
 const SOUND_KEYS = Object.keys(SOUNDS);
