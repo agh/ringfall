@@ -107,8 +107,23 @@ with ffmpeg at 30 fps. On a software GPU the capture runs far slower than
 real time; the film still plays at the right speed because the sim is
 stepped, not timed.
 
+## 15:30 Soundtrack without a clock
+
+Headless Chromium cannot play audio, and the live score schedules against
+wall-clock time. `src/audio/offline.ts` re-runs the same seed headlessly to
+recover the event timeline, schedules every voice, drum and effect into an
+`OfflineAudioContext`, and returns a WAV that `scripts/render-score.mjs`
+muxes into the silent capture. Determinism makes the audio line up with
+frames rendered minutes apart.
+
 ## Playtest reviews
+
+Each row is a human or agent watching the game play, not a screenshot.
 
 | When | Seed | What was watched | Verdict |
 | ---- | ---- | ---------------- | ------- |
-| 15:20 | 7 | 48 s from title through wave 1 and into wave 2 | Pending review of the first cut |
+| 15:35 | 7 | Frames 100 to 225 of the first capture (wave 1, 24 fps) | Bot kills two skimmers by 8 s, loses the third behind cover and reloads in the open; the sun behind a slab blooms hard enough to hide the reticle for a second. Readable, dramatic, slightly over-bright. Exposure left as is for the reel; a bloom radius reduction is a candidate. |
+
+![Wave 1, the sun behind a slab](images/1535-demo-seed7-wave1-sun.jpg)
+
+![Wave 1, holding cover with one left](images/1535-demo-seed7-wave1-cover.jpg)

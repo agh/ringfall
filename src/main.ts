@@ -1,4 +1,5 @@
 import { AudioBank } from './audio/audio';
+import { renderScore } from './audio/offline';
 import { type BotMemory, createBotMemory, decideBot, STEADY_BOT } from './core/bot';
 import { createGame, type GameState, stepGame } from './core/game';
 import { createRng } from './core/rng';
@@ -25,6 +26,8 @@ declare global {
       start: () => Promise<void>;
       advance: (steps: number) => void;
       frame: (quality: number) => string;
+      /** Renders the soundtrack for the same seed offline; returns base64 WAV. */
+      score: (seconds: number, leadIn: number) => Promise<string>;
     };
   }
 }
@@ -146,6 +149,7 @@ const main = (): void => {
         renderer.render(game, captureClock / 1000, FIXED_DT * steps);
       },
       frame: (quality) => canvas.toDataURL('image/jpeg', quality),
+      score: (seconds, leadIn) => renderScore({ seed, seconds, leadIn }),
     };
   }
 
