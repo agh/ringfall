@@ -316,10 +316,12 @@ clock in production and is fixed in tests.
   the frame. Particle sprites come in three shapes (`spark`, `smoke`,
   `shard`); the pool blends premultiplied alpha so sparks add to the frame
   exactly as before and smoke and chips can darken it. Sprites are capped
-  at 64 px and fade inside two metres of the eye. Measured at the seed 7
-  launcher kill 3 m away (`?record&bot&seed=7&post`, t = 47.0 s), mean
-  frame luminance is 106 by day and 101 at night (budget 150 and 110); the
-  first kill at night (t = 10.0 s) went from 59 to 32. Hit-stop of 50 ms (skimmer kill), 90 ms (strider kill) and
+  at 64 px and fade inside two metres of the eye. Measured on the seed 7
+  run as it stood before the bot's launcher clearance rule (#36) moved its
+  launcher shots, at a launcher kill 3 m away (`?record&bot&seed=7&post`,
+  then t = 47.0 s), mean frame luminance was 106 by day and 101 at night
+  (budget 150 and 110); the first kill at night (t = 10.0 s) went from 59
+  to 32. Hit-stop of 50 ms (skimmer kill), 90 ms (strider kill) and
   120 ms (shield break) slows the simulation to 5 % in `src/main.ts`.
 - **HUD.** DOM elements updated every frame: wave and enemies left, score,
   shield and health bars, ammo with a low-ammo colour, grenade pips, centre
