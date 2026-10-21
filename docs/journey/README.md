@@ -249,20 +249,20 @@ of the eye, blasts scale with distance from the camera, and the death
 burst is sixteen motes. Mean frame brightness at that moment went from
 204 to 61 on a scale of 255.
 
-![Night kill, before: a whiteout](images/1705-night-kill-before.jpg)
+![Night kill, before: a whiteout](images/1652-night-kill-before.jpg)
 
-![Night kill, after: a glow at the kill point](images/1716-night-kill-after.jpg)
+![Night kill, after: a glow at the kill point](images/1700-night-kill-after.jpg)
 
-## 17:12 Weapons in hand
+## 16:56 Weapons in hand
 
 Stream B2's viewmodels integrated with the scene by the coach from the
 agent's snippet; the agent had written against a copy of the scene
 because stream A owned the file. The beam rig at night and the scatter
 gun with a pickup column beside it, from the deterministic run at seed 7:
 
-![Wave 2 at night with the beam](images/1712-wave2-night-beam.jpg)
+![Wave 2 at night with the beam](images/1656-wave2-night-beam.jpg)
 
-![Wave 3, the scatter gun and a pickup](images/1712-wave3-scatter-pickup.jpg)
+![Wave 3, the scatter gun and a pickup](images/1656-wave3-scatter-pickup.jpg)
 
 ## Playtest reviews
 
@@ -270,7 +270,7 @@ Each row is a human or agent watching the game play, not a screenshot.
 
 | When | Seed | What was watched | Verdict |
 | ---- | ---- | ---------------- | ------- |
-| 17:10 | 7 | A 75 s bot run by day, frames every 3 s, and the night kill at 10 s, after the weapon integration | Weapon swaps read (beam at 18 s, scatter at 45 s, launcher at 48 s), pickup columns are visible from across the arena, the night frame keeps its stars and trims. The launcher round the bot fired at its own feet at 48 s still washes the frame pink with the shield-down effect; that is the jolt it should be, but the bot should not do it (issue for the bot: no launcher inside the blast radius). |
+| 17:00 | 7 | A 75 s bot run by day, frames every 3 s, and the night kill at 10 s, after the weapon integration | Weapon swaps read (beam at 18 s, scatter at 45 s, launcher at 48 s), pickup columns are visible from across the arena, the night frame keeps its stars and trims. The launcher round the bot fired at its own feet at 48 s still washes the frame pink with the shield-down effect; that is the jolt it should be, but the bot should not do it (issue for the bot: no launcher inside the blast radius). |
 | 15:56 | 7 | The whole 49 s film with its offline score: title, deploy, waves 1 to 4 | Reviewed frame-by-frame at 8 s, 22 s and 46 s and watched end to end at speed: the sun flare and bloom carry the opening, the bot's first kill lands at 4.8 s, wave 2 brings the first strider and bolts, the HUD reads at 720p. Weak points: around 8 s the bot turns into the sun and the frame whites out for about two seconds (this capture predates the exposure and haze reduction and HUD v2), and the bot stands in the open while reloading. Shipped as the first reel; a second capture with the current build was started at 16:00. |
 | 15:29 | 7 | Frames 100 to 225 of the first capture (wave 1, 24 fps) | Bot kills two skimmers by 8 s, loses the third behind cover and reloads in the open; the sun behind a slab blooms hard enough to hide the reticle for a second. Readable, dramatic, slightly over-bright. Exposure left as is for the reel; a bloom radius reduction is a candidate. |
 
