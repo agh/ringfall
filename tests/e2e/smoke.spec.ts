@@ -58,7 +58,9 @@ test.describe('Ringfall smoke', () => {
   });
 
   test('keyboard input moves the player', async ({ page }) => {
-    await page.goto('/');
+    // This test asserts input reaching the simulation, not the image; `?nopost` bypasses the
+    // composer, which halves the frame cost on software GL. The first test keeps the post stack.
+    await page.goto('/?nopost');
     await page.getByRole('button', { name: 'Deploy' }).click();
     await page.waitForFunction(() => (window.ringfall?.state().time ?? 0) > 0.2, null, {
       timeout: FIRST_FRAME_TIMEOUT,

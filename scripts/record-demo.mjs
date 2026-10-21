@@ -38,7 +38,7 @@ const totalFrames = seconds * fps;
 rmSync(framesDir, { recursive: true, force: true });
 mkdirSync(framesDir, { recursive: true });
 
-const server = await startPreview(port);
+// Browser first: Playwright reaps it when the process dies, nothing reaps the preview server.
 const browser = await chromium.launch({
   executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,
   args: [
@@ -48,6 +48,7 @@ const browser = await chromium.launch({
     '--ignore-gpu-blocklist',
   ],
 });
+const server = await startPreview(port);
 try {
   const page = await browser.newPage({ viewport: { width, height } });
   page.on('pageerror', (e) => console.error('pageerror', e.message));

@@ -7,6 +7,16 @@ import { spawn } from 'node:child_process';
  * caller owns the returned process and kills it in a `finally`.
  */
 export const startPreview = async (port, { outDir, attempts = 40, interval = 500 } = {}) => {
+  const url = `http://127.0.0.1:${port}/`;
+  // A server already answering here is a stale preview (a run that died before its `finally`):
+  // the new one would exit on --strictPort while the poll below adopts the old one's dist/.
+  const occupied = await fetch(url).then(
+    () => true,
+    () => false,
+  );
+  if (occupied) {
+    throw new Error(`something already answers on ${url}; stop the stale preview first`);
+  }
   const args = [
     'exec',
     'vite',
@@ -19,7 +29,6 @@ export const startPreview = async (port, { outDir, attempts = 40, interval = 500
   ];
   if (outDir) args.push('--outDir', outDir);
   const server = spawn('pnpm', args, { stdio: 'ignore' });
-  const url = `http://127.0.0.1:${port}/`;
   let exited = false;
   server.once('exit', () => {
     exited = true;

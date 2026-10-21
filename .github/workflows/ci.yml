@@ -10,8 +10,9 @@ permissions:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  # Superseded pull request pushes are cancelled; every push to main runs to completion so a
-  # merge never lands without a finished run.
+  # Superseded pull request pushes are cancelled. A running push to main is never cancelled; a
+  # push to main that is still queued behind it is replaced by the next push (GitHub keeps one
+  # pending run per group), whose tree contains it, so the newest commit is always what deploys.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -314,6 +315,9 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
+      # The hidden source map (3.4 MB of the 4.2 MB dist/) has no sourceMappingURL, so no browser
+      # asks for it; it stays out of the published site.
+      - run: find dist -name '*.map' -delete
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
