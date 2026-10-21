@@ -10,7 +10,9 @@ permissions:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Superseded pull request pushes are cancelled; every push to main runs to completion so a
+  # merge never lands without a finished run.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   lint:
@@ -43,7 +45,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: coverage
@@ -66,11 +68,37 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm build
       - run: pnpm test:e2e
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: playwright-report
           path: playwright-report
+          retention-days: 7
+
+  frames:
+    name: Luminance gate
+    runs-on: ubuntu-latest
+    # Ten frames on software GL: about 680 renders at roughly a second each (17 minutes measured).
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm build
+      # Ten seeded frames on software GL, measured against the budgets in scripts/frames.mjs.
+      - run: pnpm frames
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: frames
+          path: node_modules/.cache/ringfall-frames
           retention-days: 7
 
   build:
@@ -87,7 +115,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dist
           path: dist
@@ -107,11 +135,221 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm balance
-      - if: always()
+      - if: always() && hashFiles('test-results/balance/balance-report.md') != ''
         run: cat test-results/balance/balance-report.md >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: balance-report
           path: test-results/balance
           retention-days: 30
+
+  docs:
+    name: Docs hygiene
+    runs-on: ubuntu-latest
+    env:
+      # Versions and release-asset SHA-256 digests follow crefft's Makefile
+      # (typos v1.51.1 x86_64-unknown-linux-musl, vale_3.24.0_checksums.txt).
+      TYPOS_VERSION: '1.51.1'
+      TYPOS_SHA256: '93c301fd4120ff076e2cc2a6d6a61cab4a4bdb81899287c0938b452e56d1f454'
+      VALE_VERSION: '3.24.0'
+      VALE_SHA256: '867534ddb678abca7f214bc4706ead0922bd5252ffe8035fc227013f66c8b214'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install typos (checksum-pinned release)
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="typos-v${TYPOS_VERSION}-x86_64-unknown-linux-musl.tar.gz"
+          curl --fail-with-body --location --silent --show-error --retry 3 \
+            --output "$RUNNER_TEMP/$archive" \
+            "https://github.com/crate-ci/typos/releases/download/v${TYPOS_VERSION}/${archive}"
+          echo "${TYPOS_SHA256}  $RUNNER_TEMP/$archive" | sha256sum --check --strict
+          mkdir -p "$RUNNER_TEMP/typos"
+          tar -xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP/typos"
+          echo "$RUNNER_TEMP/typos" >> "$GITHUB_PATH"
+      - name: Install Vale (checksum-pinned release)
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="vale_${VALE_VERSION}_Linux_64-bit.tar.gz"
+          curl --fail-with-body --location --silent --show-error --retry 3 \
+            --output "$RUNNER_TEMP/$archive" \
+            "https://github.com/vale-cli/vale/releases/download/v${VALE_VERSION}/${archive}"
+          echo "${VALE_SHA256}  $RUNNER_TEMP/$archive" | sha256sum --check --strict
+          mkdir -p "$RUNNER_TEMP/vale"
+          tar -xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP/vale"
+          echo "$RUNNER_TEMP/vale" >> "$GITHUB_PATH"
+      - run: typos --version && vale --no-global --version
+      # Frontmatter schema, typos, and internal links block. Vale runs with
+      # --no-exit: its remaining findings are Crefft.Direct hits inside quoted
+      # playtester dialogue, which issue #43 says not to rewrite; drop --no-exit
+      # from `docs:vale` in package.json once they are addressed.
+      - run: pnpm lint:docs
+      - name: Check external URLs (advisory)
+        # Third-party availability is not a property of this repository, and
+        # several cited hosts throttle or refuse CI clients, so a failure here
+        # is a report to read, not a gate. Internal links blocked above.
+        continue-on-error: true
+        run: pnpm docs:links:external
+
+  security:
+    name: Security and workflow hygiene
+    runs-on: ubuntu-latest
+    env:
+      # Tool pins follow crefft's Makefile at
+      # https://github.com/agh/crefft/blob/6e6481840e68a89874e0d90eaae3cf23e83379fb/Makefile
+      ACTIONLINT_VERSION: '1.7.12'
+      # sha256 of actionlint_1.7.12_linux_amd64.tar.gz from the release's checksums.txt
+      ACTIONLINT_SHA256: '8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8'
+      ZIZMOR_VERSION: '1.31.1'
+      GITLEAKS_VERSION: '8.30.1'
+      # sha256 of gitleaks_8.30.1_linux_x64.tar.gz from gitleaks_8.30.1_checksums.txt
+      GITLEAKS_SHA256: '551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # Full history so gitleaks can scan the commits under review.
+          fetch-depth: 0
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Audit dependencies
+        run: pnpm audit --audit-level=high
+      - name: Install actionlint
+        run: |
+          set -euo pipefail
+          archive="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          url="https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/${archive}"
+          curl --fail-with-body --location --silent --show-error \
+            --retry 3 --retry-delay 5 --output "${archive}" "${url}"
+          echo "${ACTIONLINT_SHA256}  ${archive}" | sha256sum --check --strict
+          mkdir -p "${RUNNER_TEMP}/actionlint"
+          tar -xzf "${archive}" -C "${RUNNER_TEMP}/actionlint" actionlint
+          rm -f "${archive}"
+          echo "${RUNNER_TEMP}/actionlint" >> "${GITHUB_PATH}"
+      - name: Lint workflows with actionlint
+        run: |
+          actionlint -version
+          actionlint -shellcheck= -pyflakes= .github/workflows/*.yml
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+      - name: Audit workflows with zizmor
+        run: |
+          uvx --from "zizmor==${ZIZMOR_VERSION}" zizmor --version
+          uvx --from "zizmor==${ZIZMOR_VERSION}" zizmor --offline --persona=pedantic .github/workflows/*.yml
+      - name: Install gitleaks
+        run: |
+          set -euo pipefail
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          url="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${archive}"
+          curl --fail-with-body --location --silent --show-error \
+            --retry 3 --retry-delay 5 --output "${archive}" "${url}"
+          echo "${GITLEAKS_SHA256}  ${archive}" | sha256sum --check --strict
+          mkdir -p "${RUNNER_TEMP}/gitleaks"
+          tar -xzf "${archive}" -C "${RUNNER_TEMP}/gitleaks" gitleaks
+          rm -f "${archive}"
+          echo "${RUNNER_TEMP}/gitleaks" >> "${GITHUB_PATH}"
+      - name: Confirm the allowlist still rejects a real token
+        run: |
+          set -euo pipefail
+          # The allowlist in .gitleaks.toml exempts documentation placeholders.
+          # Prove here that it has not been widened into uselessness. The
+          # fixture is generated outside the working tree and never committed.
+          fixture="${RUNNER_TEMP}/gitleaks-fixture"
+          rm -rf "${fixture}"
+          mkdir -p "${fixture}"
+          python3 - "${fixture}/leak.js" <<'PY'
+          import secrets
+          import string
+          import sys
+
+          ALNUM = string.ascii_letters + string.digits
+
+
+          def token(length: int) -> str:
+              return "".join(secrets.choice(ALNUM) for _ in range(length))
+
+
+          with open(sys.argv[1], "w", encoding="utf-8") as handle:
+              handle.write(f'const githubToken = "ghp_{token(36)}";\n')
+              handle.write(f'const stripeKey = "sk_live_{token(24)}";\n')
+          PY
+          if gitleaks dir "${fixture}" --config .gitleaks.toml --no-banner --redact; then
+            echo "::error::.gitleaks.toml no longer detects a realistic token; the allowlist is too broad"
+            exit 1
+          fi
+          echo "self-test passed: realistic tokens are still detected"
+      - name: Scan the working tree for secrets
+        run: gitleaks dir . --config .gitleaks.toml --no-banner --redact --verbose
+      - name: Scan the commits under review for secrets
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          # On pull requests scan only the commits this PR adds; on pushes
+          # scan the history of the pushed branch.
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            gitleaks git . --config .gitleaks.toml --no-banner --redact \
+              --log-opts="${BASE_SHA}..${HEAD_SHA}"
+          else
+            gitleaks git . --config .gitleaks.toml --no-banner --redact --log-opts="HEAD"
+          fi
+
+  # GitHub Pages. A push to main deploys only once every job above is green; keeping the
+  # deploy in this workflow behind `needs` avoids a `workflow_run` trigger, which zizmor
+  # rejects as insecure. Least privilege per job: the build runs third-party code from
+  # node_modules and gets only a read token; only the deploy step, which runs no project
+  # code, may write Pages and mint an OIDC token.
+  pages-build:
+    name: Pages build
+    needs: [lint, test, frames, build, balance, docs, security]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: dist
+
+  pages-deploy:
+    name: Pages deploy
+    needs: pages-build
+    runs-on: ubuntu-latest
+    # One deploy at a time, never cancelled, so two pushes to main cannot land out of order.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    permissions:
+      pages: write # actions/deploy-pages publishes the artifact to the Pages site
+      id-token: write # actions/deploy-pages authenticates to Pages with an OIDC token
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

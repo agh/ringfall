@@ -51,6 +51,12 @@ export interface Sound {
 export const SILENT = [
   'pickupExpired',
   'enemyFled',
+  // The hidden switch's seven-note chime is a follow-up; the score tick is the only reaction here.
+  'secretFound',
+  // The watcher's beam reuses the strider bolt sound: game.ts emits boltFired beside watcherFired.
+  // A charge hum and a beam of its own are for the audio pass.
+  'watcherCharging',
+  'watcherFired',
 ] as const satisfies readonly GameEvent['type'][];
 export type SilentEvent = (typeof SILENT)[number];
 
@@ -154,7 +160,8 @@ export const SOUNDS: Readonly<Record<SoundKey, Sound>> = {
   grenadeThrown: { voices: [blip('triangle', 400, 0.05, 0.2)] },
   waveStarted: { voices: [tone('triangle', 300, 600, 0.6, 0.4)] },
   waveCleared: { voices: [tone('sine', 400, 1000, 0.8, 0.5)] },
-  victory: { voices: [tone('sine', 400, 1000, 0.8, 0.5)] },
+  // The run ends with the trigger possibly still held: no chargeReleased will ever follow.
+  victory: { cutsCharge: true, voices: [tone('sine', 400, 1000, 0.8, 0.5)] },
   playerDied: { cutsCharge: true, voices: [tone('sawtooth', 500, 60, 1.4, 0.6)] },
   // A routed skimmer's squeal: a rising chirp that answers the strider's death. The flee itself
   // (`enemyFled`) is silent; the bark carries the sound so a pack of three squeals three times.

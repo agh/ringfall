@@ -12,7 +12,12 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ARMOURED_HEALTH_SCALE, DROP_POD_LEAD, WAVE_BEATS } from '../src/core/waves.ts';
+import {
+  ARMOURED_HEALTH_SCALE,
+  DROP_POD_LEAD,
+  WAVE_BEATS,
+  watcherCount,
+} from '../src/core/waves.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const docPath = resolve(root, 'docs/design-doc.md');
@@ -50,9 +55,10 @@ export const renderWaveTable = (beats = WAVE_BEATS) => {
     beat.name,
     String(beat.spawns.filter((s) => s.kind === 'skimmer').length),
     String(beat.spawns.filter((s) => s.kind === 'strider').length),
+    String(watcherCount(i + 1)),
     notes(beat),
   ]);
-  const header = ['Wave', 'Name', 'Skimmers', 'Striders', 'Notes'];
+  const header = ['Wave', 'Name', 'Skimmers', 'Striders', 'Watchers', 'Notes'];
   const widths = header.map((h, c) => Math.max(h.length, ...rows.map((r) => r[c].length)));
   const line = (cells) => `| ${cells.map((cell, c) => cell.padEnd(widths[c])).join(' | ')} |`;
   const rule = `| ${widths.map((w) => '-'.repeat(w)).join(' | ')} |`;

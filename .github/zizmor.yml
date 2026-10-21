@@ -1,0 +1,6 @@
+# zizmor configuration (https://docs.zizmor.sh/configuration/).
+# CI runs zizmor 1.31.1 with --persona=pedantic over .github/workflows/*.yml.
+# Every ignore below names the finding and the change that removes it.
+# The Pages deploy lives in ci.yml behind `needs`, with per-job permissions and job names, so
+# the three deploy-pages.yml ignores that stood here are gone with that file.
+rules: {}

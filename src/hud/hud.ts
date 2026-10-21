@@ -1,13 +1,16 @@
-import { ENEMY_STATS } from '../core/enemy';
-import type { GameEvent, GameState } from '../core/game';
+import { type GameEvent, type GameState, TAUNT_BARK } from '../core/game';
 import type { Vec3 } from '../core/vec3';
 import { FINAL_WAVE } from '../core/waves';
 import { isReloading, WEAPON_SPECS, type Weapon, weaponSpec } from '../core/weapon';
+import { ARENA_SECTOR } from '../core/world';
 
 /** More pips than this and the magazine reads as a bar. */
 const MAX_PIPS = 40;
 
 const RADAR_RANGE = 28;
+
+/** Minimum gap between full-screen damage flashes: under three per second. */
+const DAMAGE_FLASH_INTERVAL_MS = 340;
 
 const byId = <T extends HTMLElement>(id: string): T => {
   const el = document.getElementById(id);
@@ -39,7 +42,8 @@ const fitCanvas = (
  * Everything is sized in viewport units by the stylesheet; canvases follow the device pixel ratio.
  */
 export class Hud {
-  private readonly root = byId<HTMLDivElement>('hud');
+  private readonly root = byId<HTMLElement>('hud');
+  private readonly sector = byId<HTMLDivElement>('hud-sector');
   private readonly wave = byId<HTMLDivElement>('hud-wave');
   private readonly waveSub = byId<HTMLDivElement>('hud-wave-sub');
   private readonly score = byId<HTMLDivElement>('hud-score');
@@ -49,6 +53,7 @@ export class Hud {
   private readonly healthArc = document.getElementById('health-arc') as SVGPathElement | null;
   private readonly shieldValue = byId<HTMLSpanElement>('shield-value');
   private readonly shieldLabel = byId<HTMLSpanElement>('shield-label');
+  private readonly ammo = this.root.querySelector<HTMLDivElement>('.hud__ammo') ?? this.root;
   private readonly ammoMag = byId<HTMLDivElement>('ammo-mag');
   private readonly ammoReserve = byId<HTMLDivElement>('ammo-reserve');
   private readonly ammoName = byId<HTMLDivElement>('ammo-name');
@@ -68,10 +73,16 @@ export class Hud {
   private messageTimer: number | null = null;
   private hitTimer: number | null = null;
   private damageTimer: number | null = null;
+  private lastDamageFlash = 0;
   private reticleTimer: number | null = null;
   private lastShield = 100;
+  private emptyAnnounced = false;
   private sweep = 0;
   private pendingDamage: Vec3[] = [];
+
+  constructor() {
+    this.sector.textContent = `Sector ${ARENA_SECTOR}`;
+  }
 
   show(): void {
     this.root.hidden = false;
@@ -87,16 +98,31 @@ export class Hud {
       switch (e.type) {
         case 'shot':
           this.kickReticle(1.25);
-          if (e.hitEnemy) this.flash(this.hitmarker, 110, 'hit');
+          // A plain hit never cuts a live kill marker short.
+          if (e.hitEnemy && !this.hitmarker.classList.contains('is-kill'))
+            this.flash(this.hitmarker, 110, 'hit');
           break;
         case 'enemyKilled':
           this.hitmarker.classList.add('is-kill');
-          this.flash(this.hitmarker, 220, 'hit');
+          this.flash(this.hitmarker, 300, 'hit');
+          this.kickReticle(0.85);
           break;
-        case 'playerDamaged':
-          this.flash(this.damage, 70, 'damage');
+        case 'weaponSwapped':
+          this.ammo.classList.remove('is-drawing');
+          void this.ammo.offsetWidth;
+          this.ammo.classList.add('is-drawing');
+          break;
+        case 'playerDamaged': {
+          // The full-screen flash is capped below three a second (WCAG 2.3.1); a barrage reads
+          // as a held glow, and the per-hit direction segment still fires every time.
+          const now = performance.now();
+          if (now - this.lastDamageFlash >= DAMAGE_FLASH_INTERVAL_MS) {
+            this.lastDamageFlash = now;
+            this.flash(this.damage, 70, 'damage');
+          }
           if (e.from) this.pendingDamage.push(e.from);
           break;
+        }
         case 'waveStarted': {
           const label = e.number === FINAL_WAVE ? 'Final wave' : `Wave ${e.number}`;
           this.announce(`${label} · ${e.name}`, 2200);
@@ -106,6 +132,9 @@ export class Hud {
           this.announce('Wave cleared', 1600);
           break;
         case 'shieldBroken':
+          // The break is an event, not just a state: the vignette hits once, past the rate cap.
+          this.lastDamageFlash = performance.now();
+          this.flash(this.damage, 220, 'damage');
           this.announce('Shield down', 900);
           break;
         case 'pickupTaken':
@@ -116,6 +145,16 @@ export class Hud {
           this.announce(`Chapter 1 complete · ${e.kills} kills · ${breaks}`, 6000);
           break;
         }
+        case 'playerDied':
+          this.announce('Down', 1600);
+          break;
+        case 'enemyBark':
+          // Rout barks are the renderer's to label over each skimmer; the taunt answers the player.
+          if (e.line === TAUNT_BARK) this.announce(e.line, 1400);
+          break;
+        case 'secretFound':
+          this.announce(`Secret found +${e.score}`, 1800);
+          break;
       }
     }
   }
@@ -130,6 +169,12 @@ export class Hud {
         : state.wave.phase === 'active'
           ? `${alive} hostile${alive === 1 ? '' : 's'}`
           : 'Clear';
+    // The countdown is the first thing the player should see, so it takes the centre line.
+    if (state.wave.phase === 'countdown') {
+      const left = Math.ceil(state.wave.phaseEndsAt - state.time);
+      if (this.message.textContent !== `Contact in ${left}`)
+        this.announce(`Contact in ${left}`, 1100);
+    }
     this.score.textContent = state.score.toString().padStart(6, '0');
     this.kills.textContent = `${state.kills} down`;
 
@@ -149,6 +194,7 @@ export class Hud {
 
     this.renderWeapon(player.weapon, player.weapons[player.activeSlot === 0 ? 1 : 0]);
     if (this.grenades.childElementCount !== player.grenades) {
+      this.grenades.setAttribute('aria-label', `Grenades: ${player.grenades}`);
       this.grenades.replaceChildren(
         ...Array.from({ length: player.grenades }, () => document.createElement('i')),
       );
@@ -159,20 +205,33 @@ export class Hud {
     this.drawCompass(state);
   }
 
+  private renderAmmo(w: Weapon, name: string): void {
+    const reloading = isReloading(w);
+    const lowAt = Math.max(1, Math.round(w.magazineSize * 0.2));
+    const low = w.magazine <= lowAt && !reloading;
+    // Low ammo is a word as well as a colour; an empty magazine says which key reloads, once.
+    this.ammoName.textContent = low ? `${name} · Low` : name;
+    this.ammoMag.textContent = reloading ? '--' : w.magazine.toString();
+    this.ammoMag.classList.toggle('is-low', low);
+    const empty = w.magazine === 0 && !reloading;
+    if (empty && !this.emptyAnnounced) this.announce('Reload · R', 1200);
+    this.emptyAnnounced = empty;
+    this.ammoReserve.textContent = `/ ${w.reserve}`;
+  }
+
   private renderWeapon(w: Weapon, offhand: Weapon | null): void {
     const spec = weaponSpec(w);
-    this.ammoName.textContent = spec.name;
-    this.ammoMag.textContent = isReloading(w) ? '--' : w.magazine.toString();
-    const lowAt = Math.max(1, Math.round(w.magazineSize * 0.2));
-    this.ammoMag.classList.toggle('is-low', w.magazine <= lowAt && !isReloading(w));
-    this.ammoReserve.textContent = `/ ${w.reserve}`;
+    this.renderAmmo(w, spec.name);
 
     // Charge (beam) and spin (minigun) share one bar; it only shows while something is building.
     const level = spec.chargeTime > 0 ? w.charge : spec.spinUp > 0 ? w.spin : 0;
     this.charge.classList.toggle('is-active', level > 0);
     this.charge.classList.toggle('is-ready', level >= 1);
     this.charge.style.setProperty('--charge', level.toFixed(3));
-    this.charge.setAttribute('aria-valuenow', level.toFixed(2));
+    const chargeNow = level.toFixed(2);
+    if (this.charge.getAttribute('aria-valuenow') !== chargeNow) {
+      this.charge.setAttribute('aria-valuenow', chargeNow);
+    }
 
     const bar = w.magazineSize > MAX_PIPS;
     const layout = bar ? 'bar' : `pips:${w.magazineSize}`;
@@ -272,7 +331,7 @@ export class Hud {
       if (enemy.state === 'dead') continue;
       const [px, py, dist] = project(enemy.position);
       if (dist > RADAR_RANGE) continue;
-      const big = enemy.kind === 'strider';
+      const big = enemy.kind !== 'skimmer';
       const r = (big ? 5 : 3.5) * (w / 150);
       ctx.fillStyle = enemy.state === 'spawning' ? 'rgba(251, 113, 133, 0.4)' : '#fb7185';
       ctx.shadowColor = '#fb7185';
@@ -324,16 +383,19 @@ export class Hud {
     ctx.clearRect(0, 0, w, h);
     const headingDeg = ((-state.player.yaw * 180) / Math.PI + 360) % 360;
     const pxPerDeg = w / 120; // the strip shows 120 degrees of arc
-    ctx.font = `${Math.round(h * 0.42)}px "Chakra Petch", "Rajdhani", sans-serif`;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    ctx.font = `600 ${Math.max(Math.round(14 * dpr), Math.round(h * 0.42))}px "Chakra Petch", "Rajdhani", sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
+    // Marks live on fixed world bearings; the fractional heading only slides them.
+    const base = Math.round(headingDeg / 5) * 5;
     for (let d = -70; d <= 70; d += 5) {
-      const deg = (((headingDeg + d) % 360) + 360) % 360;
-      const x = w / 2 + d * pxPerDeg;
+      const deg = (((base + d) % 360) + 360) % 360;
+      const x = w / 2 + (base + d - headingDeg) * pxPerDeg;
       const major = deg % 90 === 0;
       const mid = deg % 45 === 0;
       ctx.strokeStyle = major ? '#e8e4d8' : mid ? '#b8d8ea' : 'rgba(138, 160, 184, 0.55)';
-      ctx.lineWidth = major ? 2 : 1;
+      ctx.lineWidth = (major ? 2 : 1) * Math.max(1, w / 460);
       const tick = major ? h * 0.42 : mid ? h * 0.3 : h * 0.18;
       ctx.beginPath();
       ctx.moveTo(x, h);
@@ -412,6 +474,6 @@ export class Hud {
 
 /** Exposed for the end-of-game card. */
 export const summarize = (state: GameState): string => {
-  const kinds = Object.keys(ENEMY_STATS).length;
-  return `Score ${state.score} · ${state.kills} kills across ${kinds} enemy types · reached wave ${state.wave.number}.`;
+  const secrets = state.arena.secret === null ? 0 : 1;
+  return `${state.kills} kills · wave ${state.wave.number} of ${FINAL_WAVE} · ${state.secretsFound} of ${secrets} secrets found.`;
 };

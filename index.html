@@ -3,12 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!--
+      GitHub Pages cannot set response headers, so the policy lives here. Everything is same-origin
+      except the two Google Fonts hosts; the favicon is a data: SVG. frame-ancestors is ignored in
+      a meta tag; framing is accepted because the page has no privileged action to clickjack. In
+      `vite dev` the plugin in vite.config.ts relaxes style-src and connect-src for hot reload; the
+      production build ships this exact text.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <meta name="referrer" content="no-referrer" />
     <meta name="color-scheme" content="dark" />
     <meta
       name="description"
       content="Ringfall: a browser-native WebGL arena shooter. Regenerating shields, waves of enemies, and a ring on the horizon."
     />
     <title>Ringfall</title>
+    <!-- Favicon ring in Beacon (#7dd3fc): a data URI cannot read the CSS tokens. -->
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='11' fill='none' stroke='%237dd3fc' stroke-width='4'/%3E%3C/svg%3E" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -19,9 +32,9 @@
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
-    <canvas id="scene" aria-label="Ringfall game view"></canvas>
+    <canvas id="scene" role="img" aria-label="Ringfall game view"></canvas>
 
-    <div id="hud" class="hud" hidden>
+    <section id="hud" class="hud" aria-label="Heads-up display" hidden>
       <div class="hud__frame" aria-hidden="true"></div>
 
       <div class="hud__compass" role="img" aria-label="Heading">
@@ -29,7 +42,7 @@
       </div>
 
       <div class="hud__corner hud__corner--tl">
-        <div class="hud__label">Sector 117</div>
+        <div class="hud__label" id="hud-sector">Sector 117</div>
         <div class="hud__wave" id="hud-wave">Wave 1</div>
         <div class="hud__sub" id="hud-wave-sub"></div>
       </div>
@@ -40,7 +53,7 @@
       </div>
 
       <div class="hud__radar">
-        <canvas id="radar" aria-label="Motion tracker"></canvas>
+        <canvas id="radar" role="img" aria-label="Motion tracker"></canvas>
         <div class="hud__radar-label">Tracker · 28 m</div>
       </div>
 
@@ -54,14 +67,14 @@
       <div class="hud__hitmarker" id="hitmarker" aria-hidden="true"></div>
       <div class="hud__damage-ring" id="damage-ring" aria-hidden="true"></div>
 
-      <div class="hud__message" id="hud-message" aria-live="polite"></div>
+      <div class="hud__message" id="hud-message" role="status" aria-live="polite"></div>
 
       <div class="hud__vitals" role="img" aria-label="Shield and health">
         <svg class="hud__arc" viewBox="0 0 400 120" aria-hidden="true">
           <defs>
             <linearGradient id="shield-grad" x1="0" x2="1">
-              <stop offset="0" stop-color="#38bdf8" />
-              <stop offset="1" stop-color="#bae6fd" />
+              <stop offset="0" />
+              <stop offset="1" />
             </linearGradient>
           </defs>
           <path class="hud__arc-track" d="M 30 110 A 170 170 0 0 1 370 110" pathLength="100" />
@@ -85,24 +98,25 @@
           </div>
         </div>
         <div class="hud__charge" id="charge" role="progressbar" aria-label="Charge" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0"><i></i></div>
-        <div class="hud__magazine" id="magazine" role="img" aria-label="Rounds in magazine"></div>
+        <div class="hud__magazine" id="magazine" aria-hidden="true"></div>
         <div class="hud__offhand" id="offhand"></div>
         <div class="hud__grenades" id="grenades" role="img" aria-label="Grenades"></div>
       </div>
 
       <div class="hud__damage" id="damage-flash" aria-hidden="true"></div>
       <div class="hud__lowshield" id="low-shield" aria-hidden="true"></div>
-    </div>
+    </section>
 
-    <div id="overlay" class="overlay">
+    <div id="overlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="overlay-title" aria-describedby="overlay-tagline">
       <div class="overlay__card">
         <div class="overlay__eyebrow">Chapter 1 · Sector 117</div>
-        <h1 class="overlay__title">RINGFALL</h1>
+        <h1 class="overlay__title" id="overlay-title">RINGFALL</h1>
+        <p class="overlay__result" id="overlay-result" hidden></p>
         <p class="overlay__tagline" id="overlay-tagline">
-          The ring is lit. Hold the arena until the sun clears the rim.
+          The ring is lit. Hold the arena through eight waves, until the sun clears the rim.
         </p>
-        <p class="overlay__stats" id="overlay-stats" hidden></p>
-        <button id="start" class="overlay__button" type="button">Deploy</button>
+        <p class="overlay__stats" id="overlay-stats" role="status" hidden></p>
+        <button id="start" class="overlay__button" type="button" aria-describedby="overlay-tagline overlay-stats">Deploy</button>
         <dl class="overlay__controls">
           <dt>Move</dt><dd>W A S D</dd>
           <dt>Look</dt><dd>Mouse</dd>
@@ -112,8 +126,9 @@
           <dt>Swap weapon</dt><dd>Q or wheel</dd>
           <dt>Jump / Sprint</dt><dd>Space / Shift</dd>
           <dt>Fullscreen</dt><dd>F</dd>
+          <dt>Pause</dt><dd>Esc</dd>
         </dl>
-        <p class="overlay__footnote">WebGL 2 desktop browser. Deploy captures the mouse and fills the screen; Esc releases both.</p>
+        <p class="overlay__footnote">WebGL 2 desktop browser. Deploy captures the mouse and fills the screen; Esc pauses and releases both.</p>
 
         <details class="settings" id="settings">
           <summary class="settings__summary">Settings</summary>

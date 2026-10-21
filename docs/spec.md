@@ -2,13 +2,14 @@
 type: spec
 title: "Ringfall Chapter 1: specification, Minimum Lovable Product, and what is Later"
 status: draft
-authors: ["Ringfall hackathon team"]
-reviewers: []
+authors:
+  - name: "Ringfall hackathon team"
 created: 2026-10-21
-approved: 2026-10-21
 ---
 
 # Ringfall Chapter 1: specification
+
+> [Ringfall](../README.md) > Specification
 
 This document is the contract for the demo. It says what Chapter 1 is, what
 "lovable" means for each part, and what is explicitly deferred. The
@@ -48,26 +49,37 @@ a friend. Each MLP item names that moment.
 | - | ---- | ---------- | ------ | ----- |
 | 1 | Shield break as an event: hit-stop, flare, vignette, enemies ease off | "It let me breathe." | Partial (flare, vignette) | #4 |
 | 2 | Weapon juice: kick, recoil, tracer, hit-flash, sway, bob | "The gun feels good." | Done | n/a |
-| 3 | Skimmers flee when a strider dies, with a bark | "They noticed." | Not started | #5 |
+| 3 | Skimmers flee when a strider dies, with a bark | "They noticed." | Done (`src/core/enemy.ts`, #40) | #5 |
 | 4 | Striders dive from grenades and sidestep | "It dodged my grenade." | Not started | #6 |
 | 5 | Firing points for striders | "They take positions." | Not started | #7 |
 | 6 | The ring overhead, dawn sky, terrain, fog | "Where am I?" | Done | n/a |
 | 7 | Procedural chant, calm and combat states, stingers | "What is that music?" | Partial (drone, states) | #9 |
 | 8 | Five named waves, drop-pods, victory tableau | "It had an ending." | Partial (five beats, `dropPod` and `victory` events, tableau state in `src/core`; rendering follows) | #8 |
 | 9 | Title choreography and the Deploy moment | "Oh, nice." | Not started | #9 |
-| 10 | Brand compliance (fonts, tokens, banner) | Consistency, not a moment | Not started | #10 |
+| 10 | Brand compliance (fonts, tokens, banner) | Consistency, not a moment | Partial (fonts and tokens in HUD v2; the compliance pass is #10) | #10 |
 | 11 | Frame budget on an integrated GPU | It runs on the laptop in the room | Not measured | #11 |
-| 12 | Playtest bot as a CI gate | We know it is fair | Harness done; gate not | #12 |
+| 12 | Playtest bot as a CI gate | We know it is fair | Done (`tests/balance/`, CI job `Balance gate`, #39) | #12 |
 | 13 | Demo recording pipeline | The awards reel | Done (recorder, offline score, mux); CI artifact not | #13 |
-| 14 | Easter eggs: temperaments, sector number, crouch, switch | "IYKYK." | Not started | #14 |
+| 14 | Easter eggs: temperaments, sector number, crouch, switch | "IYKYK." | Core done (temperaments, Sector 117, crouch and bark, switch scoring); glyph, tint and chime are render and audio follow-ups | #14 |
 | 15 | Personal bests in the browser: this round against your previous best score, deepest wave, runs and clears | "I got further." | Done (`src/core/records.ts`, localStorage, nothing leaves the device) | n/a |
+| 16 | Six weapons, pickups during waves, two slots with a swap key | "What does this one do?" | Done (`src/core/weapon.ts`, `src/core/pickups.ts`) | #16 |
+
+### Review 2026-10-21 (#53)
+
+A five-reviewer design and user-experience pass over captured frames at
+1280x720 and 3840x2160 found the HUD labels at 9 to 12 px (checklist item 4
+says 14), no reduced-motion rule, no focus management on the card, a pause
+that looked like the title screen, and an end card that never said Victory
+or Defeat. Those are fixed. What the review left for the owner issues: the
+title choreography and Deploy moment (#9), the victory tableau and death
+camera (#8), the sun bloom hiding the reticle (renderer), and the settings
+toggles for shake and flash (#37).
 
 ## Later (explicit choices)
 
 | Item | Why deferred | Issue |
 | ---- | ------------ | ----- |
 | Melee | Needs a telegraph and a reason; promote after the shield event. | #15 |
-| Second weapon and swap | Choice without a new rhythm. | #16 |
 | Third enemy and encounter spice | Base dance first. | #17 |
 | Mobile, WebGPU, co-op | No loop change; platform work. | #18 |
 | Vehicles, campaign, second arena | A second game. | #3 |
@@ -88,7 +100,7 @@ the whole HUD's reason to exist. See [brand.md](brand.md).
 
 ## Easter eggs (proposed)
 
-Subtle, non-infringing, recognisable to people who know games:
+Subtle, non-infringing, recognizable to people who know games:
 
 - Four skimmer temperaments (chaser, ambusher, flanker, skittish), the
   four-ghost idea applied to a shooter, and it also improves the AI.

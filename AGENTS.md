@@ -68,9 +68,17 @@ pnpm test                     # Vitest unit tests with V8 coverage thresholds
 pnpm test:e2e                 # Playwright smoke tests against `vite preview`
 
 # Linting & Formatting
-pnpm lint                     # biome ci .
-pnpm lint:fix                 # biome check --write .
+pnpm lint                     # biome ci, markdownlint, then pnpm lint:css
+pnpm lint:css                 # stylelint and prettier --check over CSS
+pnpm lint:fix                 # biome check --write, stylelint --fix, prettier --write
+pnpm lint:docs                # frontmatter schema, typos, Vale (advisory), internal links
 pnpm typecheck                # tsc --noEmit
+
+# Security and workflow hygiene (the CI security job; pins in .github/workflows/ci.yml)
+pnpm audit --audit-level=high # advisories; ignores and their reasons under pnpm.auditConfig
+actionlint -shellcheck= -pyflakes= .github/workflows/*.yml          # actionlint 1.7.12
+uvx --from zizmor==1.31.1 zizmor --offline --persona=pedantic .github/workflows/*.yml
+gitleaks dir . --config .gitleaks.toml --no-banner --redact         # gitleaks 8.30.1
 
 # Everything CI runs
 pnpm check                    # lint, typecheck, unit tests, production build

@@ -3,7 +3,7 @@ import { renderScore } from './audio/offline';
 import { type BotMemory, createBotMemory, decideBot, STEADY_BOT } from './core/bot';
 import { createGame, type GameState, stepGame } from './core/game';
 import { describeComparison, recordRound } from './core/records';
-import { createRng } from './core/rng';
+import { createRng, parseSeed } from './core/rng';
 import { loadSettings, type Settings, saveSettings } from './core/settings';
 import { Hud, summarize } from './hud/hud';
 import { InputController } from './input/input';
@@ -11,6 +11,8 @@ import { SceneRenderer } from './render/scene';
 
 const FIXED_DT = 1 / 60;
 const MAX_STEPS_PER_FRAME = 5;
+/** Simulation speed during hit-stop: slow enough to read as a pop, fast enough to keep stepping. */
+const HIT_STOP_SCALE = 0.2;
 
 declare global {
   interface Window {
@@ -49,6 +51,7 @@ const main = (): void => {
   const startButton = byId<HTMLButtonElement>('start');
   const tagline = byId<HTMLParagraphElement>('overlay-tagline');
   const stats = byId<HTMLParagraphElement>('overlay-stats');
+  const result = byId<HTMLParagraphElement>('overlay-result');
 
   const renderer = new SceneRenderer(canvas);
   const hud = new Hud();
@@ -101,8 +104,10 @@ const main = (): void => {
   applySettings();
 
   const params = new URLSearchParams(window.location.search);
-  const seedParam = Number(params.get('seed'));
-  const seed = Number.isFinite(seedParam) && seedParam > 0 ? seedParam : Date.now() >>> 0;
+  // `?seed=` is untrusted input: only a decimal uint32 is honoured, anything else is the clock.
+  const seed = parseSeed(params.get('seed'), Date.now() >>> 0);
+  // A valid ?seed= pins the arena for every restart; without one each run is new.
+  const seedPinned = parseSeed(params.get('seed'), 0) > 0;
   const botMode = params.has('bot');
   const recordMode = params.has('record');
   let game = createGame({ seed });
@@ -116,16 +121,29 @@ const main = (): void => {
 
   window.ringfall = { state: () => game };
 
+  /** The card names the outcome in a word and a colour: Victory, Defeat, or Paused. */
+  const showOutcome = (outcome: 'won' | 'lost' | 'paused'): void => {
+    result.hidden = false;
+    result.dataset.outcome = outcome;
+    result.textContent = outcome === 'won' ? 'Victory' : outcome === 'lost' ? 'Defeat' : 'Paused';
+    tagline.textContent =
+      outcome === 'won'
+        ? 'The arena is quiet. The ring still turns.'
+        : outcome === 'lost'
+          ? 'Shields down. Health gone. The ring does not care.'
+          : 'The run is waiting. Resume recaptures the mouse.';
+  };
+
   const showOverlay = (finished: boolean): void => {
     running = false;
+    audio.silence();
     audio.setMusic('title');
     hud.hide();
     overlay.hidden = false;
+    overlay.classList.toggle('is-finished', finished);
     if (finished) {
       const won = game.status === 'won';
-      tagline.textContent = won
-        ? 'The arena is quiet. The ring still turns.'
-        : 'Shields down. Health gone. The ring does not care.';
+      showOutcome(won ? 'won' : 'lost');
       const round = {
         score: game.score,
         wave: game.wave.number,
@@ -141,11 +159,19 @@ const main = (): void => {
         storage = null;
       }
       const comparison = recordRound(storage, round);
-      stats.textContent = `${summarize(game)} ${describeComparison(round, comparison)}`;
+      // One line per fact: the comparison already carries score and wave, so no repeat.
+      stats.textContent = `${summarize(game)}\n${describeComparison(round, comparison).replace(/\. /g, '.\n')}`;
       stats.hidden = false;
       startButton.textContent = won ? 'Run it back' : 'Redeploy';
+    } else {
+      // A pause, not an ending: the card says Paused and must not keep the previous round's copy.
+      showOutcome('paused');
+      stats.hidden = true;
+      startButton.textContent = 'Resume';
     }
     if (document.pointerLockElement) document.exitPointerLock();
+    // Keyboard players land on the one button that matters, whichever way the card came back.
+    startButton.focus({ preventScroll: true });
   };
 
   const requestFullscreen = (): void => {
@@ -161,20 +187,29 @@ const main = (): void => {
     else requestFullscreen();
   });
 
+  /** Seconds of hit-stop remaining; the loop runs the sim at 5% speed while it is positive. */
+  let hitStop = 0;
+
   const start = async (): Promise<void> => {
     audio.unlock();
-    if (!recordMode) requestFullscreen();
+    // Fullscreen on a fresh deploy only; a resume after Esc should not replay the transition.
+    if (!recordMode && game.status !== 'playing') requestFullscreen();
     if (game.status !== 'playing') {
-      const next = Date.now() >>> 0;
+      // An explicit ?seed= is a rematch of the same arena; otherwise every run is new.
+      const next = seedPinned ? seed : Date.now() >>> 0;
       game = createGame({ seed: next });
       rng = createRng(next ^ 0x9e3779b9);
       botRng = createRng(next ^ 0x7f4a7c15);
       botMemory = createBotMemory();
       renderer.setArena(game.arena);
+      input.reset();
+    } else {
+      // Resuming after Esc: `reset()` here snapped the camera to yaw 0 on every resume.
+      input.release();
     }
-    input.reset();
+    hitStop = 0;
     overlay.hidden = true;
-    hud.show();
+    if (!params.has('nohud')) hud.show(); // `?nohud`: dev flag, keeps the HUD hidden for clean hero captures.
     running = true;
     audio.setMusic('calm');
     accumulator = 0;
@@ -192,9 +227,6 @@ const main = (): void => {
     // Esc releases the pointer; pause to the overlay so the player can recapture it.
     if (!input.locked && running && game.status === 'playing') showOverlay(false);
   });
-
-  /** Seconds of hit-stop remaining; the loop runs the sim at 5% speed while it is positive. */
-  let hitStop = 0;
 
   /** One simulation step from either the human or the bot, plus event fan-out. */
   const simulate = (now: number): void => {
@@ -257,17 +289,22 @@ const main = (): void => {
       // Hit-stop: time slows to a crawl for a few frames on a kill or a shield break.
       if (hitStop > 0) {
         hitStop = Math.max(0, hitStop - frameDt);
-        accumulator += frameDt * 0.05;
+        // A time-scale, not a freeze (brand.md): frames still step, so the marker stays framed.
+        accumulator += frameDt * HIT_STOP_SCALE;
       } else {
         accumulator += frameDt;
       }
+      // Anything past the per-frame cap is dropped, not deferred: a deferred backlog would
+      // fast-forward the game at five steps a frame once the frame rate recovers.
+      accumulator = Math.min(accumulator, FIXED_DT * MAX_STEPS_PER_FRAME);
       let steps = 0;
       while (accumulator >= FIXED_DT && steps < MAX_STEPS_PER_FRAME) {
         simulate(now);
         accumulator -= FIXED_DT;
         steps += 1;
         if (game.status !== 'playing') {
-          window.setTimeout(() => showOverlay(true), 1600);
+          // A win gets its four-second tableau before the card; a death gets the 1.6 s sink.
+          window.setTimeout(() => showOverlay(true), game.status === 'won' ? 4000 : 1600);
           running = false;
           break;
         }

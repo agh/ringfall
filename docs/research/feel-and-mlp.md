@@ -1,39 +1,40 @@
 ---
 type: research
-title: "What S-tier Halo feel in a browser actually requires"
-status: reference
-authors: ["Ringfall research agent (Claude), reviewed by the hackathon team"]
+title: "What S-tier console-shooter feel in a browser actually requires"
+status: approved
+authors:
+  - name: "Ringfall research agent (Claude), reviewed by the hackathon team"
 created: 2026-10-21
 ---
 
-# What "S-tier Halo feel in a browser" actually requires
+# What "S-tier console-shooter feel in a browser" actually requires
 
 This is a research note produced during the hackathon by a delegated
-research agent, then reviewed and lightly edited. Every claim carries a
-source. It informs [the specification](../spec.md) and the backlog; it is
+research agent, then reviewed and lightly edited. Claims carry a source
+where one exists; the frame-budget numbers are targets. It informs [the specification](../spec.md) and the backlog; it is
 not itself a commitment.
 
 ## The thesis in three sentences
 
-Halo CE's magic is not content volume; it is a **3-second loop inside a
+The reference console shooter's magic is not content volume; it is a **3-second loop inside a
 30-second loop inside a 3-minute loop** where enemies are legible actors in
-a theatre the player directs ([Griesemer, Engadget 2011][griesemer]). A 5
+a theater the player directs ([Griesemer, Engadget 2011][griesemer]). A 5
 to 10 minute demo therefore needs exactly **one** great 30-second loop,
 varied four or five times, wrapped in one unforgettable image (the ring)
 and one unforgettable sound (the chant register). Everything else is
 "later".
 
-## Why Halo CE's opening lands (primary sources)
+## Why the reference shooter's opening lands (primary sources)
 
 **The loop, not the level.** Griesemer: "there was maybe 30 seconds of fun
 that happened over and over... you can pretty much stretch that out to be
 an entire game", but the half everyone forgets is "in different
 environments, with different weapons, different vehicles, against different
-enemies... No 30 second stretch of Halo is ever repeated." His canonical
+enemies... No 30 second stretch of [the game] is ever repeated." His canonical
 example is melee on an unaware enemy, grenade into a group, clean up
-stragglers ([Engadget][griesemer]). Bungie called the
+stragglers ([Engadget][griesemer]). The studio called the
 weapons-grenades-melee triad the "Golden Triangle"
-([Halopedia][halopedia-weapons]).
+([Halopedia][wiki-weapons]).
 
 **Shield rhythm is a pacing contract with the AI.** Griesemer: when your
 shields drop and you take cover, the enemies back off and let you catch
@@ -43,22 +44,23 @@ after a brief damage-free window; health beneath it needs a medkit, which
 removes the "1% health" problem while keeping stakes
 ([Film Stories][filmstories]). **Design consequence for Ringfall:** enemy
 aggression must drop when the player's shield pops. That is the single most
-Halo-feeling AI rule and it costs ten lines.
+genre-defining AI rule and it costs ten lines.
 
-**AI as theatre.** The GDC 2002 deck lists the design goals as
+**AI as theater.** The GDC 2002 deck lists the design goals as
 *Intelligible, Interactive, Unpredictable*; "Transparent thought process";
 "Communication of Intent... Language, Posture, Gesture, Focus of Attention";
 "Things to Avoid: Subtlety, Looking Broken"; and a "Thwarted / Breaking
 point: Flee in Terror, Berserk, Retreat" ([Butcher & Griesemer][gdc2002]).
-The famous Grunt story: "Initially nobody noticed so we had to keep adding
-clues... every single Grunt run away every single time an Elite is
+The famous fleeing-minion story: "Initially nobody noticed so we had to keep adding
+clues... every single [minion] run away every single time a [leader] is
 killed... outrageously exaggerated panic run... I would still estimate that
-less than a third of our users made the connection" ([DU lecture][du]).
+less than a third of our users made the connection" (Butcher and
+Griesemer, quoted in [Sturtevant's DU lecture][du]).
 Isla: "subtlety flies straight over the player's head... you really have to
-crank it to 11" ([Game Developer][isla-subtlety]). The Bungie behaviour
+crank it to 11" ([Game Developer][isla-subtlety]). The studio's behavior
 list includes a "Dive impulse: if I'm in immediate danger from a vehicle or
 grenade... dive away", an "Evasion impulse: hop to the side", and
-"self-preserve" when shields are low ([behaviour list][bungie-ai]).
+"self-preserve" when shields are low ([behavior list][bungie-ai]).
 
 **Encounter shape.** Isla's canonical encounter: "Enemies occupy a
 territory; pushed to 'fallback' point; pushed to 'last-stand' point; player
@@ -69,12 +71,12 @@ territory; pushed to 'fallback' point; pushed to 'last-stand' point; player
 scattered green grass", a cliff over ocean, and looking up, the far side of
 the ring overhead: "Everything feels simultaneously familiar and alien"
 ([Game Informer][gameinformer]). The whole game's AI and encounter design
-was prototyped on one sandbox level ([Wikipedia][wiki-halo]). One arena is
-the Halo way.
+was prototyped on one sandbox level ([Wikipedia][wiki-ce]). One arena is
+the reference shooter's way.
 
 **Music.** O'Donnell chose "Gregorian chant, string orchestra, percussion,
 and just a bit of a 'Qawwali voice'", written in under a week
-([HBO 1999 Q&A][hbo1999]). In-game: "The music of Halo is designed so that
+([HBO 1999 Q&A][hbo1999]). In-game: "The music of [the game] is designed so that
 the player feels that their personal game experience was scored. They
 should never be aware of what they did to cause it to be scored"
 ([halo.bungie.org/music][hbo-music]).
@@ -93,7 +95,7 @@ conference room will hit the fallback path.
 1. Bloom at reduced resolution on emissive plasma, shield flare and muzzle.
 2. Juice, not passes: camera kick, 50 to 100 ms hit-stop on a shield pop,
    short eased screenshake, enemy hit-flash. Near-zero cost
-   ([screenshake breakdown][screenshake]).
+   (Nijman, "The art of screenshake", cited in [brand.md](../brand.md)).
 3. One directional sun with a tight shadow frustum; three or fewer dynamic
    lights ([utsubo tips][utsubo-tips]).
 4. Instanced particles and props.
@@ -116,10 +118,10 @@ theatrical enemies**.
 
 | Priority | Item | Why it is lovable, not merely functional |
 | -------- | ---- | ---------------------------------------- |
-| MLP 1 | Shield pop and recharge as a full audiovisual event; enemies back off while the shield is down | The Halo contract. The player feels the game letting them breathe. |
-| MLP 2 | Skimmers flee when a strider dies, with exaggerated animation and a bark | Fewer than a third of players noticed even at 11; the demo must crank to 12. |
-| MLP 3 | Striders dive from grenades and sidestep fire; seek cover on low shield | Makes bouncing grenades a conversation. |
-| MLP 4 | Weapon juice: camera kick, recoil, tracer, hit-flash, distinct chimes | Cheapest wow available. |
+| MLP 1 | Shield pop and recharge as a full audiovisual event; enemies back off while the shield is down | The reference shooter's contract. The player feels the game letting them breathe. |
+| MLP 3 | Skimmers flee when a strider dies, with exaggerated animation and a bark | Fewer than a third of players noticed even at 11; the demo must crank to 12. |
+| MLP 4 | Striders dive from grenades and sidestep fire; seek cover on low shield | Makes bouncing grenades a conversation. |
+| MLP 2 | Weapon juice: camera kick, recoil, tracer, hit-flash, distinct chimes | Cheapest wow available. |
 | MLP 5 | Firing points: enemies choose scored positions rather than beelining | "Transparent thought process" needs positioning. |
 | MLP 6 | The ring overhead, sun, fog | The single image everyone remembers. |
 | MLP 7 | Procedural title chant plus scored stingers | Audio identity is what the audience hums in the lift. |
@@ -131,9 +133,9 @@ theatrical enemies**.
 
 ## Pacing a 5 to 10 minute demo
 
-Opdahl: the "biorhythm" is action and emotion moving in opposite
-directions; find where the player "feels like they're winning, reinforce
-that, and then ask why the situation turns" ([iTWire][itwire]).
+Opdahl: the "biorhythm" is action rising while emotion sometimes falls;
+find the moment where "we do feel like the player is winning", "reinforce
+that", then ask "why does it turn?" ([iTWire][itwire]).
 
 - **0:00 to 0:30 Arrival.** Chant only.
 - **0:30 to 1:30 Wave 1, "Scouts":** three skimmers. Teaches hitscan and
@@ -142,9 +144,9 @@ that, and then ask why the situation turns" ([iTWire][itwire]).
   strider arrives last with a horn stinger and an idle posture. When it
   dies, all skimmers flee. This is the first spectacle; it must land before
   minute three.
-- **2:45 to 4:30 Wave 3, "Fallback":** two-stage fallback behaviour.
+- **2:45 to 4:30 Wave 3, "Fallback":** two-stage fallback behavior.
 - **4:30 to 6:30 Wave 4, "The Push":** chant returns under percussion.
-- **6:30 to 8:00 Wave 5, "Last Stand":** an armoured strider; on its death,
+- **6:30 to 8:00 Wave 5, "Last Stand":** an armored strider; on its death,
   slow motion, the survivors flee, the music resolves, the camera tilts to
   the ring. End on the image and the sound, not a menu.
 
@@ -160,7 +162,7 @@ mode, long cathedral tail, then strings and a drum pulse.
   "oo" is roughly 300 / 870 / 2240 Hz; "ah" is 730 / 1090 / 2440 Hz
   ([Peterson and Barney][formants]).
 - Melody: an original four-phrase Dorian line in D, unison, stepwise.
-- Space: a `ConvolverNode` with a synthesised impulse response (exponentially
+- Space: a `ConvolverNode` with a synthesized impulse response (exponentially
   decaying noise, 4 to 6 s, low-passed over time)
   ([MDN ConvolverNode][convolver]).
 - Percussion: filtered noise bursts plus a 60 Hz sine thump.
@@ -183,7 +185,7 @@ mode, long cathedral tail, then strings and a drum pulse.
 ## Sources
 
 [griesemer]: https://www.engadget.com/2011-07-14-half-minute-halo-an-interview-with-jaime-griesemer.html
-[halopedia-weapons]: https://www.halopedia.org/Weapons_(gameplay)
+[wiki-weapons]: https://www.halopedia.org/Weapons_(gameplay)
 [filmstories]: https://filmstories.co.uk/features/killer-feature-halo-and-halo-2s-regenerating-shields/
 [gdc2002]: https://www.jmeiners.com/shamans/papers/ai/the_illusion_of_intelligence.pdf
 [du]: https://www.cs.du.edu/~sturtevant/s13-ai/lecture2.pdf
@@ -191,7 +193,7 @@ mode, long cathedral tail, then strings and a drum pulse.
 [bungie-ai]: https://learn.microsoft.com/en-us/halo-master-chief-collection/h2/ai/aibehaviorlist
 [isla-battle]: https://web.cs.wpi.edu/~rich/courses/imgd4000-d11/lectures/halo3.pdf
 [gameinformer]: https://gameinformer.com/b/features/archive/2012/12/25/places-the-halo-ring.aspx
-[wiki-halo]: https://en.wikipedia.org/wiki/Halo:_Combat_Evolved
+[wiki-ce]: https://en.wikipedia.org/wiki/Halo:_Combat_Evolved
 [hbo1999]: https://halo.bungie.org/music_interviews/hbo_qanda_1999.html
 [hbo-music]: https://halo.bungie.org/music.html
 [caniuse]: https://caniuse.com/webgpu
@@ -199,7 +201,6 @@ mode, long cathedral tail, then strings and a drum pulse.
 [utsubo-migrate]: https://www.utsubo.com/blog/webgpu-threejs-migration-guide
 [utsubo-tips]: https://www.utsubo.com/blog/threejs-best-practices-100-tips
 [n8ao]: https://github.com/N8python/n8ao
-[screenshake]: https://dkliao.itch.io/the-art-of-screenshake-recreation/devlog/451576/quick-breakdown-of-all-the-effects
 [firstround]: https://review.firstround.com/dont-serve-burnt-pizza-and-other-lessons-in-building-minimum-lovable-products
 [itwire]: https://itwire.com/opinion-and-analysis-sp-481/radioactive-it/designing-halo-reach-was-like-filming-titanic
 [hook]: https://www.gamedeveloper.com/design/the-30-second-hook
@@ -225,7 +226,6 @@ mode, long cathedral tail, then strings and a drum pulse.
 - <https://www.utsubo.com/blog/webgpu-threejs-migration-guide>
 - <https://www.utsubo.com/blog/threejs-best-practices-100-tips>
 - <https://github.com/N8python/n8ao>
-- <https://dkliao.itch.io/the-art-of-screenshake-recreation/devlog/451576/quick-breakdown-of-all-the-effects>
 - <https://review.firstround.com/dont-serve-burnt-pizza-and-other-lessons-in-building-minimum-lovable-products>
 - <https://www.cs.princeton.edu/courses/archive/spr99/cs325/formants.html>
 - <https://developer.mozilla.org/docs/Web/API/ConvolverNode>

@@ -9,10 +9,12 @@ import {
   FINAL_WAVE,
   LEADER_STRIDER_DELAY,
   tickWave,
+  WATCHERS_IN_ROSTER,
   WAVE_BEATS,
   WAVE_CLEAR_PAUSE,
   WAVE_COUNTDOWN,
   type WaveBeat,
+  watcherCount,
   waveAtmosphere,
   waveBeat,
   waveComposition,
@@ -27,6 +29,15 @@ describe('wave beats', () => {
     expect(WAVE_BEATS).toHaveLength(FINAL_WAVE);
     expect(FINAL_WAVE).toBe(5);
     expect(DROP_POD_LEAD).toBe(1.5);
+  });
+
+  it('fields the watcher column only when the roster flag is on', () => {
+    expect([1, 2, 3, 4, 5, 6, 7, 8].map(watcherCount)).toEqual([0, 0, 0, 0, 1, 1, 2, 2]);
+    const inRoster = (wave: number) => waveComposition(wave).filter((k) => k === 'watcher').length;
+    const waves = Array.from({ length: FINAL_WAVE }, (_, i) => i + 1);
+    expect(waves.map(inRoster)).toEqual(
+      WATCHERS_IN_ROSTER ? waves.map(watcherCount) : waves.map(() => 0),
+    );
   });
 
   it('Scouts: three skimmers, nothing else', () => {
@@ -147,6 +158,17 @@ describe('wave clock', () => {
     expect(next.transition).toBe('next');
     expect(next.wave.number).toBe(2);
     expect(next.wave.phase).toBe('countdown');
+  });
+
+  it('moves to the final wave, not to victory, when the one before it clears', () => {
+    // Nothing else pins FINAL_WAVE: a `>= FINAL_WAVE - 1` slip passed every other test.
+    const w = { number: FINAL_WAVE - 1, phase: 'active' as const, phaseEndsAt: 0 };
+    const cleared = tickWave(w, 0, 100);
+    expect(cleared.wave.phase).toBe('cleared');
+    const next = tickWave(cleared.wave, 0, cleared.wave.phaseEndsAt);
+    expect(next.transition).toBe('next');
+    expect(next.wave.number).toBe(FINAL_WAVE);
+    expect(next.wave.phase).not.toBe('won');
   });
 
   it('declares victory when the final wave has no holdouts left', () => {

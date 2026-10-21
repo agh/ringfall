@@ -2,7 +2,8 @@
 type: runbook
 title: "Ringfall runbook: run, build, deploy, test, film, and fix"
 status: draft
-authors: ["Ringfall hackathon team"]
+authors:
+  - name: "Ringfall hackathon team"
 created: 2026-10-21
 ---
 
@@ -36,19 +37,22 @@ The development server serves the source with hot reload on port 5173.
 pnpm dev            # http://localhost:5173
 ```
 
-Three query parameters change how the page starts. `?seed=N` fixes the
+Five query parameters change how the page starts. `?seed=N` fixes the
 arena layout and enemy jitter so a run is reproducible; without it the seed
 comes from the clock. `?bot` hands the controls to the scripted player in
 `src/core/bot.ts`. `?record&bot&seed=N` enters record mode, which suspends
 the animation loop and exposes `window.ringfallCapture` so a script can
 step the simulation one tick at a time. `window.ringfall.state()` is
-available on every page for inspection.
+available on every page for inspection. `?atmo=night` (or `dawn`, `day`,
+`dusk`) and `?weather=rain` (or `fog`, `clear`) pin the atmosphere from the
+first frame regardless of wave, for checks such as a night kill
+(`?record&bot&seed=7&atmo=night`).
 
 ## Build
 
 The build type checks first and then bundles to `dist/`. The preview server
-serves that directory on port 4173, which is also what Playwright and the
-`pnpm check` sequence use.
+serves that directory on port 4173, which is also the server Playwright starts
+for `pnpm test:e2e`.
 
 ```bash
 pnpm build          # tsc --noEmit && vite build
@@ -58,20 +62,22 @@ pnpm check          # lint, typecheck, unit tests with coverage, build
 
 ## Deploy to GitHub Pages
 
-The workflow in `.github/workflows/deploy-pages.yml` runs on every push to
-`main` and on manual dispatch. Its `build` job installs with the frozen
-lockfile, runs `pnpm build`, calls `actions/configure-pages`, and uploads
-`dist/` with `actions/upload-pages-artifact`. Its `deploy` job publishes
-that artifact with `actions/deploy-pages` into the `github-pages`
-environment. The workflow holds the only write permission in the repository
-(`pages: write` and `id-token: write`); CI has `contents: read` and
-checkouts do not persist credentials. Every action is pinned to a commit
-SHA.
+The `Pages build` and `Pages deploy` jobs at the end of
+`.github/workflows/ci.yml` run on every push to `main`, after every other
+CI job on that push has passed (`needs`), so a red run never ships. The
+build job installs with the frozen lockfile, runs `pnpm build`, calls
+`actions/configure-pages`, and uploads `dist/` with
+`actions/upload-pages-artifact`. The deploy job publishes that artifact
+with `actions/deploy-pages` into the `github-pages` environment, one
+deploy at a time. That job holds the only write permissions in the
+repository (`pages: write` and `id-token: write`); every other job has
+`contents: read` and checkouts do not persist credentials. Every action is
+pinned to a commit SHA.
 
 One repository setting must be made once by hand, because a workflow
 cannot make it: under Settings, Pages, Build and deployment, the Source
 must be set to GitHub Actions. Until that is done the deploy job fails at
-`configure-pages` and the site at <https://agh.github.io/hack/> does not
+`configure-pages` and the site at <https://agh.github.io/ringfall/> does not
 exist. The `github-pages` environment is created by the first successful
 run.
 
@@ -86,13 +92,14 @@ gh run watch
 
 The unit suite runs in Node against `src/core/` only, with V8 coverage
 thresholds of 85 percent for lines, functions, and statements and 75
-percent for branches. The playtest suite is the same runner pointed at
-`tests/unit/bot.test.ts` with coverage disabled, so it finishes in seconds
-and prints the balance numbers defined in [metrics.md](metrics.md).
+percent for branches. The balance gate is the same runner pointed at
+`tests/balance/` with coverage disabled, so it finishes in seconds,
+prints the balance numbers defined in [metrics.md](metrics.md), and writes
+`test-results/balance/balance-report.md`.
 
 ```bash
 pnpm test           # vitest run --coverage
-pnpm balance        # vitest run tests/unit/bot.test.ts --coverage.enabled=false
+pnpm balance        # vitest run tests/balance --coverage.enabled=false --silent=false --reporter=verbose
 pnpm test:watch     # vitest in watch mode
 ```
 
@@ -115,7 +122,7 @@ pnpm test:e2e
 With `PLAYWRIGHT_CHROMIUM_EXECUTABLE`, `playwright.config.ts` passes the
 path through as `launchOptions.executablePath`, which is how a sandbox with
 a preinstalled Chromium runs the suite without a download. The two demo
-scripts honour the same variable.
+scripts honor the same variable.
 
 ```bash
 pnpm build
@@ -128,7 +135,7 @@ workflow.
 ## Film the demo and score it
 
 `pnpm demo` runs the two scripts in sequence with the settings used for
-the reel: seed 7, 40 seconds, 24 frames per second, a one second lead-in on
+the reel: seed 7, 40 seconds, 30 frames per second, a one second lead-in on
 the score. It needs a production build and `ffmpeg`.
 
 ```bash
@@ -167,6 +174,43 @@ is the quickest way to see that the bot is fighting. Films, frames, and
 the WAV are ignored by git. Each review of a film is logged in
 [journey/README.md](journey/README.md) with the seed and the frame range.
 
+### Cut the reel
+
+`node scripts/reel.mjs [--seed 7] [--fps 30] [--out ringfall-reel.mp4]`
+renders the title cards in `scripts/reel-cards/`, captures wave 1 by day
+and wave 2 at night, scores each segment, and stitches them. Steps are
+cached under `node_modules/.cache/ringfall-reel`; `--force` redoes one. It
+needs `pnpm build` and a full ffmpeg via `FFMPEG`. Under SwiftShader each
+captured frame takes about two seconds, so a 40 s film takes about 40
+minutes.
+
+## Measure the frames (luminance gate)
+
+`pnpm frames` captures the ten-frame set from `scripts/frames.mjs` (seed 7
+by day, night, dusk with rain, and night with fog) on software GL, writes the
+PNG files and `report.json` to `node_modules/.cache/ringfall-frames/`, prints a
+table, and exits 1 when a frame is over its budget. It needs a production
+build. CI runs it as the `frames` job on every pull request and uploads the
+directory as the `frames` artifact. [test-plan.md](test-plan.md) explains the
+measurement and the budgets.
+
+```bash
+pnpm build
+pnpm frames
+pnpm frames --only day-3,night-10 --out /tmp/frames   # a subset, elsewhere
+pnpm frames --no-gate                                 # report without failing
+```
+
+Its flags and defaults are `--seed 7`, `--fps 60` (rendered frames per
+simulated second in the lead-in before each moment; must divide 60),
+`--lead-seconds 1`, `--port 4177`, `--out node_modules/.cache/ringfall-frames`,
+`--only id,id`, and `--no-gate`. Frames that share an atmosphere are taken
+from one page in order of time, so the replay from the start is paid once per
+atmosphere; the cost is the renders, about 680 for the set, at roughly a
+second each on software GL (17 minutes for the set on this sandbox). Pages are
+not captured in parallel because SwiftShader already uses every core.
+`PLAYWRIGHT_CHROMIUM_EXECUTABLE` is honored as for the other scripts.
+
 ### Custom domain
 
 The site is served at <https://ringfall.alexhowells.com>. `public/CNAME` holds
@@ -174,8 +218,11 @@ the hostname so every Pages deploy keeps it. One-time setup: a DNS `CNAME`
 record for `ringfall` pointing at `agh.github.io`, then in the repository's
 Settings, Pages, enter the custom domain and tick "Enforce HTTPS" once the
 certificate is issued (a few minutes after DNS resolves). The Vite build uses
-a relative `base`, so the same `dist/` works at the apex, under `/hack/`, or
+a relative `base`, so the same `dist/` works at the apex, under `/ringfall/`, or
 from a local preview.
+
+Repository rename order: rename on GitHub first, then `git remote set-url origin`
+on each clone, then re-check the Pages custom domain under Settings, Pages.
 
 ### The Playwright ffmpeg cannot assemble the film
 
@@ -183,8 +230,8 @@ The ffmpeg that Playwright bundles (`/opt/pw-browsers/ffmpeg-*/ffmpeg-linux`)
 is built for screencasts only: VP8 and WebM, no JPEG decoder, no H.264, no
 audio encoder. Point `FFMPEG` at a full build instead. The static binary
 from `pip install imageio-ffmpeg` (`imageio_ffmpeg/binaries/ffmpeg-linux-*`)
-or a system `ffmpeg` both work. A 24 fps capture made before the frame-rate
-guard was added holds three simulation ticks per frame; encode it at
+or a system `ffmpeg` both work. A 24 fps capture holds three simulation ticks per
+frame (the recorder rounds `60 / fps` and does not refuse such rates); encode it at
 `-framerate 20` so it plays in real time, and render the score for the
 simulated length (48 s for 960 frames) with a lead-in equal to the title
 frames divided by 20.
@@ -208,7 +255,7 @@ Browsers refuse to start an `AudioContext` without a user gesture.
 `AudioBank.unlock()` is called from the Deploy click and from the first
 pointer down anywhere on the overlay, which is why the title drone starts
 on the first click rather than on page load. There is nothing to fix; a
-report of silence before any click is expected behaviour.
+report of silence before any click is expected behavior.
 
 ### Everything is slow on a software GPU
 
@@ -235,5 +282,6 @@ The error names a `chromium_headless_shell-NNNN` directory that does not
 exist. Either install the matching build with
 `pnpm exec playwright install --with-deps chromium`, or point
 `PLAYWRIGHT_CHROMIUM_EXECUTABLE` at an installed Chromium as shown above.
-The browser version must be one the pinned Playwright 1.64.1 drives; a
-much newer or older Chromium fails at launch with a protocol error.
+Playwright 1.64.1 expects Chromium build 1248; a nearby build (1194 on
+2026-10-21) launches and passes the smoke tests, and a much older one may
+fail at launch with a protocol error.

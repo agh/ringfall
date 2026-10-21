@@ -13,14 +13,13 @@ import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { chromium } from '@playwright/test';
+import { parseArgs, requireSeed } from './lib/args.mjs';
 
-const args = Object.fromEntries(
-  process.argv.slice(2).reduce((pairs, arg, i, all) => {
-    if (arg.startsWith('--')) pairs.push([arg.slice(2), all[i + 1] ?? 'true']);
-    return pairs;
-  }, []),
+const args = parseArgs(
+  process.argv.slice(2),
+  new Set(['seed', 'seconds', 'fps', 'width', 'height', 'out']),
 );
-const seed = Number(args.seed ?? 7);
+const seed = requireSeed(args.seed);
 const seconds = Number(args.seconds ?? 45);
 const fps = Number(args.fps ?? 30);
 const width = Number(args.width ?? 1280);
@@ -28,7 +27,11 @@ const height = Number(args.height ?? 720);
 const out = resolve(args.out ?? 'demo.mp4');
 const port = 4175;
 const framesDir = resolve('.record-frames');
-const stepsPerFrame = Math.round(60 / fps);
+if (!Number.isInteger(fps) || fps <= 0 || 60 % fps !== 0) {
+  console.error(`fps must divide 60 so every frame holds a whole number of ticks; ${fps} does not`);
+  process.exit(1);
+}
+const stepsPerFrame = 60 / fps;
 const totalFrames = seconds * fps;
 
 rmSync(framesDir, { recursive: true, force: true });

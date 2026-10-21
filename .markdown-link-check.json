@@ -1,0 +1,42 @@
+{
+  "_comment": [
+    "Adapted from crefft .markdown-link-check.json at commit",
+    "6e6481840e68a89874e0d90eaae3cf23e83379fb.",
+    "Policy for the external URL check (`pnpm docs:links:external`), which CI",
+    "runs with continue-on-error. Internal links use",
+    ".markdown-link-check-internal.json and block.",
+    "The timeout and retry budget are deliberately small so a throttling host",
+    "costs seconds, not minutes. ignorePatterns cover URLs that are placeholders",
+    "or unreachable by design. aliveStatusCodes treats 403 and 429 as alive:",
+    "they prove the host answered, and several sites the research reports cite",
+    "refuse or throttle CI user agents."
+  ],
+  "ignorePatterns": [
+    { "pattern": "^https?://localhost" },
+    { "pattern": "^https?://127\\.0\\.0\\.1" },
+    { "pattern": "^https?://0\\.0\\.0\\.0" },
+    { "pattern": "^https?://[^/]*\\.internal(/|$|:)" },
+    { "pattern": "^https?://[^/]*\\.local(/|$|:)" },
+    { "pattern": "^https?://(www\\.)?example\\.(com|org|net)" },
+    { "pattern": "^https?://[^/]*\\.example\\.(com|org|net)" },
+    { "pattern": "^https?://your-" },
+    { "pattern": "^https?://.*\\{\\{" },
+    { "pattern": "^https?://.*<[A-Za-z_-]+>" },
+    { "pattern": "^https?://.*\\$\\{" },
+    { "pattern": "^mailto:" }
+  ],
+  "httpHeaders": [
+    {
+      "urls": ["https://"],
+      "headers": {
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "User-Agent": "Mozilla/5.0 (compatible; ringfall-link-check/1.0; +https://github.com/agh/ringfall)"
+      }
+    }
+  ],
+  "timeout": "10s",
+  "retryOn429": true,
+  "retryCount": 1,
+  "fallbackRetryDelay": "5s",
+  "aliveStatusCodes": [200, 206, 401, 403, 429, 999]
+}

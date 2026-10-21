@@ -8,6 +8,21 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Security
+
+- Content Security Policy and `no-referrer` meta tags in `index.html`; the
+  dev server relaxes only `style-src` and `connect-src` for hot reload.
+- `?seed` is parsed by `parseSeed` (decimal uint32 only) and personal bests
+  are re-validated field by field with a 1 KB cap before `JSON.parse`, so
+  hostile query strings and storage values cannot stall or corrupt the end
+  card (`src/core/rng.ts`, `src/core/records.ts`).
+- Hidden production source maps, a 24 h release cooldown and no lifecycle
+  scripts for pnpm, `engine-strict`, a `pnpm audit --prod` script, grouped
+  Dependabot updates with a seven-day cooldown, `markdownlint-cli2` 0.24.0.
+- Per-job least-privilege tokens in the Pages deploy workflow; CI runs on
+  `main` are no longer cancelled by the next push.
+- Threat model in `SECURITY.md`.
+
 ### Added
 
 - The dropship moment (#58): when a wave's first pod launches, a dark
@@ -26,11 +41,34 @@ and this project adheres to
   kills and shield breaks, the survivors flee off the arena, and the state
   holds a 5 s tableau before the run is won. `scripts/wave-table.mjs`
   generates the design doc's composition table from the constants.
+- A unit test that fails if the pre-rename repository path reappears outside
+  `docs/journey/`, and a runbook note on the rename order (#70).
+
+- The watcher, a third enemy archetype (#17): a tall perimeter sentinel
+  that holds 24 to 32 m, orbits the player and fires a telegraphed hitscan
+  beam that cover blocks; one from wave 5 and two from wave 7 by design,
+  behind `WATCHERS_IN_ROSTER` (off) until the balance pass. New
+  `watcherCharging` and `watcherFired` events, a tripod rig with an aiming
+  line, and bot rules that shoot a charging watcher first with a precise gun.
+- Four skimmer temperaments handed out round-robin per wave: chaser,
+  ambusher (leads the player's velocity by 4 m), flanker (swings to the
+  off-hand side) and skittish (holds at 10 m until a packmate is within
+  6 m of the player). The HUD names the arena Sector 117 from a core
+  constant. A crouch on C or Ctrl lowers the eye by 0.6 m; three crouches
+  within 1.5 s over a fallen strider earn a one-word bark from a surviving
+  skimmer. One cover block per arena hides a switch on its outward face;
+  shooting it once scores 1000 and the end card counts secrets found.
 - Enemy theatre: when a strider dies, every skimmer within 25 m breaks and
   runs for 4 s at 1.3x speed without attacking, then returns to the chase.
   New enemy state `flee` and two events for the presentation layers,
   `enemyFled { id, kind }` and `enemyBark { id, line }`, with three original
   bark lines (`src/core/enemy.ts`).
+- Core purity as a lint rule: a Biome override on `src/core/**` and
+  `tests/unit/purity.test.ts` (#34).
+- Balance gate in CI: `pnpm balance` fails on baseline-derived thresholds
+  in `tests/balance/gate.ts` and uploads a `balance-report` artifact (#39).
+- One event-to-sound table (`src/audio/sounds.ts`) shared by the live bank
+  and the offline score, with a bark squeal for routed skimmers (#42).
 - Renderer v2: scattering dawn sky, a ringworld you stand on, rolling
   terrain with mountains, image-based lighting, a GPU particle pool, an HDR
   composer with bloom and a custom feel pass (vignette, chromatic
@@ -42,7 +80,7 @@ and this project adheres to
   `src/core/playtest.ts`) with balance tests; `pnpm balance`.
 - Deterministic demo recorder (`scripts/record-demo.mjs`, `pnpm demo`) and
   the `?record&bot&seed=N` capture hook.
-- Specification, brand system, test plan, two research reports, a journey
+- Specification, brand system, test plan, three research reports, a journey
   log with captured frames, and a README banner.
 - Personal bests kept in the browser's local storage: the end card compares
   the round with the previous best score, deepest wave, runs and clears.
@@ -60,9 +98,64 @@ and this project adheres to
   cards, wave 1 by day and wave 2 by night from the deterministic bot, the
   offline score, one MP4.
 - Pages deploys to ringfall.alexhowells.com.
+- Explosions and deaths that read at any distance, by day and at night:
+  a 120 ms sprite flash, a thin shockwave crest, debris sparks and chips
+  under gravity, a smoke column that rises and thins over 1.5 s, and a
+  4 s scorch on the floor; a kill borrows the enemy's own accent and shell
+  colours. The particle pool gains `spark`, `smoke` and `shard` shapes with
+  premultiplied blending so smoke can darken the frame (#26).
+
+### Changed
+
+- Night and weather readability (#31): dust motes are a hint rather than
+  white discs (size 0.09, 3.5 to 10 m out, at most 11 px at 720p) with
+  rate, life and brightness per time of day and weather; rain streaks are
+  brighter and longer with larger splashes; enemy rigs own their materials
+  and lift their emissives (skimmer ring and core, strider lens and muzzle)
+  with a night factor from the atmosphere rig, so one strider charging no
+  longer whitens every strider's lens.
+- The repository no longer names the console shooter franchise it was
+  inspired by outside the cited titles and URLs under `docs/research/`
+  (ADR-0003). The research note on feel and the MLP cut dropped the name
+  from its file name (`docs/research/feel-and-mlp.md`), and
+  `tests/unit/originality.test.ts` greps the tree for the term list in
+  `tests/unit/originality.terms.ts`.
 
 ### Fixed
 
+- Design and UX review (#53): HUD labels and card copy never below 14 px and
+  scale to 4K; the card is a dialog that names Victory, Defeat or Paused and
+  takes focus when it returns; low ammo, an empty magazine and a kill are
+  signalled in words or size, not colour alone; a
+  `prefers-reduced-motion` rule stops the looping pulses.
+
+- Still too much flare after the bloom prefilter: bloom strength and radius
+  halved again (0.15, 0.25), the flare ghosts at 0.3 opacity and the core
+  sprite at two thirds of its size, and the day and dawn skies given a
+  thinner, tighter mie lobe so the sun reads as a disc; facing the sun the
+  saturated blob went from 13% to 3% of the frame height (#71).
+
+- Adversarial software review (#51): a death in the same step as the last
+  kill is no longer overwritten by victory; blasts spare spawning enemies
+  as shots do; the fixed-step loop drops, rather than defers, steps past
+  its per-frame cap; resuming after Esc keeps the look direction and shows a pause card; one-shot key latches are cleared on reset; the beam
+  charge hum is cut on victory and whenever the overlay returns; the
+  arena rebuild and expired explosion and death effects dispose their GPU
+  resources; a zero-height viewport no longer puts NaN in the projection;
+  the recorder refuses frame rates that do not divide 60, as the audit
+  claimed it already did; the purity test and the Biome denied-globals
+  list cover `crypto`, `globalThis`, `structuredClone`, `Intl`, timers,
+  storage and `console`; the Pages deploy is a job in the CI workflow that runs only after every other job is green; the
+  browser smoke tests fail on page errors in every test and check for a
+  WebGL 2 context; `tests/scratch/` is ignored by git, Biome and tsc.
+
+- The bot no longer fires the launcher when cover sits inside the blast
+  radius (#36).
+- The frame bloomed and flared too much: the bloom prefilter passed the
+  whole HDR texel, so the sky's sun disc and the dust motes flooded the
+  frame with halos. The prefilter now keeps only the excess over the
+  threshold, with a knee and a per-pixel cap; the flare ghosts are sized as
+  fractions of the frame and hidden with the sun at night (#25).
 - A negative first frame delta after Deploy made every decay term grow
   without bound; the delta is now clamped at zero.
 - The terrain under the arena z-fought the floor at range; it is sunk six
@@ -97,4 +190,4 @@ and this project adheres to
 - GitHub Actions CI (lint, type check, unit, e2e, build) and GitHub Pages
   deployment, all actions pinned to commit SHAs.
 
-[Unreleased]: https://github.com/agh/hack/commits/main
+[Unreleased]: https://github.com/agh/ringfall/commits/main

@@ -1,8 +1,9 @@
 ---
 type: research
 title: "What a product manager would produce for Ringfall, and what docs/ must hold"
-status: reference
-authors: ["Ringfall research agent (Claude), reviewed by the hackathon team"]
+status: approved
+authors:
+  - name: "Ringfall research agent (Claude), reviewed by the hackathon team"
 created: 2026-10-21
 ---
 
@@ -15,7 +16,7 @@ operational documents listed in the shelf table below.
 ## Verdict
 
 The engineering shelf (design doc, ADRs, test plan, changelog, journey)
-was unusually complete for a morning. The product shelf was not: the
+existed. The product shelf did not: the
 specification was doing the job of a concept pitch, a requirements
 document, and a scope cut at once. The highest-value hour was to split it
 into a PR/FAQ and a PRD with numbered, testable requirements, add a text
@@ -45,12 +46,12 @@ Applied: `docs/product/concept-proposal.md` in the crefft PR/FAQ form.
 
 ## Requirements specification
 
-Lenny Rachitsky's template roundup favours Square's PRD for its Non-Goals
+Lenny Rachitsky's template roundup favors Square's PRD for its Non-Goals
 and Steve Morin's one-pager for success criteria ([Lenny][lenny]). Google
 design docs cover context, goals and non-goals, design, alternatives, and
 cross-cutting concerns ([Ubl][google]). Pillars are "for settling
 arguments, not for decoration" ([Allo][allo]). Acceptance criteria tie to
-tests by tagging scenarios with the requirement ID
+tests by making every scenario "map back to a requirement or user story"
 ([Fowler][gwt]; [TestQuality][tq]). A PRD states the what; an ADR records
 why X over Y and is superseded, never edited ([Cognitect][nygard]). For
 coding agents, Addy Osmani's rules apply: exact versions, commands, a
@@ -63,7 +64,8 @@ acceptance criteria that name the test layer, and a traceability table.
 ## Storyboards
 
 Beat sheets list beats in order; thumbnails come before an animatic
-([UW CSE 456][uw]; [Gnomon][gnomon]). Trailer structure per Derek Lieu:
+([UW CSE 456][uw]; [Gnomon][gnomon]). Trailer structure per presskit.gg's
+field guide (which quotes Derek Lieu on "burying your hook"):
 hook in the first five seconds, core loop to twenty-five, escalation to
 forty-five, title last ([presskit.gg][lieu]; [PC Gamer][pcgamer]). The
 first thirty seconds decide retention ([Game Developer][hook]). Because
@@ -76,17 +78,18 @@ Applied: `docs/product/storyboard.md`.
 
 ## Art direction
 
-An art bible holds per-state mood targets, silhouette readability at
-thumbnail size, a semantic palette, and a VFX language
-([makko survey][makko]). Valve's TF2 paper is the primary source for
+Public art bibles hold a fixed "silhouette envelope" and a "reserved
+color per character" ([makko survey][makko]); the mood, palette and VFX
+sections below are this project's additions. Valve's TF2 paper is the primary source for
 silhouette rules: "Even when viewed only in silhouette with no internal
 shading at all, the characters are readily identifiable"
-([Valve][tf2]). Riot's VFX style guide sets the effects rules: emphasise
+([Valve][tf2]). Riot's VFX style guide sets the effects rules: emphasize
 focus, scale matches importance, anticipation then payoff
-([Riot][riot]). Overwatch's pillars include big bold silhouettes that skins
-must not change ([Game Developer][overwatch]). With procedural art and no
-artist, the art bible is the constraint set
-([No Man's Sky][nms]; [EA SEED][seed]).
+([Riot][riot]). Overwatch's art direction was fixed early around a diverse
+cast, a hopeful future and a vibrant world ([Game Developer][overwatch]).
+Procedural art still needs "artistic control" ([No Man's Sky][nms]) and is
+"a form of language, where we view the world through rules"
+([EA SEED][seed]); with no artist, this document is where those rules live.
 
 Applied: `docs/product/art-direction.md` complementing `docs/brand.md`.
 
@@ -102,7 +105,7 @@ Applied: `docs/product/art-direction.md` complementing `docs/brand.md`.
 | ADRs | Permanent why-records | Future team | Superseded, never edited | `docs/adr/` |
 | Decision index | One line per decision, where recorded | Everyone | Append on every merge | `docs/decisions.md` |
 | Test plan | Layers and gates | Engineers, CI | When a gate changes | `docs/test-plan.md` |
-| Evolution | How intent is proven and the product evolves safely | Sceptical engineers, agents | When a gate or practice changes | `docs/evolution.md` |
+| Evolution | How intent is proven and the product evolves safely | Skeptical engineers, agents | When a gate or practice changes | `docs/evolution.md` |
 | Release notes | Per-version changes | Players, maintainers | Every release | `CHANGELOG.md` |
 | Runbook | How to run, deploy, film, and fix known faults | Whoever runs the demo | When a procedure changes | `docs/runbook.md` |
 | Launch checklist | Go or no-go before a tag | Release owner | Per release | `docs/launch-checklist.md` |

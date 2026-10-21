@@ -1,10 +1,21 @@
 import * as THREE from 'three';
 import { ENEMY_STATS, type Enemy } from '../core/enemy';
+import { makeWatcherRig } from './watcher-rig';
 
-/** Composite enemy rigs. Emissive parts are tuned to catch bloom so enemies read at range. */
+/**
+ * Composite enemy rigs. Emissive parts are tuned to catch bloom so enemies read at range, and
+ * each rig owns its materials so one strider charging does not whiten every strider's lens.
+ */
 export interface EnemyRig {
   readonly group: THREE.Group;
   readonly animate: (enemy: Enemy, simTime: number) => void;
+  /**
+   * 0 by day, 1 at night: lifts the rig's own emissives (skimmer ring and core, strider lens
+   * and muzzle, their point lights) so the enemy reads after dark on its own light, not only
+   * through the exposure lift. The environment's blended rig supplies the factor every frame.
+   * Optional so a rig with no emissives to lift need not implement it.
+   */
+  readonly setNight?: (factor: number) => void;
 }
 
 const SKIMMER_BODY = new THREE.OctahedronGeometry(0.55, 1);
@@ -15,21 +26,15 @@ const STRIDER_HEAD = new THREE.ConeGeometry(0.35, 0.6, 6);
 const STRIDER_LEG = new THREE.CylinderGeometry(0.07, 0.11, 1.5, 6);
 const STRIDER_CANNON = new THREE.CylinderGeometry(0.1, 0.14, 0.9, 8);
 const STRIDER_EYE = new THREE.PlaneGeometry(0.5, 0.08);
+const STRIDER_MUZZLE = new THREE.SphereGeometry(0.1, 8, 8);
 
+/** Shells and joints never change per rig, so they stay shared. */
 const skimmerShell = new THREE.MeshStandardMaterial({
   color: 0x9a4b1c,
   emissive: 0x2a0c02,
   roughness: 0.35,
   metalness: 0.75,
   flatShading: true,
-});
-const skimmerGlow = new THREE.MeshBasicMaterial({ color: 0xffb347 });
-const skimmerRing = new THREE.MeshStandardMaterial({
-  color: 0xffc46b,
-  emissive: 0xff8c1a,
-  emissiveIntensity: 1.6,
-  roughness: 0.3,
-  metalness: 0.6,
 });
 const striderShell = new THREE.MeshStandardMaterial({
   color: 0x5b1a24,
@@ -38,12 +43,28 @@ const striderShell = new THREE.MeshStandardMaterial({
   metalness: 0.65,
   flatShading: true,
 });
-const striderEye = new THREE.MeshBasicMaterial({ color: 0xff4d5a, side: THREE.DoubleSide });
 const striderJoint = new THREE.MeshStandardMaterial({
   color: 0x2b2b33,
   roughness: 0.6,
   metalness: 0.8,
 });
+
+/**
+ * Emissive tuning. Day values are the pre-night look; the night multipliers were set on seed 7
+ * frames at `?atmo=night` and `?atmo=night&weather=fog` (docs/design-doc.md, Atmosphere).
+ */
+const SKIMMER_RING_EMISSIVE = 1.6;
+const SKIMMER_RING_NIGHT = 2.4;
+const SKIMMER_CORE_COLOR = 0xffb347;
+const SKIMMER_CORE_NIGHT = 1.6;
+const SKIMMER_LIGHT = 2.5;
+const STRIDER_EYE_COLOR = 0xff4d5a;
+const STRIDER_EYE_NIGHT = 1.8;
+const STRIDER_MUZZLE_COLOR = 0xc084fc;
+const STRIDER_MUZZLE_NIGHT = 0.8;
+const STRIDER_LIGHT = 2;
+/** Point lights grow by this much of themselves at full night. */
+const LIGHT_NIGHT = 1.2;
 
 const makeSkimmer = (): EnemyRig => {
   const group = new THREE.Group();
@@ -51,16 +72,25 @@ const makeSkimmer = (): EnemyRig => {
   const body = new THREE.Mesh(SKIMMER_BODY, skimmerShell);
   body.scale.set(1, 0.5, 1);
   body.castShadow = true;
-  const ring = new THREE.Mesh(SKIMMER_RING, skimmerRing);
+  const ringMaterial = new THREE.MeshStandardMaterial({
+    color: 0xffc46b,
+    emissive: 0xff8c1a,
+    emissiveIntensity: SKIMMER_RING_EMISSIVE,
+    roughness: 0.3,
+    metalness: 0.6,
+  });
+  const ring = new THREE.Mesh(SKIMMER_RING, ringMaterial);
   ring.rotation.x = Math.PI / 2;
-  const core = new THREE.Mesh(SKIMMER_CORE, skimmerGlow);
+  const coreMaterial = new THREE.MeshBasicMaterial({ color: SKIMMER_CORE_COLOR });
+  const core = new THREE.Mesh(SKIMMER_CORE, coreMaterial);
   core.position.z = -0.42;
-  const light = new THREE.PointLight(0xffa040, 2.5, 7, 1.5);
+  const light = new THREE.PointLight(0xffa040, SKIMMER_LIGHT, 7, 1.5);
   light.position.set(0, 0, -0.5);
   const lift = new THREE.Group();
   lift.position.y = stats.height / 2;
   lift.add(body, ring, core, light);
   group.add(lift);
+  let night = -1;
   return {
     group,
     animate: (enemy, t) => {
@@ -69,6 +99,13 @@ const makeSkimmer = (): EnemyRig => {
       lift.position.y = stats.height / 2 + 0.35 + Math.sin(t * 6 + enemy.id) * 0.14;
       lift.rotation.z = Math.sin(t * 5 + enemy.id) * 0.08;
       core.scale.setScalar(enemy.state === 'attack' ? 1.6 + Math.sin(t * 30) * 0.3 : 1);
+    },
+    setNight: (factor) => {
+      if (factor === night) return;
+      night = factor;
+      ringMaterial.emissiveIntensity = SKIMMER_RING_EMISSIVE + SKIMMER_RING_NIGHT * factor;
+      coreMaterial.color.setHex(SKIMMER_CORE_COLOR).multiplyScalar(1 + SKIMMER_CORE_NIGHT * factor);
+      light.intensity = SKIMMER_LIGHT * (1 + LIGHT_NIGHT * factor);
     },
   };
 };
@@ -85,17 +122,19 @@ const makeStrider = (): EnemyRig => {
   const head = new THREE.Mesh(STRIDER_HEAD, striderShell);
   head.position.set(0, 0.55, -0.35);
   head.rotation.x = -Math.PI / 2;
-  const eye = new THREE.Mesh(STRIDER_EYE, striderEye);
+  const eyeMaterial = new THREE.MeshBasicMaterial({
+    color: STRIDER_EYE_COLOR,
+    side: THREE.DoubleSide,
+  });
+  const eye = new THREE.Mesh(STRIDER_EYE, eyeMaterial);
   eye.position.set(0, 0.48, -0.66);
   const cannon = new THREE.Mesh(STRIDER_CANNON, striderJoint);
   cannon.position.set(0.55, 0.45, -0.2);
   cannon.rotation.x = Math.PI / 2;
-  const muzzle = new THREE.Mesh(
-    new THREE.SphereGeometry(0.1, 8, 8),
-    new THREE.MeshBasicMaterial({ color: 0xc084fc }),
-  );
+  const muzzleMaterial = new THREE.MeshBasicMaterial({ color: STRIDER_MUZZLE_COLOR });
+  const muzzle = new THREE.Mesh(STRIDER_MUZZLE, muzzleMaterial);
   muzzle.position.set(0.55, 0.45, -0.68);
-  const light = new THREE.PointLight(0xff4d5a, 2, 8, 1.5);
+  const light = new THREE.PointLight(STRIDER_EYE_COLOR, STRIDER_LIGHT, 8, 1.5);
   light.position.copy(eye.position);
   hip.add(torso, head, eye, cannon, muzzle, light);
   const legs: THREE.Mesh[] = [];
@@ -114,6 +153,7 @@ const makeStrider = (): EnemyRig => {
     legs.push(leg);
   }
   group.add(hip);
+  let night = 0;
   return {
     group,
     animate: (enemy, t) => {
@@ -125,10 +165,23 @@ const makeStrider = (): EnemyRig => {
       hip.rotation.z = Math.sin(t * 3.5) * 0.04 * walking;
       const charging = enemy.state === 'attack' && enemy.nextAttackAt - t < 0.35;
       muzzle.scale.setScalar(charging ? 1.8 + Math.sin(t * 40) * 0.4 : 1);
-      striderEye.color.setHex(charging ? 0xffffff : 0xff4d5a);
+      // The lens goes white while charging; after dark both states carry the night lift.
+      eyeMaterial.color
+        .setHex(charging ? 0xffffff : STRIDER_EYE_COLOR)
+        .multiplyScalar(1 + STRIDER_EYE_NIGHT * night);
+    },
+    setNight: (factor) => {
+      if (factor === night) return;
+      night = factor;
+      muzzleMaterial.color
+        .setHex(STRIDER_MUZZLE_COLOR)
+        .multiplyScalar(1 + STRIDER_MUZZLE_NIGHT * factor);
+      light.intensity = STRIDER_LIGHT * (1 + LIGHT_NIGHT * factor);
     },
   };
 };
 
-export const makeEnemyRig = (enemy: Enemy): EnemyRig =>
-  enemy.kind === 'skimmer' ? makeSkimmer() : makeStrider();
+export const makeEnemyRig = (enemy: Enemy): EnemyRig => {
+  if (enemy.kind === 'watcher') return makeWatcherRig();
+  return enemy.kind === 'skimmer' ? makeSkimmer() : makeStrider();
+};

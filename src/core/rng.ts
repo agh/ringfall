@@ -23,3 +23,18 @@ export const createRng = (seed: number): Rng => {
     int: (n) => Math.floor(next() * n),
   };
 };
+
+/** Largest seed the generator distinguishes: `createRng` folds the seed to an unsigned 32-bit int. */
+export const MAX_SEED = 0xffffffff;
+
+/**
+ * Parses an untrusted seed string (the `?seed=` query parameter) into a usable seed.
+ * Only a plain decimal integer in `[1, MAX_SEED]` is accepted; anything else (`abc`, `1e400`,
+ * `-1`, `0x10`, `1.5`, an empty value, or `null`) yields `fallback`, so hostile or malformed
+ * input can neither throw nor collapse the generator to a degenerate state.
+ */
+export const parseSeed = (raw: string | null | undefined, fallback: number): number => {
+  if (typeof raw !== 'string' || !/^[0-9]{1,10}$/.test(raw)) return fallback;
+  const value = Number(raw);
+  return value >= 1 && value <= MAX_SEED ? value : fallback;
+};

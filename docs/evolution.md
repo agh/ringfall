@@ -2,8 +2,8 @@
 type: design-doc
 title: "How Ringfall proves intent, prevents regressions, and evolves with agents"
 status: draft
-authors: ["Ringfall hackathon team"]
-reviewers: []
+authors:
+  - name: "Ringfall hackathon team"
 created: 2026-10-21
 ---
 
@@ -11,7 +11,7 @@ created: 2026-10-21
 
 > [spec](spec.md) · [test plan](test-plan.md) · [journey](journey/README.md)
 
-This document answers four questions a sceptical engineer asks of a
+This document answers four questions a skeptical engineer asks of a
 project built largely by a coding agent in a morning: how do we know the
 implementation is the product that was designed, how is it tested, what
 stops the next change from breaking it, and how can the next change be
@@ -44,7 +44,7 @@ The whole step is exercised end to end: moving, jumping, shooting,
 reloading, a grenade killing a strider, a swarm breaking the shield and
 killing the player, a wave clearing and the next arriving, and victory
 (`tests/unit/game.test.ts`). These are not tautologies; several of them
-failed when first written and exposed real behaviour (the grenade flew too
+failed when first written and exposed real behavior (the grenade flew too
 far; the enemy faced the wrong way by the renderer's convention; the
 rifle shot over a low enemy's head because the player must aim down).
 
@@ -85,7 +85,7 @@ The assertions in `tests/unit/bot.test.ts` are floors, not targets:
 determinism, first-wave clearance on most seeds, pooled accuracy above 25%,
 and that both profiles run and report separately. The balance numbers
 themselves are printed by `pnpm balance`, and the first run's figures are
-quoted in the journey log so later tuning has a baseline. Issue #12 turns the harness into a gate with
+quoted in the journey log so later tuning has a baseline. Issue #12 (merged as #39) turned the harness into a gate with
 thresholds chosen from a baseline, not from what passed.
 
 ## What stops the next change from breaking it
@@ -129,9 +129,9 @@ commands, the structure, the conventions, and the pitfalls that were
 actually hit this morning (the negative frame delta, software GL, aiming
 below eye height). The spec names the moment each feature is for. The
 backlog issues carry acceptance criteria that name the test layer that
-proves them. An agent picking up issue #5 knows to add a unit test for the
+proves them. The agent that took issue #5 (#40) added a unit test for the
 flee state, a bark event, and a playtest assertion that wave 2 does not
-get slower, before it writes a line of renderer code.
+get slower, before any renderer code was written.
 
 **The core is the safe place to change.** A gameplay change touches
 `src/core/`, where it is typed strictly, tested in milliseconds, and

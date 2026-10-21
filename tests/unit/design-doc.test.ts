@@ -37,6 +37,13 @@ import {
   SHIELD_RECHARGE_RATE,
 } from '../../src/core/vitality';
 import {
+  WATCHER_BEAM_DURATION,
+  WATCHER_CHARGE,
+  WATCHER_COOLDOWN,
+  WATCHER_MAX_RANGE,
+  WATCHER_MIN_RANGE,
+} from '../../src/core/watcher';
+import {
   ATMOSPHERE_TABLE,
   FINAL_WAVE,
   WAVE_BONUS,
@@ -214,7 +221,7 @@ describe('design-doc.md simulation model', () => {
     );
     expectSentence(
       'simulation',
-      /deals (\S+) damage at the centre falling linearly to zero at (\S+) m/,
+      /deals (\S+) damage at the cent(?:re|er) falling linearly to zero at (\S+) m/,
       [GRENADE_MAX_DAMAGE, GRENADE_BLAST_RADIUS],
     );
   });
@@ -250,7 +257,28 @@ describe('design-doc.md enemy archetypes', () => {
   ];
 
   it('lists every archetype once', () => {
-    expect(table.rows.map((r) => r[0])).toEqual(rows.map(([label]) => label));
+    expect(table.rows.map((r) => r[0])).toEqual([...rows.map(([label]) => label), 'Watcher']);
+  });
+
+  it('matches the watcher constants', () => {
+    const stats = ENEMY_STATS.watcher;
+    expectCell(table, 'Watcher', 'Health', String(stats.maxHealth));
+    expectCell(table, 'Watcher', 'Speed', `${stats.speed} m/s`);
+    expectCell(table, 'Watcher', 'Score', String(stats.score));
+    expectCell(
+      table,
+      'Watcher',
+      'Attack',
+      `Hitscan beam, ${stats.damage} dmg: ${WATCHER_CHARGE} s charge, ` +
+        `${WATCHER_BEAM_DURATION} s beam, ${WATCHER_COOLDOWN} s cooldown`,
+    );
+    expect(/^Holds (\S+) to (\S+) m/.exec(cell(table, 'Watcher', 'Behavior'))?.slice(1)).toEqual([
+      String(WATCHER_MIN_RANGE),
+      String(WATCHER_MAX_RANGE),
+    ]);
+    expectSentence('enemies', /A watcher takes (\w+)\./, [
+      word(shotsToKill('watcher', WEAPON_SPECS.rifle.damage)),
+    ]);
   });
 
   it.each(rows)('matches ENEMY_STATS for the %s', (label, kind) => {
@@ -262,8 +290,8 @@ describe('design-doc.md enemy archetypes', () => {
     expect(attack, `docs/design-doc.md table "enemies", row "${label}", column "Attack"`).toBe(
       `${stats.ranged ? 'Bolt' : 'Melee zap'}, ${stats.damage} dmg every ${stats.attackInterval} s`,
     );
-    const behaviour = cell(table, label, 'Behaviour');
-    const where = `docs/design-doc.md table "enemies", row "${label}", column "Behaviour"`;
+    const behaviour = cell(table, label, 'Behavior');
+    const where = `docs/design-doc.md table "enemies", row "${label}", column "Behavior"`;
     if (stats.ranged) {
       // Striders back off inside half their attack range (see updateEnemy).
       expect(/^Holds (\S+) to (\S+) m/.exec(behaviour)?.slice(1), where).toEqual([
@@ -383,7 +411,9 @@ describe('design-doc.md wave composition', () => {
   const table = parseTable('waves');
 
   it('quotes the spawn ring and the clear bonus', () => {
-    expectSentence('waves', /on a (\S+) m ring around the arena centre/, [SPAWN_RING_RADIUS]);
+    expectSentence('waves', /on a (\S+) m ring around the arena cent(?:re|er)/, [
+      SPAWN_RING_RADIUS,
+    ]);
     expectSentence('waves', /Clearing a wave is worth (\d+)\./, [WAVE_BONUS]);
     expectSentence('waves', /The roster for the (\w+) waves/, [word(FINAL_WAVE)]);
   });
