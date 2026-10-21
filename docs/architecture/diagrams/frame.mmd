@@ -1,0 +1,26 @@
+%%{init: {"flowchart": {"curve": "basis"}} }%%
+flowchart TB
+  raf["requestAnimationFrame(now)"]
+  dt["frameDt = clamp(now - last, 0, 0.1) s<br/>never negative: decay terms would grow"]
+  hitstop{"hitStop > 0?"}
+  slow["accumulator += frameDt * HIT_STOP_SCALE (0.2)<br/>time crawls after a kill or a shield break"]
+  full["accumulator += frameDt"]
+  cap["accumulator = min(accumulator, 5/60)<br/>a backlog is dropped, not deferred"]
+  loop{"accumulator >= 1/60<br/>and steps < 5?"}
+  take["input.take()<br/>held keys live, one-shot keys latched"]
+  bot["?bot: decideBot(state) replaces the frame"]
+  step["stepGame(state, input, 1/60, rng)<br/>pure: new GameState with events"]
+  fan["renderer.handle(events)<br/>hud.handle(events)<br/>audio.handle(events)"]
+  stop["enemyKilled or shieldBroken sets hitStop<br/>50, 90 or 120 ms"]
+  music["audio.setMusic(combat or calm)"]
+  hudr["hud.render(state)"]
+  draw["renderer.render(state, now, frameDt)<br/>mirrors state, decays effects, post stack"]
+  capture["window.ringfallCapture.advance(n)<br/>runs the step n times and renders once,<br/>so a recorder pulls frames at any speed"]
+  raf --> dt --> hitstop
+  hitstop -->|"yes"| slow --> cap
+  hitstop -->|"no"| full --> cap --> loop
+  again(["back to the accumulator test"])
+  next(["next requestAnimationFrame"])
+  loop -->|"yes: one fixed step"| take --> bot --> step --> fan --> stop --> music --> again
+  loop -->|"no"| hudr --> draw --> next
+  step -.-|"?record: the loop above is suspended"| capture
