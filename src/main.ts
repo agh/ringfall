@@ -24,6 +24,7 @@ declare global {
     ringfallDebug?: {
       uniforms: () => Record<string, unknown>;
       info: () => unknown;
+      lights: () => { inUse: number };
     };
     /**
      * Recording hook (`?record&bot&seed=N`): the animation loop is suspended and each call steps
@@ -187,7 +188,7 @@ const main = (): void => {
     else requestFullscreen();
   });
 
-  /** Seconds of hit-stop remaining; the loop runs the sim at 5% speed while it is positive. */
+  /** Seconds of hit-stop remaining; the loop runs the sim at `HIT_STOP_SCALE` while it is positive. */
   let hitStop = 0;
 
   const start = async (): Promise<void> => {

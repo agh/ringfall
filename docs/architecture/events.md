@@ -17,11 +17,13 @@ Every member of the `GameEvent` union in `src/core/game.ts`, with the function i
 
 `src/core/bot.ts` is scanned and consumes no event: the bot reads `GameState` directly, as a player reads the screen.
 
+Events declared but never pushed by `stepGame`: `shot`, `beamFired`.
+
 ## Catalogue
 
 | Event | Payload | Producer | Renderer | HUD | Playtest | Bot | Loop | Sound |
 | ----- | ------- | -------- | --- | --- | --- | --- | --- | ----- |
-| `shot` | `from: Vec3`, `to: Vec3`, `hitEnemy: boolean`, `kind: WeaponKind`, `pellets: number` | `fireWeapon` | scene: reacts; weapons: reacts | hud: reacts | playtest: reacts |  |  | `shot:rifle` (2 voices), `shot:rifle:hit` (2 voices), `shot:laser` (2 voices), `shot:scatter` (2 voices), `shot:minigun` (2 voices), `shot:beam` (no voices), `shot:launcher` (no voices) |
+| `shot` | `from: Vec3`, `to: Vec3`, `hitEnemy: boolean`, `kind: WeaponKind`, `pellets: number` | none | scene: reacts; weapons: reacts | hud: reacts | playtest: reacts |  |  | `shot:rifle` (2 voices), `shot:rifle:hit` (2 voices), `shot:laser` (2 voices), `shot:scatter` (2 voices), `shot:minigun` (2 voices), `shot:beam` (no voices), `shot:launcher` (no voices) |
 | `empty` | none | `stepWeapon` |  |  |  |  |  | `empty` (1 voice) |
 | `reload` | none | `stepWeapon` |  |  |  |  |  | `reload` (1 voice) |
 | `grenadeThrown` | `id: number` | `stepGrenades` | scene: named, no action |  | playtest: reacts |  |  | `grenadeThrown` (1 voice) |
@@ -29,7 +31,7 @@ Every member of the `GameEvent` union in `src/core/game.ts`, with the function i
 | `weaponSwapped` | `kind: WeaponKind`, `slot: SlotIndex` | `swapSlots` | scene: reacts; weapons: reacts | hud: reacts |  |  |  | `weaponSwapped` (4 voices) |
 | `chargeStarted` | `kind: WeaponKind` | `stepWeapon` | weapons: reacts |  |  |  |  | `chargeStarted` (no voices) |
 | `chargeReleased` | `kind: WeaponKind`, `charge: number` | `stepWeapon` | weapons: reacts |  |  |  |  | `chargeReleased` (no voices) |
-| `beamFired` | `from: Vec3`, `to: Vec3`, `hits: number` | `fireWeapon` | weapons: reacts |  |  |  |  | `beamFired` (3 voices) |
+| `beamFired` | `from: Vec3`, `to: Vec3`, `hits: number` | none | weapons: reacts |  |  |  |  | `beamFired` (3 voices) |
 | `pickupSpawned` | `id: number`, `kind: WeaponKind`, `at: Vec3` | `spawnPickup` | pickups: reacts |  |  |  |  | `pickupSpawned` (voices from a helper) |
 | `pickupTaken` | `id: number`, `kind: WeaponKind`, `slot: SlotIndex` | `stepPickups` | pickups: reacts; scene: reacts; weapons: reacts | hud: announces |  |  |  | `pickupTaken` (voices from a helper) |
 | `pickupExpired` | `id: number` | `stepPickups` |  |  |  |  |  | `SILENT` |

@@ -74,8 +74,8 @@ macOS and Linux. An integrated GPU is the target; see
 [spec.md](../spec.md) item 11 for the frame budget commitment.
 
 **How long is a session?** Five to ten minutes from Deploy to the victory
-tableau. The [spec](../spec.md) names five waves; the current build ships
-eight uniform ones, and the roster per wave is in
+tableau. The [spec](../spec.md) names five waves and the build ships them as
+five named beats; the roster per wave is in
 [design-doc.md](../design-doc.md).
 
 **Is there a story?** Only what you can see. A ring, a dawn, a walled
@@ -97,7 +97,7 @@ run. Those three beats are the product.
 
 **Does it have an ending?** Partly. Clearing the final wave lifts the
 camera to the ring; the tableau text and the resolving score are not built
-(#8). We end on the
+(#56, under #8). We end on the
 image and the sound, not a menu.
 
 ## Internal FAQ

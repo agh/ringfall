@@ -8,6 +8,7 @@ test-results/
 .DS_Store
 .record-frames/
 *.mp4
-.record-score.wav
+# The shipped demo reel and the walkthrough deck are tracked on purpose.
+!docs/reel/*.mp4
 smoke-tmp/
 tests/scratch/

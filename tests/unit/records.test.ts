@@ -67,6 +67,17 @@ describe('records', () => {
     expect(third.after.runs).toBe(3);
   });
 
+  it('reports a first run and keeps nothing when there is no storage at all', () => {
+    const c = recordRound(null, round(300, 1));
+    expect(c.firstRun).toBe(true);
+    expect(c.before).toEqual(EMPTY_BESTS);
+    expect(c.after.runs).toBe(1);
+    expect(c.newBestScore).toBe(false);
+    expect(describeComparison(round(300, 1), c)).toContain('First run');
+    // Nothing persisted: the next round on the same null store is a first run again.
+    expect(recordRound(null, round(900, 2)).firstRun).toBe(true);
+  });
+
   it('survives a storage that throws on write', () => {
     const store: RecordStore = {
       getItem: () => null,

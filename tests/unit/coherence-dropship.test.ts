@@ -23,6 +23,7 @@ import {
   waveBeat,
 } from '../../src/core/waves';
 import { CRAFT_FLIGHT_SECONDS, Dropship } from '../../src/render/dropship';
+import { LightPool } from '../../src/render/lights';
 
 /**
  * Seam 4 of #97: the dropship renderer (#80), the `dropPod` events the simulation emits, and
@@ -99,7 +100,7 @@ const play = (
   probe: (i: number, state: GameState, seen: Census, parent: THREE.Group) => void,
 ): THREE.Group => {
   const parent = new THREE.Group();
-  const dropship = new Dropship(parent);
+  const dropship = new Dropship(parent, new LightPool());
   run.forEach((state, i) => {
     const now = clock(i);
     dropship.handle(state.events, now);
@@ -441,7 +442,7 @@ describe('seam 4: dropship, dropPod events, sound table', () => {
       expect(beat.spawns.every((s) => s.delay === 0)).toBe(true);
     }
     const parent = new THREE.Group();
-    const dropship = new Dropship(parent);
+    const dropship = new Dropship(parent, new LightPool());
     dropship.handle(next.events, next.time);
     dropship.update(next.time);
     expect(census(parent)).toMatchObject({ crafts: 1, pods: 1, dust: 0 });

@@ -1,4 +1,4 @@
-<p align="center"><img src="docs/banner.png" alt="Ringfall: an in-game render at night, seed 7, t = 10 s, with the wordmark" width="100%"></p>
+<p align="center"><img src="docs/banner.png" alt="Ringfall: an in-game render at night, seed 7, t = 15 s, with the wordmark" width="100%"></p>
 
 # Ringfall
 
@@ -7,9 +7,9 @@ want you dead. TypeScript + three.js, zero assets. Built in four hours on
 2026-10-21 by one person coaching thirty-three cloud agents; the
 [journey](docs/journey/README.md) has the clock.
 
-<p align="center"><sub>The banner is the game itself: seed 7 at night, t = 10 s, 3840x1600 with the post stack on. Recipe in <a href="docs/brand.md#hero-and-social">docs/brand.md</a>.</sub></p>
+<p align="center"><sub>The banner is the game itself: seed 7 at night, t = 15 s, 3840x1600 with the post stack on. Recipe in <a href="docs/brand.md#hero-and-social">docs/brand.md</a>.</sub></p>
 
-**[Play now](https://ringfall.alexhowells.com)** (deploys from `main`; `agh.github.io/ringfall` until DNS is set; neither is live as of 2026-10-21).
+**[Play now](https://ringfall.alexhowells.com)** (deploys from `main`; `agh.github.io/ringfall` redirects there).
 
 Ringfall takes its cues from the classic console sci-fi shooter loop: a
 regenerating energy shield over fixed health, a two-second rhythm of fire,
@@ -35,20 +35,19 @@ pnpm dev            # http://localhost:5173
 | Reload         | R                  |
 | Swap weapon    | Q or wheel         |
 | Jump / Sprint  | Space / Shift      |
-| Swap weapon    | Q                  |
 | Fullscreen     | F                  |
-| Release mouse  | Esc                |
+| Pause          | Esc                |
 
 Requires a browser with WebGL 2 and pointer lock.
 
 | Dawn, wave 5 | Night, wave 2 | Dusk, wave 3 |
 | :---: | :---: | :---: |
-| ![Dawn: the sun flares behind the ring over the cover slabs](docs/journey/images/1740-hero-dawn-s7-t95.jpg) | ![Night: the beam weapon in hand, stars and trims](docs/journey/images/1740-hero-night-s7-t18.jpg) | ![Dusk: the laser in hand against a rose horizon](docs/journey/images/1740-hero-dusk-s7-t45.jpg) |
-| seed 7, t = 95 s, `atmo=dawn` | seed 7, t = 18 s, `atmo=night` | seed 7, t = 45 s, `atmo=dusk` |
+| ![Dawn: the sun rises behind the ridge, laser hit in wave 5](docs/journey/images/1850-hero-dawn-s7-t78.jpg) | ![Night: a skimmer in the laser sights, stars and trims](docs/journey/images/1850-hero-night-s7-t24.jpg) | ![Dusk: the laser in hand against a rose horizon](docs/journey/images/1850-hero-dusk-s7-t45.jpg) |
+| seed 7, t = 78.5 s, `atmo=dawn` | seed 7, t = 24.15 s, `atmo=night` | seed 7, t = 45 s, `atmo=dusk` |
 
-Every frame above is a headless render of the shipped build (`?record&bot&seed=7&nohud`), not an illustration.
+Every frame in this README is a headless render (`?record&bot&seed=7&nohud`) of the build at 17:40 UTC on 2026-10-21, not an illustration. The waves were retuned after that capture, so the same seed and time now show a different moment.
 
-<p align="center"><img src="docs/hero/hero-loop.webp" alt="Six seconds of seed 7 at night, t = 8 to 14 s, the skimmer kill at 10 s" width="100%"><br><sub>Six seconds at 24 fps, seed 7, night, t = 8 to 14 s, from the same capture hook.</sub></p>
+<p align="center"><img src="docs/hero/hero-loop.webp" alt="Six seconds of seed 7 at night, t = 4 to 10 s, three skimmer kills" width="100%"><br><sub>Six seconds at 24 fps, seed 7, night, t = 4 to 10 s, from the same capture hook.</sub></p>
 
 ## How it works
 
@@ -90,6 +89,8 @@ tests in real Chromium.
 | [docs/test-plan.md](docs/test-plan.md) | Static, unit, playtest, balance gate, browser, visual, and recording layers |
 | [docs/research/](docs/research/) | Sourced research on the reference console shooter's design, on browser WebGL prior art, and on product management practice |
 | [docs/journey/](docs/journey/) | Time-indexed build log with captured frames |
+| [docs/reel/](docs/reel/) | The 69-second demo reel (`ringfall-reel.mp4`, seed 7, day and night) |
+| [docs/deck/](docs/deck/) | The walkthrough deck (`ringfall-journey.pptx`) with the reel embedded on its jump-out slide |
 | [docs/adr/](docs/adr/) | Architecture decision records |
 | [docs/runbook.md](docs/runbook.md) | Run, build, deploy, test, film, and fix |
 | [docs/metrics.md](docs/metrics.md) | Every number the playtest harness reports |
@@ -98,6 +99,7 @@ tests in real Chromium.
 | [docs/launch-checklist.md](docs/launch-checklist.md) | Go or no-go before a release tag |
 | [docs/glossary.md](docs/glossary.md) | Glossary |
 | [docs/audit.md](docs/audit.md) | Adversarial audits: findings and outcomes |
+| [docs/threat-model.md](docs/threat-model.md) | Trust boundaries, threats per boundary, controls and gaps, admin items |
 
 The backlog lives in GitHub Issues: the MLP epic (#2) and the Later epic (#3).
 
@@ -116,7 +118,7 @@ pnpm demo                         # film seed 7 to demo.mp4 (needs pnpm build an
 ## Develop
 
 ```bash
-pnpm lint           # Biome (CI mode) and markdownlint
+pnpm lint           # Biome (CI mode), markdownlint, then stylelint and prettier over CSS
 pnpm typecheck      # tsc --noEmit, strict
 pnpm test           # Vitest unit tests and the balance gate, with V8 coverage thresholds
 pnpm test:e2e       # Playwright smoke tests against a production preview

@@ -3,7 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { createEnemy } from '../../src/core/enemy';
 import { WATCHER_STATS } from '../../src/core/watcher';
 import { makeEnemyRig } from '../../src/render/enemies';
+import { LightPool } from '../../src/render/lights';
 import { makeWatcherRig } from '../../src/render/watcher-rig';
+
+const lights = new LightPool();
 
 /** Height over the wider of the two horizontal extents, from the rig's world bounding box. */
 const aspect = (group: THREE.Group): { ratio: number; height: number; width: number } => {
@@ -26,9 +29,13 @@ const pixelsTall = (metres: number, range: number): number =>
 
 describe('watcher rig', () => {
   it('is a tall, narrow silhouette that reads against the strider by aspect ratio alone', () => {
-    const watcher = aspect(makeWatcherRig().group);
-    const strider = aspect(makeEnemyRig(createEnemy(1, 'strider', { x: 0, y: 0, z: 0 }, 0)).group);
-    const skimmer = aspect(makeEnemyRig(createEnemy(2, 'skimmer', { x: 0, y: 0, z: 0 }, 0)).group);
+    const watcher = aspect(makeWatcherRig(lights).group);
+    const strider = aspect(
+      makeEnemyRig(createEnemy(1, 'strider', { x: 0, y: 0, z: 0 }, 0), lights).group,
+    );
+    const skimmer = aspect(
+      makeEnemyRig(createEnemy(2, 'skimmer', { x: 0, y: 0, z: 0 }, 0), lights).group,
+    );
     expect(watcher.height).toBeCloseTo(WATCHER_STATS.height, 0);
     expect(watcher.ratio).toBeGreaterThanOrEqual(2.5);
     expect(watcher.ratio).toBeGreaterThan(strider.ratio * 1.5);
@@ -39,7 +46,7 @@ describe('watcher rig', () => {
   });
 
   it('telegraphs the charge on the lens from any angle: colour moves from Rose to white', () => {
-    const rig = makeWatcherRig();
+    const rig = makeWatcherRig(lights);
     const base = createEnemy(3, 'watcher', { x: 0, y: 0, z: -28 }, 0);
     const lens = rig.group.getObjectByProperty('type', 'Mesh');
     expect(lens).toBeDefined();

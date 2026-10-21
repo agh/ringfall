@@ -9,11 +9,13 @@ flowchart TB
   s3["3. stepPickups<br/>expire, reach, take into the two-slot inventory"]
   s4["4. stepWeapon<br/>swap, reload, trigger, charge, fire: hitscan, beam or launcher round"]
   s5["5. stepGrenades<br/>throw, bounce, fuse, blast damage to enemies and thrower"]
-  s6["6. stepEnemies<br/>one state machine per enemy: melee hits, bolts fired, corpses expire"]
-  s7["7. stepBolts<br/>fly, stop on cover, hit the player's sphere"]
-  s8["8. stepWaves<br/>countdown, active, cleared, next wave or victory"]
-  s9["tickVitality<br/>shield recharge after the delay"]
+  s6["6. stepPendingSpawns<br/>launch the drop pods whose time has come"]
+  s7["7. stepEnemies<br/>one state machine per enemy: melee hits, bolts fired, corpses expire"]
+  s8["8. stepBolts<br/>fly, stop on cover, hit the player's sphere"]
+  s9["9. stepWaves<br/>countdown, active, cleared, next wave or victory"]
+  s10["10. stepTableau<br/>hold the victory tableau, then the run is won"]
+  s11["tickVitality<br/>shield recharge after the delay"]
   freeze["Freeze: drop rng, return the draft as the new immutable GameState<br/>carrying this step's events"]
   in --> guard
   guard -->|"no"| same
-  guard -->|"yes"| draft --> s1 --> s2 --> s3 --> s4 --> s5 --> s6 --> s7 --> s8 --> s9 --> freeze
+  guard -->|"yes"| draft --> s1 --> s2 --> s3 --> s4 --> s5 --> s6 --> s7 --> s8 --> s9 --> s10 --> s11 --> freeze

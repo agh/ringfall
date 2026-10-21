@@ -56,17 +56,17 @@ flowchart LR
     input["src/input: keyboard, mouse,<br/>pointer lock"]
     globals["window.ringfall.state()<br/>window.ringfallDebug<br/>window.ringfallCapture (?record)"]
     storage[("localStorage<br/>ringfall.records.v1<br/>ringfall.settings.v1")]
-    url["URL parameters<br/>?seed ?bot ?record ?nohud<br/>?atmo ?weather"]
+    url["URL parameters<br/>?seed ?bot ?record ?nohud ?nopost<br/>?atmo ?weather"]
     privileged["Browser-owned UI<br/>pointer lock, fullscreen,<br/>AudioContext gesture"]
   end
 
   pages["GitHub Pages origin<br/>ringfall.alexhowells.com<br/>public/CNAME"]
-  fonts["Google Fonts<br/>fonts.googleapis.com (CSS)<br/>fonts.gstatic.com (woff2)"]
+  fonts["Self-hosted fonts<br/>src/fonts.css and woff2 files<br/>same origin since #96"]
   scripts["Anything with script access:<br/>devtools, extensions,<br/>Playwright, recorder scripts"]
 
   player -->|clicks, keys| input
   pages -->|"B1: HTTPS, CSP meta"| page
-  fonts -->|"B2: style-src and font-src allow-list"| page
+  fonts -->|"B2: style-src and font-src are 'self'"| page
   url -->|"B3: allow-list parsers"| core
   storage -->|"B3: 1 KB cap, field allow-list"| core
   page --> core --> present
@@ -80,8 +80,8 @@ flowchart LR
 | Boundary | From | To | What crosses | Why it is a boundary |
 | -------- | ---- | -- | ------------- | -------------------- |
 | B1 | GitHub Pages at the custom domain | the player's browser | the static build: `index.html`, hashed assets, `CNAME` | integrity of what is served depends on TLS, DNS and the Pages configuration, none of which is in this tree |
-| B2 | Google Fonts (two hosts) | the page | one stylesheet and the `woff2` files it names | a third-party origin inside the page; it learns the player's IP address and can inject CSS |
-| B3 | the query string and local storage | `src/core` parsers | `?seed`, `?bot`, `?record`, `?nohud`, `?atmo`, `?weather`; `ringfall.records.v1`, `ringfall.settings.v1` | the only untrusted input the page reads; anything the player, a share link or an extension wrote |
+| B2 | the fonts | the page | `src/fonts.css` and the `woff2` files beside it, served from the page's own origin since #96 | was two Google Fonts hosts inside the page until #96; the boundary id is kept for T2 |
+| B3 | the query string and local storage | `src/core` parsers | `?seed`, `?bot`, `?record`, `?nohud`, `?nopost`, `?atmo`, `?weather`; `ringfall.records.v1`, `ringfall.settings.v1` | the only untrusted input the page reads; anything the player, a share link or an extension wrote |
 | B4 | the page | browser-owned UI | pointer lock, fullscreen, audio unlock | the page asks for capabilities that can trap or annoy the player; the browser decides |
 | B5 | the page | anything with script access to the page | `window.ringfall`, `window.ringfallDebug`, `window.ringfallCapture` | the debug surface is readable by devtools, extensions and the test harness; nothing else can reach it cross-origin |
 
@@ -104,14 +104,13 @@ flowchart TB
     lint["Lint and type check"]
     unit["Unit tests<br/>purity, originality,<br/>repo-name, records, rng"]
     e2e["Browser smoke tests<br/>CSP enforced"]
-    frames["Luminance gate"]
     build["Production build"]
     balance["Balance gate"]
     docs["Docs hygiene<br/>typos, Vale, schema, links"]
     security["Security and workflow hygiene<br/>pnpm audit, actionlint,<br/>zizmor, gitleaks"]
   end
 
-  subgraph deploy["ci.yml Pages jobs: push to main only, needs every job above"]
+  subgraph deploy["ci.yml Pages jobs: push to main only, needs every job above except Browser smoke tests"]
     direction LR
     dbuild["Pages build<br/>contents: read"]
     ddeploy["Pages deploy<br/>pages: write, id-token: write<br/>environment github-pages,<br/>concurrency pages"]
@@ -138,7 +137,7 @@ flowchart TB
 
 | Boundary | From | To | What crosses | Why it is a boundary |
 | -------- | ---- | -- | ------------- | -------------------- |
-| B6 | the owner, the agents the owner runs, Dependabot | the repository | commits and pull requests | twenty agent sessions pushed with one token in one afternoon; the repository has no rules about what a token may do to `main` |
+| B6 | the owner, the agents the owner runs, Dependabot | the repository | commits and pull requests | twenty-six agent sessions pushed with one token in one afternoon; the repository has no rules about what a token may do to `main` |
 | B7 | the repository | GitHub Actions runners | workflow files, the `GITHUB_TOKEN`, third-party actions | a pull request runs third-party code from `node_modules` on a runner holding a token |
 | B8 | npm, PyPI, GitHub releases, the actions marketplace | the runner and the developer's machine | packages, binaries, actions | the build runs whatever those hosts serve; pins and checksums are the only defense |
 | B9 | `main` | GitHub Pages | the built `dist/` through an OIDC deployment, from the `pages-build` and `pages-deploy` jobs at the end of `ci.yml` | the one write path to the site |
@@ -173,11 +172,11 @@ that implements it at `6fb2608`; "Gap" is what the control does not cover;
 
 | ID | Boundary | STRIDE | Threat | Likelihood | Impact | Control today (file, finding) | Gap | Issue |
 | -- | -------- | ------ | ------ | ---------- | ------ | ----------------------------- | --- | ----- |
-| T1 | B1, B10 | Spoofing, Tampering | The domain or the Pages site serves something other than the build from `main`: a DNS `CNAME` created before Pages is enabled and the domain verified can be claimed by another Pages site; HTTPS not enforced lets a network attacker rewrite the page. | Low | High | `public/CNAME` pins the hostname into every deploy; `vite.config.ts` content-hashes every asset; `docs/runbook.md` "Custom domain" gives the order of operations. Pages itself is off and no DNS record exists yet (F1; #54 finding 17). | Pages source, custom domain verification and "Enforce HTTPS" are repository settings nobody has set (F1). | #85 |
-| T2 | B2 | Information disclosure, Tampering | Every page load sends the player's IP address, user agent and timing to `fonts.googleapis.com` and `fonts.gstatic.com` before any interaction; a compromised or substituted fonts response can inject CSS (not script) into the page. A cross-origin stylesheet cannot carry Subresource Integrity. | Medium | Low | `index.html` CSP `style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com` confines the two hosts to CSS and fonts; `script-src 'self'` keeps script out (F3). | The fonts are still loaded from Google (F5); `scripts/reel-cards/*.html` fetch them too (F19). Self-hosting removes the boundary. | #83 |
+| T1 | B1, B10 | Spoofing, Tampering | The domain or the Pages site serves something other than the build from `main`: a DNS `CNAME` created before Pages is enabled and the domain verified can be claimed by another Pages site; HTTPS not enforced lets a network attacker rewrite the page. | Low | High | `public/CNAME` pins the hostname into every deploy; `vite.config.ts` content-hashes every asset; `docs/runbook.md` "Custom domain" gives the order of operations. As of 2026-10-21, 19:10 UTC, Pages serves the build from `main` over HTTPS and plain HTTP, the DNS record exists and "Enforce HTTPS" is not yet on (F1; #54 finding 17; `docs/runbook.md`). | The Pages source is set; "Enforce HTTPS" is not (plain HTTP answers 200), and domain verification cannot be read from outside (F1). | #85 |
+| T2 | B2 | Information disclosure, Tampering | Until #96 every page load sent the player's IP address, user agent and timing to `fonts.googleapis.com` and `fonts.gstatic.com` before any interaction, and a compromised or substituted fonts response could inject CSS (not script) into the page. A cross-origin stylesheet cannot carry Subresource Integrity. | Medium | Low | Since #96 the fonts are self-hosted (`src/fonts.css`, `woff2` files and OFL texts beside them) and `index.html` CSP is `style-src 'self'; font-src 'self'`; `scripts/reel-cards/*.html` use the same local files; `script-src 'self'` keeps script out (F3). | None since #96 (F5, F19); #83 tracks closing the finding. | #83 |
 | T3 | B1 | Tampering, Elevation | A script or inline handler is injected into the page: through markup, a `data:` URL, an object, a worker or `eval`. | Low | High | `index.html` CSP: `default-src 'none'; script-src 'self'; worker-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'`, plus `<meta name="referrer" content="no-referrer">` (F3). No `innerHTML`, `insertAdjacentHTML`, `document.write`, `eval`, `new Function`, `fetch`, `postMessage` or `window.open` anywhere in `src/` (verified by #68; `src/hud/hud.ts` writes through `textContent`). `tests/e2e/smoke.spec.ts` fails on any console error, so a CSP refusal in the production preview fails CI. | A meta-tag CSP cannot set `frame-ancestors`, `report-uri` or `Permissions-Policy`; GitHub Pages sets no headers. | none (accepted, F17) |
 | T4 | B1 | Tampering | The page is embedded in a third-party frame (clickjacking). | Medium | Low | Nothing privileged exists to clickjack: no account, no purchase, no setting that matters outside the tab; the CSP comment in `index.html` records the decision (F17). An embedder can request fullscreen and pointer lock on its own page anyway. | `frame-ancestors` is ignored in a meta tag and Pages cannot send `X-Frame-Options`. | none (accepted, F17) |
-| T5 | B3 | Tampering, Denial of service | A hostile query string: `?seed=1e400`, `0x10`, `9007199254740993`, ten thousand digits, markup; or an unexpected `?atmo` or `?weather` value. | High | Low | `parseSeed` in `src/core/rng.ts` accepts only a decimal integer in `[1, 2^32 - 1]` and otherwise uses the clock (F8), tested against twenty hostile inputs in `tests/unit/rng.test.ts`; `readOverride` in `src/render/environment.ts` matches `?atmo` and `?weather` against fixed lists; `?bot`, `?record` and `?nohud` are presence checks in `src/main.ts`. No parameter reaches markup. | None in code. `SECURITY.md` still names `?nopost`, which does not exist, and omits `?nohud`; the list above is from the code. | none (doc fix noted on #78's pull request) |
+| T5 | B3 | Tampering, Denial of service | A hostile query string: `?seed=1e400`, `0x10`, `9007199254740993`, ten thousand digits, markup; or an unexpected `?atmo` or `?weather` value. | High | Low | `parseSeed` in `src/core/rng.ts` accepts only a decimal integer in `[1, 2^32 - 1]` and otherwise uses the clock (F8), tested against twenty hostile inputs in `tests/unit/rng.test.ts`; `readOverride` in `src/render/environment.ts` matches `?atmo` and `?weather` against fixed lists; `?bot`, `?record` and `?nohud` are presence checks in `src/main.ts`, `?nopost` in `src/render/scene.ts`. No parameter reaches markup. | None in code. `SECURITY.md` lists the same seven parameters. | none (doc fix noted on #78's pull request) |
 | T6 | B5 | Information disclosure, Tampering | A script with access to the page (devtools, an extension, a userscript) reads or drives the game through the window globals. | Medium | Low | `window.ringfallCapture` is installed only under `?record` (`src/main.ts`); `window.ringfall.state()` is read-only access to the immutable state and is what `tests/e2e/smoke.spec.ts` reads from the production preview. There is no leaderboard, so a cheated score harms only the cheater (F16). | `window.ringfallDebug` (post uniforms, draw statistics) is assigned unconditionally in the `SceneRenderer` constructor in `src/render/scene.ts` (F16). | #84 |
 | T7 | B3 | Tampering, Denial of service | Local storage holds a hostile value under `ringfall.records.v1` or `ringfall.settings.v1`: ten megabytes, `Infinity`, negative counts, `__proto__`, extra keys, a non-string timestamp. | Medium | Low | `src/core/records.ts`: `MAX_RECORD_BYTES = 1024` checked before `JSON.parse`, `sanitizeBests` rebuilds the record field by field (integers in `[0, 1e9]`, ISO timestamp regex, arrays and unknown keys rejected), writes clamped; `src/core/settings.ts`: `MAX_SETTINGS_BYTES = 1024`, `parseSettings` clamps each field to its range. Both are pure modules tested in `tests/unit/records.test.ts` (including the 10 MB case) and `tests/unit/settings.test.ts` (F7). Blocked storage yields defaults (`src/main.ts`). | None. The only same-origin writers at the custom domain are the page itself, extensions and devtools. | none |
 | T8 | B4 | Denial of service | The page traps the player: fullscreen and pointer lock requested without consent, or re-requested after Esc. | Low | Low | `requestFullscreen` and `InputController.lock()` run only from the Deploy click or the F key (`src/main.ts`, `src/input/input.ts`); the browser requires a gesture and owns the Esc path; a refusal is swallowed and the game runs in the tab; `pointerlockchange` returns to the overlay rather than re-locking (`src/main.ts`). The overlay copy says Esc releases both. | None. The browser's cool-down after Esc is documented as a known fault in `docs/runbook.md`. | none |
@@ -192,12 +191,12 @@ that implements it at `6fb2608`; "Gap" is what the control does not cover;
 | T12 | B6 | Information disclosure | A token, key or password is committed. | Low | High | `ci.yml` job `Security and workflow hygiene`: gitleaks 8.30.1 (SHA-256 verified download) over the working tree and the pushed commits with `.gitleaks.toml`, plus a self-test that the allowlist still catches a realistic `ghp_` and `sk_live_` token; `.pre-commit-config.yaml` runs gitleaks and `detect-private-key`; #68's sweep of the tree and `git log --all -p` found nothing (F22). | GitHub-side secret scanning and push protection are repository settings not yet confirmed on (F22). | #85 |
 | T13 | B6 | Tampering | A commit breaks an invariant that no reviewer would catch by eye: a `three` import or a clock in the pure core, a franchise term, a self-reference to the old repository name, a gameplay number that no longer matches the design document. | High | Medium | `tests/unit/purity.test.ts` and Biome restrict `src/core` to no `three`, `window`, `document`, `Date.now`, `Math.random`; `tests/unit/originality.test.ts` greps every tracked file outside `docs/research/` for the term list in `tests/unit/originality.terms.ts` (ADR-0003); `tests/unit/repo-name.test.ts` rejects the old repository path; `tests/unit/design-doc.test.ts` ties constants to `docs/design-doc.md`; `tests/balance/` and the `Luminance gate` job bound behavior and brightness. | None. These are the tests that did the stopping on 2026-10-21; see below. | none |
 | T14 | B7 | Elevation | A pull request workflow steals the `GITHUB_TOKEN`, writes to the repository, or runs an action whose upstream was replaced. | Low | High | `ci.yml` top-level `permissions: contents: read`; every `actions/checkout` has `persist-credentials: false`; `ci.yml` is the only workflow and has no `pull_request_target` or `workflow_run` trigger (#76 added a `workflow_run` deploy trigger and #89 removed it the same hour because zizmor rejects it); no `${{ }}` expression inside a `run:` (verified by #68); every `uses:` is pinned to a commit SHA with its tag in a comment, and #68 confirmed each SHA resolves to that tag; the `pages-deploy` job alone holds `pages: write` and `id-token: write`, checks nothing out, and runs only after `pages-build`, which has `contents: read` (F9, moved from `deploy-pages.yml` into `ci.yml` by #89). actionlint 1.7.12 and zizmor 1.31.1 at `--persona=pedantic` run on every pull request (`ci.yml` security job); Dependabot proposes action bumps weekly after a 7-day cooldown (`.github/dependabot.yml`, F12). | The repository-level Actions defaults (read-only token, approval for fork pull requests, allowed actions) could not be read (F20). They matter the day the repository is public. | #85 |
-| T15 | B7 | Repudiation | Evidence of a failing browser run is lost: the `playwright-report` artifact is uploaded on failure but is always empty. | High | Low | `ci.yml` uploads an artifact on e2e failure; `playwright.config.ts` writes traces on first retry to `test-results/`. | The artifact path is `playwright-report`, which the `github` reporter never writes (F14). | #86 |
+| T15 | B7 | Repudiation | Evidence of a failing browser run is lost: the e2e artifact is uploaded on failure but holds nothing. | High | Low | `ci.yml` uploads `playwright-report/` and `test-results/` as `playwright-report` on e2e failure (#100, #96); `playwright.config.ts` writes the HTML report in CI and traces on first retry to `test-results/`. | None since #96; before #100 the artifact held only `playwright-report/`, which the `github` reporter alone never wrote (F14). | #86 |
 | T16 | B7, B8 | Tampering | A tool downloaded at CI time is substituted. | Low | Medium | typos, Vale, actionlint and gitleaks are fetched from GitHub releases at pinned versions and checked with `sha256sum --check --strict` before use (`ci.yml` docs and security jobs); `astral-sh/setup-uv` is SHA-pinned; Chromium comes from Playwright's own pinned distribution. | zizmor is run through `uvx --from zizmor==1.31.1` with a version pin only, no checksum; a PyPI compromise of that exact release would run on the runner with a read-only token. Accepted: the runner holds nothing to steal and the job runs no project code afterwards. | none (accepted) |
 | T17 | B7 | Tampering | A workflow regression goes unnoticed because a finding is suppressed. | Medium | Low | `.github/zizmor.yml` carries no ignores (`rules: {}` since #89); every zizmor finding at `--persona=pedantic` fails the security job. | None. | none |
 | T18 | B8 | Tampering | A hijacked or typosquatted npm release is installed on a developer machine or the runner; a lifecycle script runs on install. | Medium | High | `package.json` pins every dependency exactly, `pnpm-lock.yaml` carries sha512 integrity for each, every workflow job runs `pnpm install --frozen-lockfile`; `pnpm-workspace.yaml` `minimumReleaseAge: 1440` (nothing younger than a day resolves) and `onlyBuiltDependencies: []` (no dependency runs an install script); `.npmrc` `engine-strict=true` (F11); `.github/dependabot.yml` `versioning-strategy: increase`, `cooldown: 7 days`, grouped dev tooling (F12); `pnpm audit --audit-level=high` gates every pull request (`ci.yml` security job, from #62) with `pnpm.overrides` lifting the advisories that have fixes (F4). The one runtime dependency is `three@0.186.1`. | `GHSA-vfj7-8cjw-p6xm` (`braces`, high, reached only through `markdownlint-cli2` expanding the repository's own glob) is ignored under `pnpm.auditConfig` because no fixed release exists; the ignore is to be removed when one ships (recorded in #62). Dependency review on pull requests needs the dependency graph enabled by an admin. | #85 (dependency review); the `braces` ignore is residual risk, see section 5 |
-| T19 | B9 | Elevation, Tampering | Something other than a completed push to `main` deploys to the site, or a broken `main` deploys. | Low | High | The `pages-build` job in `ci.yml` runs only on `push` to `refs/heads/main` and `needs` every other job (lint, unit, frames, build, balance, docs, security), so a red `main` does not deploy (#89); the OIDC token is minted only in `pages-deploy` inside the `github-pages` environment (F9); `concurrency: pages` with `cancel-in-progress: false` keeps deploys in order; the launch checklist refuses a tag unless CI is green on the exact commit. | The `github-pages` environment has no deployment-branch restriction (F21). A run on `main` that is cancelled rather than failed (see T10) deploys nothing, which is safe, but leaves the site behind `main` with no signal. | #85 |
-| T20 | B10 | Spoofing | Players are sent to a host that does not serve the game: the links in `README.md`, `CONTRIBUTING.md`, `.github/ISSUE_TEMPLATE/config.yml` and `docs/launch-checklist.md`. | High (today) | Low | #74 pointed every self-reference at `agh/ringfall`; `README.md` names the custom domain and the interim Pages URL (F18). | Both hosts return 404 until Pages is enabled (T1). | #85 |
+| T19 | B9 | Elevation, Tampering | Something other than a completed push to `main` deploys to the site, or a broken `main` deploys. | Low | High | The `pages-build` job in `ci.yml` runs only on `push` to `refs/heads/main` and `needs` the fast gates (lint, unit, build, balance, docs, security), so a red `main` does not deploy (#89); the OIDC token is minted only in `pages-deploy` inside the `github-pages` environment (F9); `concurrency: pages` with `cancel-in-progress: false` keeps deploys in order; the launch checklist refuses a tag unless CI is green on the exact commit. | The `github-pages` environment has no deployment-branch restriction (F21). A run on `main` that is cancelled rather than failed (see T10) deploys nothing, which is safe, but leaves the site behind `main` with no signal. | #85 |
+| T20 | B10 | Spoofing | Players are sent to a host that does not serve the game: the links in `README.md`, `CONTRIBUTING.md`, `.github/ISSUE_TEMPLATE/config.yml` and `docs/launch-checklist.md`. | High (until the deploy on 2026-10-21) | Low | #74 pointed every self-reference at `agh/ringfall`; `README.md` names the custom domain and the interim Pages URL (F18). | Neither host serves the build until the Pages source is set to GitHub Actions (T1). | #85 |
 | T21 | B6 | Repudiation, Tampering | A film, a frame or a balance number describes a build other than the one in the tree, or a claim in a document is not backed by a run. | Medium | Medium | The recorder steps the simulation deterministically from a seed (`?record&bot&seed=N`, `src/main.ts`); `pnpm balance` and `pnpm frames` run in CI and upload their reports as artifacts (`ci.yml`); `AGENTS.md` requires every verification claim to link execution evidence; `.github/PULL_REQUEST_TEMPLATE.md` demands transcripts; `docs/launch-checklist.md` requires the film to be regenerated from the tagged commit and screenshots from a clean profile. | `scripts/reel.mjs` derives the web encode name from `--out` without checking its extension, and `record-demo.mjs` and `render-score.mjs` leave a preview server behind on failure (F15; the frame-rate guard half of F15 landed in #76, `scripts/record-demo.mjs` lines 30 to 34); two documentation audits (#54) found present-tense claims about features that did not exist and corrected them, which is a process the tree cannot enforce. | #87 (scripts); #54 (documentation) |
 
 ### 3.3 Agent-built supply chain
@@ -241,7 +240,7 @@ What did not, and would not have:
   required, so a merge with the Luminance gate still running or red was
   one click, and CI run 102 on `main` did fail with merges continuing on
   top of it (T10).
-- **One token for twenty sessions.** A prompt-injected agent (a fetched
+- **One token for twenty-six sessions.** A prompt-injected agent (a fetched
   page or an issue comment that redirected it) would have had the owner's
   full write access. The mitigations are rulesets on `main` and, when the
   platform offers it, a per-session credential with a narrower scope.
@@ -281,8 +280,9 @@ tracked, this is what remains and is accepted:
    page cannot forbid framing, report CSP violations or set a
    `Permissions-Policy`. There is nothing privileged in the page to
    protect with them (T3, T4).
-2. **Google Fonts until #83 lands.** Two third-party hosts learn the
-   player's address on every load and could inject CSS (T2).
+2. **Google Fonts, until #96.** Two third-party hosts learned the
+   player's address on every load and could inject CSS (T2); the fonts are
+   self-hosted since #96 and #83 tracks closing the finding.
 3. **One unfixable development advisory.** `braces` through
    `markdownlint-cli2` has no patched release; it is reached only by the
    repository's own glob and never by untrusted input (T18).
@@ -332,9 +332,9 @@ ticked only with the date of that reading.
    under `docs/diagrams/`:
 
    ```bash
-   # Extract each ```mermaid block to a .mmd file, then (mermaid-cli 11.4.2, puppeteer on the installed Chromium):
-   npx -y @mermaid-js/mermaid-cli@11.4.2 -i threat-model-runtime.mmd -o docs/diagrams/threat-model-runtime.png -b transparent -s 2
-   npx -y @mermaid-js/mermaid-cli@11.4.2 -i threat-model-delivery.mmd -o docs/diagrams/threat-model-delivery.png -b transparent -s 2
+   # Extract each ```mermaid block to a .mmd file, then (mermaid-cli 12.0.0 from node_modules, puppeteer on the installed Chromium):
+   pnpm exec mmdc -i threat-model-runtime.mmd -o docs/diagrams/threat-model-runtime.png -b transparent -s 2
+   pnpm exec mmdc -i threat-model-delivery.mmd -o docs/diagrams/threat-model-delivery.png -b transparent -s 2
    ```
 
    GitHub renders the Mermaid source directly; the PNG files are for readers and
@@ -360,7 +360,7 @@ issue tracks it; "Accepted" means the residual risk is stated in section 5.
 | 2 | Medium | No branch protection or ruleset on `main` | Admin | T10, A2, #85 |
 | 3 | Medium | No CSP or referrer policy | Fixed (`index.html`) | T3 |
 | 4 | Medium | Nine audit advisories under `markdownlint-cli2`; no audit gate | Fixed (`package.json` overrides and `audit` script by #68; CI gate by #62) | T18 |
-| 5 | Medium | Google Fonts on every load | Open | T2, #83 |
+| 5 | Medium | Google Fonts on every load | Fixed (#96) | T2, #83 |
 | 6 | Medium | Full source maps shipped | Fixed (`vite.config.ts`) | T9 |
 | 7 | Low | Personal bests parsed without validation | Fixed (`src/core/records.ts`) | T7 |
 | 8 | Low | `?seed` aliasing through `Number()` | Fixed (`src/core/rng.ts`) | T5 |
@@ -369,12 +369,12 @@ issue tracks it; "Accepted" means the residual risk is stated in section 5.
 | 11 | Low | No pnpm hardening | Fixed (`pnpm-workspace.yaml`, `.npmrc`) | T18 |
 | 12 | Low | Dependabot without pin strategy, cooldown or grouping | Fixed (`.github/dependabot.yml`) | T14, T18 |
 | 13 | Low | Script arguments unvalidated | Fixed (`scripts/lib/args.mjs`) | T21 |
-| 14 | Low | `playwright-report` artifact always empty | Open | T15, #86 |
+| 14 | Low | `playwright-report` artifact always empty | Fixed (#100, #96) | T15, #86 |
 | 15 | Low | Recorder frame-rate and cleanup nits | Partly fixed (frame-rate guard, #76); rest open | T21, #87 |
 | 16 | Info | `window.ringfallDebug` ungated | Open | T6, #84 |
 | 17 | Info | Page is framable | Accepted | T4 |
 | 18 | Info | Stale links to the Pages URL | Superseded by #74; the host answers once A1 is done | T20, #85 |
-| 19 | Info | Reel cards fetch Google Fonts | Open | T2, #83 |
+| 19 | Info | Reel cards fetch Google Fonts | Fixed (#96) | T2, #83 |
 | 20 | Admin | Actions default settings unreadable | Admin | T14, A3, #85 |
 | 21 | Admin | `github-pages` environment unrestricted | Admin | T19, A4, #85 |
 | 22 | Admin | Code security settings unreadable | Admin | T12, A5, #85 |

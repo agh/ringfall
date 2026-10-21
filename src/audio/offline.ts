@@ -6,6 +6,7 @@ import {
   type ChargeHum,
   chargeSeconds,
   kick,
+  makeLimiter,
   SNARE,
   scheduleVoices,
   startChargeHum,
@@ -31,8 +32,14 @@ export interface ScoreOptions {
 
 /**
  * Gain of the effects bus in the score. The live bank plays the same voices through a 0.35
- * master straight to the speakers; the score mixes them under a choir and through a reverb,
- * so they sit lower. This is the one place the two renderings differ in level.
+ * master; the score mixes them under a choir and through a reverb, so they sit lower.
+ *
+ * The voices are shared; the mix is not. The score also differs from the live bank in its
+ * master (0.8 against the live 0.35 effects and 0.5 music buses), its reverb (a 4 s room at 0.5
+ * wet with no dry gain, against the live 4.5 s room at 0.9 wet over a 0.35 dry), its choir
+ * level (0.22 against 0.32 to 0.5 by state), its pulse bus (0.7 against 0.9 in combat), and the
+ * beat (one kick per half second against the live quarter-beat scheduler). Moving the mix into
+ * sounds.ts as data is A4 in #51 and still open; until then the film is its own mix.
  */
 export const OFFLINE_SFX_GAIN = 0.4;
 
@@ -131,14 +138,17 @@ export const renderScore = async (options: ScoreOptions): Promise<string> => {
   const sampleRate = options.sampleRate ?? 48000;
   const total = options.leadIn + options.seconds;
   const ctx = new OfflineAudioContext(2, Math.ceil(sampleRate * total), sampleRate);
+  // The same brick-wall limiter as the live bank closes the score.
+  const limiter = makeLimiter(ctx);
+  limiter.connect(ctx.destination);
   const master = ctx.createGain();
   master.gain.value = 0.8;
   const reverb = ctx.createConvolver();
   reverb.buffer = makeImpulse(ctx, 4);
   const wet = ctx.createGain();
   wet.gain.value = 0.5;
-  master.connect(ctx.destination);
-  master.connect(reverb).connect(wet).connect(ctx.destination);
+  master.connect(limiter);
+  master.connect(reverb).connect(wet).connect(limiter);
 
   // Choir drone through two drifting formants, present for the whole film.
   const choir = buildChoir(ctx, master, total);

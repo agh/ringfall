@@ -35,7 +35,7 @@ const RESPONSIBILITIES = {
   'src/main.ts':
     'Fixed 60 Hz accumulator loop, hit-stop, overlay and pointer-lock lifecycle, settings panel, the `?record` capture hook',
   'src/core/game.ts':
-    '`GameState`, `InputFrame`, the `GameEvent` union and `stepGame`: one simulation tick as a draft, eight systems in order, then a frozen state',
+    '`GameState`, `InputFrame`, the `GameEvent` union and `stepGame`: one simulation tick as a draft, ten systems in order, then a frozen state',
   'src/core/enemy.ts':
     'Enemy state machine (`spawning`, `chase`, `attack`, `flee`, `dead`), skimmer temperaments, the rout and its bark lines',
   'src/core/weapon.ts':
@@ -80,16 +80,22 @@ const RESPONSIBILITIES = {
   'src/render/dispose.ts':
     '`disposeTree`: frees geometry, materials and textures under an object before it is dropped',
   'src/render/post.ts': 'HDR composer: render pass, capped bloom prefilter, feel pass, ACES output',
+  'src/render/lights.ts':
+    "`LightPool`: a fixed set of point lights borrowed and returned, so the scene's light count never changes",
+  'src/render/random.ts':
+    "`renderRandom`: the renderer's one seeded source of randomness, so captures repeat frame for frame",
   'src/hud/hud.ts':
     'DOM heads-up display, announcements, hit marker, damage direction and the 2D-canvas motion tracker',
   'src/input/input.ts':
     'Keyboard, mouse, wheel and pointer lock into an `InputFrame`; one-shot actions latched between steps',
+  'src/input/wheel.ts':
+    'Wheel travel folded into swap notches: one swap per mouse click or per hundred trackpad pixels',
   'src/audio/audio.ts':
     '`AudioBank`: the WebAudio context, buses, the charge hum and the event-to-sound dispatch',
   'src/audio/sounds.ts':
     'The procedural sound table keyed by event, the `SILENT` list and the voice scheduler',
   'src/audio/music.ts':
-    'Live score: choir drone, pulse and percussion scheduled against the wall clock',
+    'Live score: choir drone, pulse and percussion placed on the audio clock from a wall-clock timer',
   'src/audio/offline.ts':
     'Offline score: re-runs a seeded playtest and renders its events into an `OfflineAudioContext`',
 };
@@ -99,7 +105,7 @@ const ALLOWED = {
   core: ['core'],
   render: ['render', 'core', 'three'],
   hud: ['core'],
-  input: ['core'],
+  input: ['input', 'core'],
   audio: ['audio', 'core'],
   main: ['core', 'render', 'hud', 'input', 'audio'],
 };

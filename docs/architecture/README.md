@@ -50,15 +50,15 @@ are never typed by hand.
 
 Ringfall is one static page with no backend. The player opens it in a
 desktop browser with WebGL 2 and pointer lock; GitHub Pages serves it from
-the custom domain, and the page fetches nothing else at runtime except two
-font families from Google Fonts, which the content security policy in
-`index.html` names explicitly. The only data the page keeps is the player's
+the custom domain, and the page fetches nothing else at runtime; the two
+font families are self-hosted (`src/fonts.css`) and the content security
+policy in `index.html` allows no other origin. The only data the page keeps is the player's
 personal bests and settings, in that browser's local storage, and nothing
 leaves the device. The maintainer and the coding agents they run change the
 system through pull requests to the repository; every push runs the CI
 gates and a push to `main` deploys the build.
 
-![System context: the player, the static page, GitHub Pages, Google Fonts, local storage, the repository and its CI](render/context.png)
+![System context: the player, the static page, GitHub Pages, the self-hosted fonts, local storage, the repository and its CI](render/context.png)
 
 Source: [diagrams/context.mmd](diagrams/context.mmd).
 
@@ -94,7 +94,7 @@ Source: [diagrams/containers.mmd](diagrams/containers.mmd).
 | Luminance gate | Playwright Chromium on software GL | Ten seeded frames measured against budgets | `scripts/frames.mjs` |
 | Recorder and score | Playwright Chromium, ffmpeg, `OfflineAudioContext` | A seeded film and its soundtrack | `scripts/record-demo.mjs`, `scripts/render-score.mjs` |
 | Reel | Playwright Chromium, ffmpeg | Title cards, two waves, stitched cut | `scripts/reel.mjs` |
-| CI | GitHub Actions, every action pinned to a commit SHA | Eight gate jobs, then the Pages build and deploy on `main` | `.github/workflows/` |
+| CI | GitHub Actions, every action pinned to a commit SHA | Seven gate jobs, then the Pages build and deploy on `main`; the luminance gate is a separate optional workflow | `.github/workflows/` |
 
 ## Level 3: components
 
@@ -108,9 +108,10 @@ forbids, so the diagrams cannot show a dependency the architecture does not
 allow.
 
 Two shapes are worth knowing before opening the file. In the core,
-`game.ts` is the hub that imports every other simulation module and nothing
+`game.ts` is the hub that imports every simulation system and nothing
 imports it back except the bot, the playtest and the presentation layers;
-the leaves are `vec3.ts`, `rng.ts` and `raycast.ts`. In the renderer,
+the leaves are `vec3.ts`, `rng.ts`, `vitality.ts`, `records.ts` and
+`settings.ts`. In the renderer,
 `scene.ts` is the hub that owns the sub-renderers, `particles.ts` is the
 shared pool that the environment, pickups and weapons draw into, and every
 module imports three.js directly.
@@ -156,7 +157,7 @@ position, pickups are taken before the trigger is read so a fresh weapon
 can fire in the same step, grenades burst before enemies move, bolts fly
 after enemies have fired them, and the wave system sees the step's deaths.
 
-![One tick: the guard, the draft, the eight systems in order, vitality, and the freeze](render/tick.png)
+![One tick: the guard, the draft, the ten systems in order, vitality, and the freeze](render/tick.png)
 
 Source: [diagrams/tick.mmd](diagrams/tick.mmd).
 
@@ -194,11 +195,11 @@ runs the same scripts.
 | `pnpm balance` | The balance gate; writes `test-results/balance/` |
 | `pnpm demo` | Films seed 7 and scores it into `demo.mp4` |
 
-The one workflow, `.github/workflows/ci.yml`, runs eight independent gate
-jobs on every push and pull request; a pull request push cancels a
+The CI workflow, `.github/workflows/ci.yml`, runs seven independent gate
+jobs on every pull request and every push to `main`; a pull request push cancels a
 superseded run, a push to `main` always runs to completion. Two more jobs,
 Pages build and Pages deploy, run only on a push to `main` and only after
-every gate except the browser smoke tests has passed, so a merge never
+every gate except the browser smoke tests has passed (#100, #104), so a merge never
 publishes a build that failed a gate. Every action is pinned to a commit
 SHA and checkouts do not persist credentials; the deploy job is the only
 one with write permission.
@@ -207,16 +208,16 @@ one with write permission.
 | --- | ----- | -------- |
 | Lint and type check | Biome, markdownlint, strict TypeScript | none |
 | Unit tests | Every core rule and the coverage thresholds in `vitest.config.ts` | `coverage` |
-| Browser smoke tests | The built page loads, starts, advances, moves on keys, no page errors | `playwright-report` on failure |
-| Luminance gate | Ten seeded frames within the mean and blob budgets in `scripts/frames.mjs` | `frames` |
+| Browser smoke tests | The built page loads, starts, advances, moves on keys, no page errors | `playwright-report` (the HTML report and the traces) on failure |
+| Luminance gate (`frames.yml`, pull requests that touch the renderer, or by hand) | Ten seeded frames within the mean and blob budgets in `scripts/frames.mjs` | `frames` |
 | Production build | `vite build` succeeds | `dist` |
 | Balance gate | Twenty seeded games per profile within `tests/balance/gate.ts` | `balance-report`, also appended to the job summary |
 | Docs hygiene | Frontmatter, typos, Vale, internal links; external links advisory | none |
-| Security and workflow hygiene | `pnpm audit`, actionlint, zizmor and gitleaks, each pinned by checksum | none |
-| Pages build | `main` only, after the gates: `pnpm build` and `upload-pages-artifact` | `github-pages` |
+| Security and workflow hygiene | `pnpm audit`, actionlint, zizmor and gitleaks; actionlint and gitleaks pinned by checksum, zizmor by version | none |
+| Pages build | `main` only, after the fast gates: `pnpm build` and `upload-pages-artifact` | `github-pages` |
 | Pages deploy | `main` only, after Pages build: `deploy-pages` with `pages: write` and an OIDC token | the live site |
 
-![Build and delivery: the eight gate jobs, the two Pages jobs behind them, and the local recorder, reel and documentation pipelines](render/build.png)
+![Build and delivery: the seven gate jobs, the two Pages jobs behind them, and the local recorder, reel and documentation pipelines](render/build.png)
 
 Source: [diagrams/build.mmd](diagrams/build.mmd).
 
@@ -243,7 +244,7 @@ Each architecture decision record and each row of the
 | Local storage | Personal bests stay in the browser; missing or corrupt storage is a clean slate | [decisions.md](../decisions.md), "Keep personal bests in the browser's local storage" |
 | Browser smoke tests | The smoke test waits on simulation time, not on a wave, and idle title rendering is throttled | [decisions.md](../decisions.md), "Make the browser smoke test wait on simulation time" |
 | Post stack | Bloom threshold above 1.0 in HDR, ACES tone mapping at a fixed exposure | [decisions.md](../decisions.md), "Keep the bloom threshold above 1.0" |
-| Wave system | Eight uniform waves from a formula with `FINAL_WAVE` as the lever | [decisions.md](../decisions.md), "Ship eight uniform waves" |
+| Wave system | Five named beats (`WAVE_BEATS`) with drop pods and a victory tableau, superseding the eight-wave formula (#57) | [decisions.md](../decisions.md), "Ship eight uniform waves" (overruled by #57) |
 | Environment | The ring is a torus the player stands on, so the arc rises on both horizons | [decisions.md](../decisions.md), "Make the ring a torus" |
 
 ## Invariants and constraints
@@ -258,7 +259,7 @@ enforces it, so a reader can find the gate before changing the behavior.
 | Determinism from a seed | Arena layout, AI jitter and the bot derive from `createRng(seed)`; the clock seeds production only | `src/core/rng.ts`; the determinism assertions in `tests/unit/bot.test.ts`; `parseSeed` in `src/core/rng.ts` for `?seed=` |
 | Frame budget | The simulation steps at exactly 1/60 s, at most five steps per frame, and the frame delta is clamped to between 0 and 0.1 s | `FIXED_DT`, `MAX_STEPS_PER_FRAME` and the `frameDt` clamp in `src/main.ts` |
 | Particle cap | One `Points` draw call with a fixed pool, sprites capped at 64 px and faded inside two meters of the eye | The pool capacity and the vertex shader in `src/render/particles.ts` |
-| Luminance budget | Ten seeded frames keep a mean under the day and night budgets with no saturated blob over the limit | `BUDGET` and `FRAME_SET` in `scripts/frames.mjs`; the CI `Luminance gate` job |
+| Luminance budget | Ten seeded frames keep a mean under the day and night budgets with no saturated blob over the limit | `BUDGET` and `FRAME_SET` in `scripts/frames.mjs`; the `Luminance gate` workflow (`frames.yml`) |
 | Balance | Twenty seeded games per bot profile stay within baseline-derived bounds | `GATE_THRESHOLDS` in `tests/balance/gate.ts`; the CI `Balance gate` job |
 | Coverage | `src/core/` is covered to the thresholds | `coverage.thresholds` in `vitest.config.ts` |
 | Design numbers | Every gameplay number quoted in the design document equals the constant that owns it | `tests/unit/design-doc.test.ts` |

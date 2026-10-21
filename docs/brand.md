@@ -11,7 +11,7 @@ created: 2026-10-21
 
 One recommendation per decision; alternatives marked "Alt". Values here are
 the reference for `src/style.css`, the light rig in
-`src/render/scene.ts`, and the README banner. Where the code and this
+`src/render/environment.ts`, and the README banner. Where the code and this
 document disagree, fix the code or update this document in the same PR.
 
 Status: the palette, typography, geometry and feel sections were checked
@@ -50,7 +50,7 @@ in `src/hud/hud.ts` writes Rose and Beacon as literals for the same reason.
 
 The world's threat red is `#ff4d5a` (strider lens and its light), an HDR
 emissive that tone-maps close to Rose; the HUD uses Rose itself. Skimmers
-carry a warm amber ring (`#ffb347`, emissive `#ff8c1a`), the other side of
+carry a warm amber ring (`#ffc46b`, emissive `#ff8c1a`) around a `#ffb347` core, the other side of
 "warm means hostile" from the player's Flare. Pickups and the rifle carry
 Beacon; enemies carry none.
 
@@ -100,7 +100,8 @@ sun and recolour the rig per wave, and rain and fog weathers grey it.
   Tabular numerals for free, so health and ammo never jitter.
 - Alt: keep **Rajdhani** (OFL) as the display fallback.
 
-Both families load from Google Fonts with `display=swap`; the fallback
+Both families are self-hosted (`src/fonts.css`, latin and latin-ext
+subsets, OFL texts beside the files) with `display=swap`; the fallback
 stack is Rajdhani, Bahnschrift, Segoe UI for display and the system
 monospace for body.
 
@@ -110,13 +111,13 @@ Rules: wordmark "RINGFALL" in Chakra Petch 700, uppercase, letter-spacing
 14 px. Hero numerals (shield, magazine) in Chakra Petch 700; the score and
 every small count in JetBrains Mono with `font-variant-numeric:
 tabular-nums`, which `body` sets for everything. Body copy sentence case,
-line-height 1.5, max-width 60ch. Uppercase only for labels of three words
+line-height 1.5; a 60ch max-width is not yet in `src/style.css`. Uppercase only for labels of three words
 or fewer. No italics in the HUD.
 
 ### Type scale
 
 Tokens in `src/style.css`; the HUD unit `--u` is 0.45 vmin clamped to
-2 to 6 px, so HUD text is `max(14px, …)` of a unit multiple.
+2 to 10 px, so HUD text is `max(14px, …)` of a unit multiple.
 
 | Token | Size | Face | Used for |
 | ----- | ---- | ---- | -------- |
@@ -293,14 +294,19 @@ pin the atmosphere (`src/render/environment.ts`). Call
 so the last render sees a real 0.1 s delta for its effects, and take a PNG
 screenshot. One 4K frame costs about 30 s on software GL.
 
-**Chosen frames** (all seed 7, 3840x1600, post stack on):
+**Chosen frames** (all seed 7, 3840x1600, post stack on; current files captured
+from commit `8195bba` at 18:50 UTC on 2026-10-21, after the bloom prefilter,
+flare, explosion, dust and weapon-flash changes; the simulation changed too, so
+the moments below were re-found from the core's event log for seed 7, not
+carried over by timestamp):
 
 | Use | Moment | URL flags |
 | --- | ------ | --------- |
-| Hero, banner, social card | night, t = 10 s, wave 1 cleared, a skimmer kill glowing between the slabs | `atmo=night` |
-| Strip: dawn | t = 95 s, wave 5, the sun flares behind the ring, minigun in hand | `atmo=dawn` |
-| Strip: night | t = 18 s, wave 2, the beam in hand | `atmo=night` |
-| Strip: dusk | t = 45 s, wave 3, the laser against a rose horizon | `atmo=dusk` |
+| Hero, banner, social card | night, t = 15.15 s, wave 2, the laser's first kill 0.07 s after the hit, the ring top right | `atmo=night` |
+| Strip: dawn | t = 78.5 s, wave 5, the sun's aureole over the ridge, a laser hit mid-frame | `atmo=dawn` |
+| Strip: night | t = 24.15 s, wave 2, a skimmer's Rose ring in the laser sights | `atmo=night` |
+| Strip: dusk | t = 45 s, wave 3 cleared, the minigun and a strider burst against a rose horizon | `atmo=dusk` |
+| Loop | night, t = 4 to 10 s, three wave 1 kills, 24 fps, 960x400 | `atmo=night` |
 
 **Lockup.** Top-left, on a safe margin of 6% of the width on both axes. From
 the top: eyebrow "CHAPTER 1 · SECTOR 117" in Chakra Petch 600 at 1.2% of
@@ -314,8 +320,10 @@ else is added to the frame.
 
 **Crops and exports.** The banner is the full 2.4:1 frame: `docs/banner.png`
 at 1920x800 and `docs/hero/banner-2x.webp` at 3840x1600. The raw hero frame
-without type is `docs/hero/hero-night-seed7-t10.webp`. The social card is a
+without type is `docs/hero/hero-night-seed7-t15.webp`. The social card is a
 centered 2:1 crop of the same frame with the lockup re-set at 1.15x,
 exported to `docs/social-card.png` at 1280x640 (GitHub's repository
 preview size). Journey copies of every candidate and the contact sheet live
-under `docs/journey/images/1740-hero-*`.
+under `docs/journey/images/1740-hero-*` (17:40 build) and
+`docs/journey/images/1850-hero-*` (current); the old-versus-new sheet from
+the re-render is `docs/journey/images/1850-hero-rerender.jpg`.

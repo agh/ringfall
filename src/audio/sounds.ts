@@ -377,7 +377,33 @@ export interface Choir {
   readonly bus: GainNode;
   /** Moves the formants towards the vowel at `phase` from context time `at`. */
   setVowel(phase: number, at: number): void;
+  /** Stops every oscillator at context time `at` and disconnects the drone; not reversible. */
+  stop(at: number): void;
 }
+
+/**
+ * Master-bus limiter. Four skimmers dying under one grenade sum to 1.19 full scale before the
+ * music; a compressor set as a brick wall (hard knee, high ratio, fast attack) at -6 dBFS keeps
+ * the mix below clipping without touching a single shot. The same node closes the offline score
+ * so the film and the game clip, or do not, together. Chosen by the numbers, not by ear.
+ */
+export const LIMITER = {
+  threshold: -6,
+  knee: 2,
+  ratio: 16,
+  attack: 0.002,
+  release: 0.2,
+} as const;
+
+export const makeLimiter = (ctx: BaseAudioContext): DynamicsCompressorNode => {
+  const node = ctx.createDynamicsCompressor();
+  node.threshold.value = LIMITER.threshold;
+  node.knee.value = LIMITER.knee;
+  node.ratio.value = LIMITER.ratio;
+  node.attack.value = LIMITER.attack;
+  node.release.value = LIMITER.release;
+  return node;
+};
 
 /**
  * Builds the choir drone: additive detuned voices through two drifting formants and a body
@@ -408,6 +434,7 @@ export const buildChoir = (
   formantMix.connect(destination);
   body.connect(destination);
 
+  const oscillators: OscillatorNode[] = [];
   for (const hz of CHOIR.hz) {
     const voice = ctx.createGain();
     voice.gain.value = hz < 100 ? 0.5 : 0.16;
@@ -429,15 +456,24 @@ export const buildChoir = (
         osc.stop(stopAt);
         vibrato.stop(stopAt);
       }
+      oscillators.push(osc, vibrato);
     }
   }
 
+  let stopped = stopAt !== undefined;
   return {
     bus,
     setVowel: (phase, at) => {
       const [a, b] = vowelFormants(phase);
       formantA.frequency.setTargetAtTime(a, at, 0.5);
       formantB.frequency.setTargetAtTime(b, at, 0.5);
+    },
+    stop: (at) => {
+      if (stopped) return;
+      stopped = true;
+      for (const osc of oscillators) osc.stop(at);
+      formantMix.disconnect();
+      body.disconnect();
     },
   };
 };

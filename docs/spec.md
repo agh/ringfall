@@ -47,16 +47,16 @@ a friend. Each MLP item names that moment.
 
 | # | Item | The moment | Status | Issue |
 | - | ---- | ---------- | ------ | ----- |
-| 1 | Shield break as an event: hit-stop, flare, vignette, enemies ease off | "It let me breathe." | Partial (flare, vignette) | #4 |
+| 1 | Shield break as an event: hit-stop, flare, vignette, enemies ease off | "It let me breathe." | Partial (hit-stop, flare, vignette; enemies easing off is open) | #4 |
 | 2 | Weapon juice: kick, recoil, tracer, hit-flash, sway, bob | "The gun feels good." | Done | n/a |
-| 3 | Skimmers flee when a strider dies, with a bark | "They noticed." | Done (`src/core/enemy.ts`, #40) | #5 |
+| 3 | Skimmers flee when a strider dies, with a bark | "They noticed." | Core done (`src/core/enemy.ts`, #40); flee posture and bark label are #41 | #5 |
 | 4 | Striders dive from grenades and sidestep | "It dodged my grenade." | Not started | #6 |
 | 5 | Firing points for striders | "They take positions." | Not started | #7 |
 | 6 | The ring overhead, dawn sky, terrain, fog | "Where am I?" | Done | n/a |
 | 7 | Procedural chant, calm and combat states, stingers | "What is that music?" | Partial (drone, states) | #9 |
-| 8 | Five named waves, drop-pods, victory tableau | "It had an ending." | Partial (five beats, `dropPod` and `victory` events, tableau state in `src/core`; rendering follows) | #8 |
+| 8 | Five named waves, drop-pods, victory tableau | "It had an ending." | Partial (five beats, `dropPod` and `victory` events, tableau state in `src/core`, dropship and falling pods rendered in #80; tableau text and death camera follow, #56) | #8 |
 | 9 | Title choreography and the Deploy moment | "Oh, nice." | Not started | #9 |
-| 10 | Brand compliance (fonts, tokens, banner) | Consistency, not a moment | Partial (fonts and tokens in HUD v2; the compliance pass is #10) | #10 |
+| 10 | Brand compliance (fonts, tokens, banner) | Consistency, not a moment | Done (fonts and tokens in HUD v2; compliance pass merged as #55) | #10 |
 | 11 | Frame budget on an integrated GPU | It runs on the laptop in the room | Not measured | #11 |
 | 12 | Playtest bot as a CI gate | We know it is fair | Done (`tests/balance/`, CI job `Balance gate`, #39) | #12 |
 | 13 | Demo recording pipeline | The awards reel | Done (recorder, offline score, mux); CI artifact not | #13 |
@@ -72,15 +72,15 @@ says 14), no reduced-motion rule, no focus management on the card, a pause
 that looked like the title screen, and an end card that never said Victory
 or Defeat. Those are fixed. What the review left for the owner issues: the
 title choreography and Deploy moment (#9), the victory tableau and death
-camera (#8), the sun bloom hiding the reticle (renderer), and the settings
-toggles for shake and flash (#37).
+camera (#8), and the sun bloom hiding the reticle (renderer). The settings
+toggles for shake and flash (#37) have since shipped (#48, #65).
 
 ## Later (explicit choices)
 
 | Item | Why deferred | Issue |
 | ---- | ------------ | ----- |
 | Melee | Needs a telegraph and a reason; promote after the shield event. | #15 |
-| Third enemy and encounter spice | Base dance first. | #17 |
+| Third enemy and encounter spice | The watcher is built behind `WATCHERS_IN_ROSTER` (off) in #75; the roster entry waits on the balance pass (#63). | #17 |
 | Mobile, WebGPU, co-op | No loop change; platform work. | #18 |
 | Vehicles, campaign, second arena | A second game. | #3 |
 
@@ -115,4 +115,5 @@ Subtle, non-infringing, recognizable to people who know games:
 
 Multiplayer, mobile, imported art or audio, difficulty settings, an
 endless mode, anything that interrupts the first thirty seconds. The only
-persistence is personal bests in the player's own browser.
+persistence is personal bests and the settings panel's values in the
+player's own browser.
