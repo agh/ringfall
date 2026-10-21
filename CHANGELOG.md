@@ -48,7 +48,7 @@ and this project adheres to
   a 120 ms sprite flash, a thin shockwave crest, debris sparks and chips
   under gravity, a smoke column that rises and thins over 1.5 s, and a
   4 s scorch on the floor; a kill borrows the enemy's own accent and shell
-  colors. The particle pool gains `spark`, `smoke` and `shard` shapes with
+  colours. The particle pool gains `spark`, `smoke` and `shard` shapes with
   premultiplied blending so smoke can darken the frame (#26).
 
 ### Fixed
