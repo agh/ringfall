@@ -19,14 +19,25 @@ import type { GateThreshold } from '../../src/core/playtest';
  *   steady    win=75% waves=4.35 seconds=152 accuracy=52% breaks=0.10 clear=[4,13,14,20]
  *   reckless  win=70% waves=4.55 seconds=127 accuracy=43% breaks=0.45 clear=[4,14,19,23]
  *
- * Each limit is the baseline moved by the same margin as before in the lenient direction: one
- * game of twenty on the steady win rate, half a wave on waves cleared, ten points of accuracy,
- * twice the slowest wave, two games on the reckless win rate. The margins were sized against the
- * reference breaking change in issue #12 (halving rifle damage) under the eight-wave formula and
- * have not been re-measured under the five beats. One intent is lost: the reckless bound used to
- * say "never retreating must not become the way to win", and under the beats as specified in #8
- * the reckless profile wins 70% of its games, so that bound now only catches drift. Issue #63
- * holds that question.
+ * Issue #93 then stopped the bot firing hitscan weapons without line of sight and made it walk
+ * at a target behind cover instead of waiting. Holding fire alone left the gate on its limits
+ * (steady 70% wins, 231 s mean, reckless 4.05 waves: the bot stood still while a target sat
+ * behind a slab); with the walk it beats the run above on every steady metric, and the reckless
+ * win rate (85%) passes the old drift cap. The baseline below is that branch on `main` at
+ * cd16454, same seeds and cap, and the limits are re-derived from it with the margins unchanged:
+ *
+ *   steady    win=85% waves=4.50 seconds=154 accuracy=83% breaks=0.10 clear=[4,11,16,20]
+ *   reckless  win=85% waves=4.70 seconds=138 accuracy=83% breaks=0.20 clear=[4,16,15,18]
+ *
+ * Accuracy jumps because shots into cover were counted as misses; it is now a line-of-sight
+ * signal as much as an aim one. Each limit is the baseline moved by the same margin as before in
+ * the lenient direction: one game of twenty on the steady win rate, half a wave on waves cleared,
+ * ten points of accuracy, twice the slowest wave, two games on the reckless win rate. The margins
+ * were sized against the reference breaking change in issue #12 (halving rifle damage) under the
+ * eight-wave formula and have not been re-measured under the five beats. One intent is lost: the
+ * reckless bound used to say "never retreating must not become the way to win", and under the
+ * beats as specified in #8 the reckless profile wins 85% of its games, so that bound now only
+ * catches drift. Issue #63 holds that question.
  */
 export const SEEDS: readonly number[] = Array.from({ length: 20 }, (_, i) => 100 + i);
 export const MAX_SECONDS = 480;
@@ -37,24 +48,24 @@ export const GATE_THRESHOLDS: readonly GateThreshold[] = [
     profile: 'steady',
     metric: 'winRate',
     bound: 'min',
-    limit: 0.7,
-    baseline: 0.75,
+    limit: 0.8,
+    baseline: 0.85,
     margin: 'one game of twenty (5 points)',
   },
   {
     profile: 'steady',
     metric: 'meanWavesCleared',
     bound: 'min',
-    limit: 3.85,
-    baseline: 4.35,
+    limit: 4,
+    baseline: 4.5,
     margin: 'half a wave of five',
   },
   {
     profile: 'steady',
     metric: 'accuracy',
     bound: 'min',
-    limit: 0.42,
-    baseline: 0.52,
+    limit: 0.73,
+    baseline: 0.83,
     margin: '10 points',
   },
   {
@@ -69,16 +80,16 @@ export const GATE_THRESHOLDS: readonly GateThreshold[] = [
     profile: 'reckless',
     metric: 'winRate',
     bound: 'max',
-    limit: 0.8,
-    baseline: 0.7,
+    limit: 0.95,
+    baseline: 0.85,
     margin: 'two games of twenty (10 points); drift only, see the note above and #63',
   },
   {
     profile: 'reckless',
     metric: 'meanWavesCleared',
     bound: 'min',
-    limit: 4.05,
-    baseline: 4.55,
+    limit: 4.2,
+    baseline: 4.7,
     margin: 'half a wave of five',
   },
 ];
