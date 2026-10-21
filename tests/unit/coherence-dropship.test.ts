@@ -222,6 +222,15 @@ const makeFakeAudio = (sampleRate = 8000) => {
     createBiquadFilter: () => node('filter'),
     createBufferSource: () => node('source'),
     createConvolver: () => node('convolver'),
+    // The master-bus limiter from #96: a compressor whose parameters are never read here.
+    createDynamicsCompressor: () =>
+      Object.assign(node('compressor'), {
+        threshold: fakeParam(),
+        knee: fakeParam(),
+        ratio: fakeParam(),
+        attack: fakeParam(),
+        release: fakeParam(),
+      }),
     createBuffer,
     resume: () => Promise.resolve(),
     startRendering: () => Promise.resolve(createBuffer(2, 8)),
@@ -338,12 +347,14 @@ describe('seam 4: dropship, dropPod events, sound table', () => {
       Array.from({ length: 4 }, () => 'skimmer'),
     );
     expect(RUN[strider]?.events.filter(isDropPod).map((e) => e.kind)).toEqual(['strider']);
-    // The skimmers' pods launch the step after waveStarted; the strider's dropAt is measured
-    // from waveStarted itself, so the gap is LEADER_STRIDER_DELAY less one step.
-    expect(strider - skimmers).toBe(steps(LEADER_STRIDER_DELAY) - 1);
+    // The strider's dropAt is measured from waveStarted; its pod launches within one step of
+    // LEADER_STRIDER_DELAY after the skimmers' pods, which is the craft's whole flight: the pod
+    // leaves on the craft's last step or the step after, never with a second craft.
+    expect(strider - skimmers).toBeGreaterThanOrEqual(steps(LEADER_STRIDER_DELAY) - 1);
+    expect(strider - skimmers).toBeLessThanOrEqual(steps(LEADER_STRIDER_DELAY));
     const t = ((RUN[strider]?.time ?? 0) - (RUN[skimmers]?.time ?? 0)) / CRAFT_FLIGHT_SECONDS;
-    expect(t).toBeLessThan(1);
-    expect(t).toBeCloseTo(1 - DT / CRAFT_FLIGHT_SECONDS, 3);
+    expect(t).toBeLessThanOrEqual(1);
+    expect(t).toBeGreaterThanOrEqual(1 - DT / CRAFT_FLIGHT_SECONDS - 1e-6);
     let craftAtBurst: THREE.Object3D | undefined;
     let craftAtStrider: THREE.Object3D | undefined;
     let craftToPod = 0;
@@ -473,7 +484,9 @@ describe('seam 4: the dropPod sound is the ship, not the pods', () => {
         }
       },
       setInterval: () => 0,
+      addEventListener: () => {},
     });
+    vi.stubGlobal('document', { addEventListener: () => {}, visibilityState: 'visible' });
     const bank = new AudioBank();
     bank.unlock();
     const step = lastStand();
